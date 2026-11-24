@@ -13,6 +13,34 @@
 
 ---
 
+## v0.9.6-beta — adaptive VAD, tap-to-send and voice commands
+
+- **Date:** 2026-11-24
+- **Artifact:** `dist/android/penguru-squad-debug.apk`
+- **SHA-256:** `362d9604ea4bf9002fecfc709583c4cb5282a47adebf30f54b6f413cb4306952`
+- **Version:** `0.9.6-beta` (`versionCode=906`)
+- **Min/target SDK:** 26 / 35
+- **Signing:** debug identity, APK Signature Scheme v2 + v3 verified
+
+  Voice activation now has three explicit policies. The Conversation default is
+  **tap to talk; tap again to stop, transcribe and send**. `vad` mode uses an
+  adaptive RMS voice-activity detector with a configurable 0.5–2.5 s
+  end-of-speech window instead of the old fixed 2.5 s recognizer timeout.
+  `fixed` mode keeps the microphone open for five seconds and then sends the
+  whole window; the **Speak a message · 5 seconds** button always uses it.
+
+  SonarBird now shows the live partial sentence in the persistent notification,
+  finalises on VAD-detected end-of-speech, and supports **Send now** and
+  **Stop listening** actions. Voice commands `stop`, `stop listening`, `cancel`,
+  `never mind`, `that's all`, `send`, `send it`, `Penguru stop` and
+  `Penguru send` are recognised natively in both the foreground mic and the
+  background listener. Installed GrapheneOS / Google / vendor recognition
+  services are selectable in Settings; Android TTS engine discovery continues to
+  expose Piper / Spark when the phone installs them as TTS engines. Android
+  `NoiseSuppressor`, AGC and echo cancellation are reported, and pinned
+  **Silero VAD ONNX** and **RNNoise 0.2** entries are available in the Model
+  library.
+
 ## v0.9.5-beta — live SonarBird foreground listening and reliable dictation
 
 - **Date:** 2026-11-24

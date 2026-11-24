@@ -1,22 +1,29 @@
-// Voice input for PenGuru. On Android this uses the built-in SpeechRecognizer
-// (on-device where the device supports it). The Web Audio path remains a
-// fallback for browsers and for a future whisper.cpp bridge.
+// Voice input for PenGuru.
 //
-// The conversation mic is a toggle:
-//   tap once  -> start listening
-//   tap again -> finish and send the transcript
-// If "auto-send after silence" is enabled, the recognizer finishes and sends
-// by itself after the configured silence window. With it disabled the owner
-// can talk for as long as they like and the second tap submits.
+// On Android this uses the native SpeechRecognizer bridge. The bridge exposes
+// three endpointing policies:
 //
-// Every native session has both a JavaScript deadline and a native watchdog so
-// the microphone is always released even when a speech service never calls
-// back. That "listening forever" state was the previous beta's biggest bug.
+//   toggle  (default) tap the mic to talk; tap it again to stop, transcribe and
+//           send. Nothing waits for a silence timeout.
+//   vad     adaptive voice-activity detection: sends as soon as the owner has
+//           actually stopped talking. The end-of-speech window is configurable.
+//   fixed   "Speak a message" records for exactly five seconds, then transcribes
+//           and sends everything captured in that window.
+//
+// The persistent SonarBird listener has the same adaptive endpointing, and the
+// voice-command vocabulary ("Penguru stop", "stop listening", "send it") is
+// handled natively as well as here.
 const WAKE_RE = /\b(?:pen[\s-]?guru|peng[\s-]?g?u(?:ru|ro|roo)|ping[\s-]?u?ru|pang[\s-]?u?ru)\b[\s,.:;!?-]*(.*)$/i;
-const KEY_AUTOSEND = 'penguru-voice-autosend';
-const KEY_SILENCE = 'penguru-voice-silence';
-const DEFAULT_SILENCE_MS = 2500;
-const SILENCE_CHOICES = [0, 1500, 2500, 4000, 7000];
+const STOP_RE = /^(?:(?:hey|hi|ok|okay|oi)\s+)?(?:pen[\s-]?guru|peng[\s-]?g?u(?:ru|ro|roo)|ping[\s-]?u?ru|pang[\s-]?u?ru)[\s,.:;!?-]*(?:stop(?:\s+(?:listening|recording|now|it|that|the\s+mic))?|abort|halt|never[\s-]?mind|that'?s\s+all|that\s+is\s+all|cancel|quiet|silence|shut\s+up|enough)[\s.!,]*$/i;
+const SEND_RE = /^(?:(?:hey|hi|ok|okay|oi)\s+)?(?:pen[\s-]?guru|peng[\s-]?g?u(?:ru|ro|roo)|ping[\s-]?u?ru|pang[\s-]?u?ru)[\s,.:;!?-]*(?:send(?:\s+(?:it|now|this|that|message))?|submit|finish|done|that'?s\s+it|go\s+ahead)[\s.!,]*$/i;
+
+const KEY_MODE = 'penguru-voice-mode';
+const KEY_END_SILENCE = 'penguru-voice-end-silence';
+const KEY_COMMANDS = 'penguru-voice-commands';
+const KEY_NOISE = 'penguru-voice-noise';
+const DEFAULT_END_SILENCE_MS = 900;
+const FIXED_RECORD_MS = 5000;
+const MODES = ['toggle', 'vad', 'fixed'];
 
 function stored(key, fallback) {
   try {
@@ -31,6 +38,10 @@ function save(key, value) {
   try { localStorage.setItem(key, String(value)); } catch (error) { /* unavailable */ }
 }
 
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, Number(value) || min));
+}
+
 export function voiceControls(call, available, onText) {
   const $ = id => document.getElementById(id);
   const host = typeof window !== 'undefined' ? window.NuxelAndroid : null;
@@ -40,11 +51,15 @@ export function voiceControls(call, available, onText) {
   // the speech service releases the background listener. Retry those
   // automatically instead of making the owner tap the microphone again.
   let busyRetries = 0;
-  let autoSend = stored(KEY_AUTOSEND, '1') === '1';
-  let silenceMs = Number(stored(KEY_SILENCE, String(DEFAULT_SILENCE_MS)));
-  if (!Number.isFinite(silenceMs) || silenceMs <= 0) silenceMs = DEFAULT_SILENCE_MS;
-  let manualStop = false;   // the second mic tap asked to finish + send
-  let pendingText = '';     // transcript waiting for a second tap / Send
+  let mode = stored(KEY_MODE, 'toggle');
+  if (!MODES.includes(mode)) mode = 'toggle';
+  let endSilenceMs = Math.round(clamp(stored(KEY_END_SILENCE, DEFAULT_END_SILENCE_MS), 350, 5000));
+  let commands = stored(KEY_COMMANDS, '1') === '1';
+  let noise = stored(KEY_NOISE, 'auto');
+  let manualStop = false;
+  let pendingText = '';
+  let currentMode = mode;
+  let finishing = false;
 
   const status = text => {
     for (const id of ['voice-status', 'mic-status']) {
@@ -60,35 +75,73 @@ export function voiceControls(call, available, onText) {
     } catch (error) { return false; }
   };
 
-  function syncSilenceControls() {
-    const value = String(autoSend ? silenceMs : 0);
+  function persistNative() {
+    try {
+      if (host && typeof host.speechConfigure === 'function') {
+        host.speechConfigure(JSON.stringify({
+          end_silence_ms: endSilenceMs,
+          commands,
+          noise,
+        }));
+      }
+    } catch (error) { /* older bridge */ }
+  }
+
+  function syncModeControls() {
+    for (const id of ['voice-mode', 'convo-mode']) {
+      const select = $(id);
+      if (select) select.value = mode;
+    }
     for (const id of ['voice-silence', 'convo-silence']) {
       const select = $(id);
       if (!select) continue;
+      const value = String(endSilenceMs);
       if (![...select.options].some(option => option.value === value)) {
         const option = document.createElement('option');
         option.value = value;
-        option.textContent = (silenceMs / 1000).toFixed(1) + ' seconds';
+        option.textContent = (endSilenceMs / 1000).toFixed(2) + ' seconds';
         select.append(option);
       }
       select.value = value;
+      const label = select.closest('label');
+      if (label) label.hidden = mode !== 'vad';
     }
+    if ($('voice-commands')) $('voice-commands').checked = commands;
+    if ($('voice-noise')) $('voice-noise').value = noise;
   }
 
-  function setSilenceMs(value) {
-    const ms = Math.max(0, Number(value) || 0);
-    if (ms <= 0) {
-      autoSend = false;
-    } else {
-      autoSend = true;
-      silenceMs = ms;
-    }
-    save(KEY_AUTOSEND, autoSend ? '1' : '0');
-    save(KEY_SILENCE, silenceMs);
-    syncSilenceControls();
-    status(autoSend
-      ? 'Voice requests send automatically after ' + (silenceMs / 1000).toFixed(1) + ' seconds of silence.'
-      : 'Voice requests stay open until you tap the mic again and send.');
+  function setMode(value) {
+    mode = MODES.includes(value) ? value : 'toggle';
+    save(KEY_MODE, mode);
+    persistNative();
+    syncModeControls();
+    status(mode === 'toggle'
+      ? 'Tap the mic to talk; tap it again to stop, transcribe and send.'
+      : mode === 'vad'
+        ? 'Voice activity detection is on; PenGuru sends when you stop talking.'
+        : 'The mic records for 5 seconds, then transcribes and sends.');
+  }
+
+  function setEndSilenceMs(value) {
+    endSilenceMs = Math.round(clamp(value, 350, 5000));
+    save(KEY_END_SILENCE, endSilenceMs);
+    persistNative();
+    syncModeControls();
+    status('End-of-speech silence: ' + (endSilenceMs / 1000).toFixed(2) + ' seconds.');
+  }
+
+  function setCommands(value) {
+    commands = !!value;
+    save(KEY_COMMANDS, commands ? '1' : '0');
+    persistNative();
+    if ($('voice-commands')) $('voice-commands').checked = commands;
+  }
+
+  function setNoise(value) {
+    noise = value === 'off' ? 'off' : 'auto';
+    save(KEY_NOISE, noise);
+    persistNative();
+    if ($('voice-noise')) $('voice-noise').value = noise;
   }
 
   function updateMicUi() {
@@ -101,7 +154,7 @@ export function voiceControls(call, available, onText) {
         ? 'Stop recording and send request'
         : pendingText ? 'Send recorded request' : 'Record a request');
       mic.title = recording
-        ? 'Stop and send'
+        ? 'Stop, transcribe and send'
         : pendingText ? 'Send recorded request' : 'Record a request';
     }
     if ($('voice-stop')) $('voice-stop').disabled = !active;
@@ -111,6 +164,8 @@ export function voiceControls(call, available, onText) {
 
   function finishNative() {
     active = false;
+    finishing = false;
+    manualStop = false;
     clearTimeout(timer);
     timer = null;
     updateMicUi();
@@ -161,20 +216,50 @@ export function voiceControls(call, available, onText) {
   }
 
   function finishNow(reason) {
-    if (!active) return;
+    if (!active || finishing) return;
+    if (!host) {
+      // Browser fallback: finish the Web Audio capture and transcribe locally.
+      finishing = true;
+      recordFinish();
+      return;
+    }
+    finishing = true;
     manualStop = true;
-    status(reason === 'timeout' ? 'Finishing your request…' : 'Finishing and sending…');
+    status(reason === 'fixed'
+      ? 'Five seconds recorded · transcribing and sending…'
+      : reason === 'timeout'
+        ? 'Finishing your request…'
+        : 'Stopping the mic · transcribing and sending…');
     if (host && typeof host.finishSpeechRecognition === 'function') {
-      try { host.finishSpeechRecognition(); return; } catch (error) { /* fall back */ }
+      try {
+        host.finishSpeechRecognition();
+        // If the bridge disappears, release the UI rather than showing a
+        // permanently active microphone.
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          if (active) {
+            finishNative();
+            finishing = false;
+            status('Microphone released. Tap the mic to try again.');
+          }
+        }, 14000);
+        return;
+      } catch (error) { /* fall back */ }
     }
     // Older bridge: cancel and report rather than leaving the mic open.
-    try { host.stopSpeechRecognition(); } catch (error) { /* stopped */ }
+    try { host && host.stopSpeechRecognition && host.stopSpeechRecognition(); } catch (error) { /* stopped */ }
     finishNative();
     status('Microphone closed. Tap the mic to try again.');
   }
 
   function errorText(error) {
     switch (error) {
+      case 'voice_stop_command':
+        return 'Stopped by voice command. Microphone closed.';
+      case 'voice_cancel_command':
+        return 'Cancelled by voice command. Microphone closed.';
+      case 'voice_send_command':
+        return 'Send command heard, but there was no transcript to send.';
       case 'microphone_permission_denied':
         return 'Microphone permission denied. Enable it for PenGuru Squad in Android Settings.';
       case 'speech_recognizer_unavailable':
@@ -204,6 +289,10 @@ export function voiceControls(call, available, onText) {
     finishNative();
     if (!result || result.ok !== true) {
       const error = result && result.error ? result.error : 'unavailable';
+      if (result && result.command === 'stop') {
+        status(errorText('voice_stop_command'));
+        return;
+      }
       if ((error === 'recognizer_busy' || error === 'client_error') && busyRetries < 4) {
         busyRetries++;
         status('Reconnecting the microphone…');
@@ -214,7 +303,7 @@ export function voiceControls(call, available, onText) {
       }
       if ((nextMode === 'wake' || nextMode === 'followup') && error === 'no_speech_detected') {
         status(nextMode === 'wake' ? 'No “Penguru” detected. Listening again…' : 'No speech detected. Listening again…');
-        timer = setTimeout(() => { if (!document.hidden) nativeListen(nextMode); }, 500);
+        timer = setTimeout(() => { if (!document.hidden) nativeListen(nextMode); }, 450);
         return;
       }
       status(errorText(error));
@@ -225,7 +314,7 @@ export function voiceControls(call, available, onText) {
     if (!text) {
       if (nextMode === 'wake' || nextMode === 'followup') {
         status('No speech detected. Listening again…');
-        timer = setTimeout(() => { if (!document.hidden) nativeListen(nextMode); }, 500);
+        timer = setTimeout(() => { if (!document.hidden) nativeListen(nextMode); }, 450);
       } else {
         status('No speech detected. Tap the mic and try again.');
       }
@@ -235,38 +324,47 @@ export function voiceControls(call, available, onText) {
       const match = text.match(WAKE_RE);
       if (!match) {
         status('No “Penguru” detected. Listening again…');
-        timer = setTimeout(() => { if (!document.hidden) nativeListen('wake'); }, 500);
+        timer = setTimeout(() => { if (!document.hidden) nativeListen('wake'); }, 450);
         return;
       }
       const rest = match[1].trim();
       if (rest) {
+        if (commands && (STOP_RE.test(rest) || SEND_RE.test(rest))) {
+          if (STOP_RE.test(rest)) { status(errorText('voice_stop_command')); return; }
+        }
         deliver(rest, true);
         status('Heard “Penguru” · sending: ' + rest);
       } else {
         status('“Penguru” detected · listening for your message…');
-        timer = setTimeout(() => { if (!document.hidden) nativeListen('followup'); }, 350);
+        timer = setTimeout(() => { if (!document.hidden) nativeListen('followup'); }, 300);
       }
       return;
     }
     if (nextMode === 'followup') {
+      if (commands && STOP_RE.test(text)) { status(errorText('voice_stop_command')); return; }
       deliver(text, true);
       status('“Penguru” request sent: ' + text);
       return;
     }
-    // Ad-hoc dictation from the conversation mic.
-    const tappedToSend = manualStop;
-    manualStop = false;
-    if (autoSend || tappedToSend) {
-      deliver(text, true);
-      status('Transcript sent: ' + text);
-    } else {
-      pendingText = text;
-      const prompt = $('prompt');
-      if (prompt) { prompt.value = text; try { prompt.focus(); } catch (error) { /* no focus */ } }
-      try { window.dispatchEvent(new CustomEvent('penguru:transcript-ready')); } catch (error) { /* old WebView */ }
-      updateMicUi();
-      status('Transcript ready · tap the mic again or press Send');
+    // Conversation mic and the five-second "Speak a message" mode always
+    // stop, transcribe and send. This is the owner-selected default.
+    if (commands && STOP_RE.test(text)) { status(errorText('voice_stop_command')); return; }
+    deliver(text, true);
+    status((nextMode === 'fixed' ? 'Five-second transcript sent: ' : 'Transcript sent: ') + text);
+  }
+
+  function nativeConfig(nextMode) {
+    if (nextMode === 'fixed') {
+      return {mode: 'fixed', record_ms: FIXED_RECORD_MS, end_silence_ms: 0,
+        max_ms: FIXED_RECORD_MS + 6000, commands, noise};
     }
+    if (nextMode === 'vad') {
+      return {mode: 'vad', end_silence_ms: endSilenceMs, max_ms: 26000, commands, noise};
+    }
+    if (nextMode === 'wake' || nextMode === 'followup') {
+      return {mode: nextMode, end_silence_ms: Math.min(endSilenceMs, 1200), max_ms: 22000, commands, noise};
+    }
+    return {mode: 'toggle', end_silence_ms: 0, max_ms: 95000, commands, noise};
   }
 
   function nativeListen(nextMode) {
@@ -284,28 +382,35 @@ export function voiceControls(call, available, onText) {
       return;
     }
     active = true;
+    finishing = false;
     manualStop = false;
+    currentMode = nextMode;
     const own = ++epoch;
-    const effectiveSilence = nextMode === 'dictate'
-      ? (autoSend ? silenceMs : 0)
-      : nextMode === 'followup' ? Math.max(1200, silenceMs) : 0;
     updateMicUi();
-    status(nextMode === 'dictate'
-      ? (autoSend
-          ? 'Microphone on · speak now · sends after ' + (silenceMs / 1000).toFixed(1) + 's of silence'
-          : 'Microphone on · speak now · tap the mic again to send')
-      : nextMode === 'followup'
-        ? 'Listening for your message after “Penguru”…'
-        : 'Microphone on · say “Penguru” and then your message');
+    status(nextMode === 'fixed'
+      ? 'Microphone on for 5 seconds · speak now · it will transcribe and send automatically'
+      : nextMode === 'vad'
+        ? 'Microphone on · speak now · sends after ' + (endSilenceMs / 1000).toFixed(2) + 's of real silence'
+        : nextMode === 'followup'
+          ? 'Listening for your message after “Penguru”…'
+          : nextMode === 'wake'
+            ? 'Microphone on · say “Penguru” and then your message'
+            : 'Microphone on · tap the mic again to stop, transcribe and send');
 
     window.__nuxelSpeechResult = result => handleNativeResult(result, nextMode, own);
 
     try {
-      if (typeof host.startSpeechRecognitionEx === 'function') {
-        if (!host.startSpeechRecognitionEx(nextMode, effectiveSilence)) {
+      if (typeof host.startSpeechRecognitionConfig === 'function') {
+        if (!host.startSpeechRecognitionConfig(JSON.stringify(nativeConfig(nextMode)))) {
           throw new Error('Could not start Android speech recognition');
         }
-      } else if (!host.startSpeechRecognition(nextMode !== 'dictate')) {
+      } else if (typeof host.startSpeechRecognitionEx === 'function') {
+        const fallbackSilence = nextMode === 'vad' ? endSilenceMs
+          : nextMode === 'fixed' ? FIXED_RECORD_MS : 0;
+        if (!host.startSpeechRecognitionEx(nextMode, fallbackSilence)) {
+          throw new Error('Could not start Android speech recognition');
+        }
+      } else if (!host.startSpeechRecognition(nextMode === 'wake' || nextMode === 'followup')) {
         throw new Error('Could not start Android speech recognition');
       }
     } catch (error) {
@@ -313,24 +418,28 @@ export function voiceControls(call, available, onText) {
       status(error.message);
       return;
     }
-    // The native watchdog is authoritative; this one keeps the UI honest if
-    // the WebView throttles or the bridge disappears. It asks for the final
-    // hypothesis rather than cancelling so a spoken request is not lost. The
-    // system voice-input fallback can stay on screen much longer than the
-    // in-process recognizer, so leave it room to finish.
-    const fallback = nextMode === 'dictate'
-      ? (autoSend ? Math.max(45000, silenceMs + 30000) : 90000)
-      : 45000;
+    // Native endpointing is authoritative. This timer only releases the UI if
+    // the WebView or bridge disappears.
+    const fallback = nextMode === 'fixed' ? FIXED_RECORD_MS + 12000
+      : nextMode === 'vad' ? 32000
+      : nextMode === 'wake' || nextMode === 'followup' ? 28000 : 100000;
     timer = setTimeout(() => {
       if (!active || own !== epoch) return;
-      if (fallback > 20000) {
-        finishNow('timeout');
-        return;
-      }
-      finishNative();
-      try { host.stopSpeechRecognition(); } catch (error) { /* already stopped */ }
-      status('Microphone timed out and has been released. Tap the mic to try again.');
+      finishNow('timeout');
     }, fallback);
+    if (nextMode === 'fixed') {
+      // Belt-and-braces: ask for the transcript at 5 s even if the native
+      // timer could not be scheduled.
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (!active || own !== epoch) return;
+        finishNow('fixed');
+      }, FIXED_RECORD_MS + 250);
+      timer = setTimeout(() => {
+        if (!active || own !== epoch) return;
+        finishNow('timeout');
+      }, FIXED_RECORD_MS + 12000);
+    }
   }
 
   function wav(samples, rate) {
@@ -354,77 +463,131 @@ export function voiceControls(call, available, onText) {
     if (!available() || document.hidden) { status('Wait for the current answer to finish, or press Stop generation first.'); return; }
     if (active) return;
     const own = ++epoch;
+    const targetMs = currentMode === 'fixed' ? FIXED_RECORD_MS : 30000;
     try {
       const launcherHost = window.NuxelHost || window.parent?.NuxelHost;
       if (launcherHost?.micAuthorize) { const grant = await launcherHost.micAuthorize(); if (grant?.ok === false && !grant.offline) throw Error('Microphone permission denied'); }
       const acquired = await navigator.mediaDevices.getUserMedia({audio: true, video: false});
       if (own !== epoch || document.hidden) { acquired.getTracks().forEach(t => t.stop()); return; }
-      stream = acquired; context = new AudioContext(); await context.resume(); active = true;
+      stream = acquired; context = new AudioContext(); await context.resume(); active = true; finishing = false;
       updateMicUi();
       const source = context.createMediaStreamSource(stream); processor = context.createScriptProcessor(4096, 1, 1);
       const silent = context.createGain(); silent.gain.value = 0;
       source.connect(processor); processor.connect(silent); silent.connect(context.destination);
-      processor.onaudioprocess = e => { if (active) chunks.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
-      status(wake ? 'Microphone on · say “Penguru” · foreground only' : 'Microphone on · speak for up to 5 seconds');
-      timer = setTimeout(async () => {
+      // Lightweight browser-side VAD: learn the noise floor and finish after
+      // the configured real-silence window once speech has started.
+      let noiseFloor = 0.005, speechStarted = false, lastVoice = performance.now();
+      processor.onaudioprocess = e => {
+        if (!active) return;
+        const chunk = new Float32Array(e.inputBuffer.getChannelData(0));
+        chunks.push(chunk);
+        let sum = 0; for (let i = 0; i < chunk.length; i++) sum += chunk[i] * chunk[i];
+        const rms = Math.sqrt(sum / chunk.length);
+        const threshold = Math.max(0.018, noiseFloor * 3.2);
+        if (rms >= threshold) {
+          speechStarted = true; lastVoice = performance.now();
+        } else if (!speechStarted) {
+          noiseFloor = noiseFloor * 0.92 + rms * 0.08;
+        } else if (currentMode !== 'fixed' && performance.now() - lastVoice >= endSilenceMs) {
+          finishNow('vad');
+        }
+      };
+      status(currentMode === 'fixed'
+        ? 'Microphone on for 5 seconds · speak now'
+        : currentMode === 'vad' ? 'Microphone on · speak now · sends when you stop'
+        : 'Microphone on · tap the mic again to stop, transcribe and send');
+      timer = setTimeout(() => {
         if (!active || own !== epoch) return;
-        const rate = context.sampleRate;
-        const samples = new Float32Array(chunks.reduce((n, c) => n + c.length, 0)); let at = 0;
-        for (const chunk of chunks) { samples.set(chunk, at); at += chunk.length; }
-        await stop(); const recognitionEpoch = epoch;
-        status('Microphone closed · recognizing locally…');
-        try {
-          const result = await call('transcribe', {audio: wav(samples, rate)});
-          if (epoch !== recognitionEpoch || document.hidden || !available()) return;
-          if (wake && !result.wake_detected) { status('No “Penguru” detected. Listening again…'); timer = setTimeout(() => start(true), 500); return; }
-          const text = wake ? result.after_wake : result.text;
-          if (text) deliver(text, true);
-          status('Transcript sent automatically.');
-        } catch (e) { status(e.message); }
-      }, 5000);
+        finishNow(currentMode === 'fixed' ? 'fixed' : 'timeout');
+      }, targetMs);
     } catch (e) { await stop(); status(e.message); }
   }
 
-  function start(wake) {
+  function recordFinish() {
+    if (!active) { finishing = false; return; }
+    const own = epoch;
+    const rate = context ? context.sampleRate : 16000;
+    const samples = new Float32Array(chunks.reduce((n, c) => n + c.length, 0)); let at = 0;
+    for (const chunk of chunks) { samples.set(chunk, at); at += chunk.length; }
+    const audio = wav(samples, rate);
+    const nextMode = currentMode;
+    stop().then(async () => {
+      status('Microphone closed · recognizing locally…');
+      try {
+        const result = await call('transcribe', {audio});
+        if (epoch !== own + 1 || document.hidden || !available()) return;
+        if (nextMode === 'wake' && !result.wake_detected) { status('No “Penguru” detected. Listening again…'); return; }
+        const text = nextMode === 'wake' ? result.after_wake : result.text;
+        if (text) deliver(text, true);
+        status('Transcript sent automatically.');
+      } catch (e) { status(e.message); }
+    }).finally(() => { finishing = false; });
+  }
+
+  function startMode(nextMode) {
     busyRetries = 0;
     if (nativeAvailable()) {
-      nativeListen(wake ? 'wake' : 'dictate');
+      nativeListen(nextMode);
     } else if (host) {
-      // The APK has no local transcription model; do not open the microphone
-      // only to fail in the Web Audio fallback.
       status('No speech recognizer is installed. Open Android Settings → System → Languages & input → Voice input and enable one.');
     } else {
-      recordListen(wake);
+      currentMode = nextMode;
+      recordListen(nextMode === 'wake' || nextMode === 'followup');
     }
+  }
+
+  function start(wake) {
+    startMode(wake ? 'wake' : mode);
   }
 
   function toggleMic() {
     if (pendingText) { sendPending(); return; }
     if (active) { finishNow('manual'); return; }
-    start(false);
+    startMode(mode);
   }
 
-  if ($('voice-talk')) $('voice-talk').onclick = () => start(false);
-  if ($('voice-wake')) $('voice-wake').onclick = () => start(true);
+  if ($('voice-talk')) $('voice-talk').onclick = () => startMode('fixed');
+  if ($('voice-wake')) $('voice-wake').onclick = () => startMode('wake');
   if ($('voice-stop')) $('voice-stop').onclick = stop;
   if ($('mic')) $('mic').onclick = toggleMic;
-  for (const id of ['voice-silence', 'convo-silence']) {
-    if ($(id)) $(id).onchange = () => setSilenceMs($(id).value);
+  for (const id of ['voice-mode', 'convo-mode']) {
+    if ($(id)) $(id).onchange = () => setMode($(id).value);
   }
+  for (const id of ['voice-silence', 'convo-silence']) {
+    if ($(id)) $(id).onchange = () => setEndSilenceMs($(id).value);
+  }
+  if ($('voice-commands')) $('voice-commands').onchange = () => setCommands($('voice-commands').checked);
+  if ($('voice-noise')) $('voice-noise').onchange = () => setNoise($('voice-noise').value);
   document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
   window.addEventListener('pagehide', stop);
-  syncSilenceControls();
+  syncModeControls();
+  persistNative();
   updateMicUi();
+  status(mode === 'toggle'
+    ? 'Tap the mic to talk; tap it again to stop, transcribe and send.'
+    : mode === 'vad'
+      ? 'Voice activity detection is on; PenGuru sends when you stop talking.'
+      : 'The mic records for 5 seconds, then transcribes and sends.');
 
   return {
     stop,
     start,
-    startDictation: () => start(false),
-    startWake: () => start(true),
+    startDictation: () => startMode(mode),
+    startWake: () => startMode('wake'),
+    startFixed: () => startMode('fixed'),
     toggleMic,
-    setSilenceMs,
-    get autoSend() { return autoSend; },
-    get silenceMs() { return silenceMs; },
+    setMode,
+    setSilenceMs: setEndSilenceMs,
+    setEndSilenceMs,
+    setCommands,
+    setNoise,
+    syncModeControls,
+    get mode() { return mode; },
+    get autoSend() { return mode !== 'toggle'; },
+    get silenceMs() { return endSilenceMs; },
+    get endSilenceMs() { return endSilenceMs; },
+    get commands() { return commands; },
+    get noise() { return noise; },
     get recording() { return active; },
     get pending() { return !!pendingText; },
   };

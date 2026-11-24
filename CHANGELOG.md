@@ -2,6 +2,34 @@
 
 All notable changes to the Nuxel Phone OS repository are documented here.
 
+## [v0.9.6-beta] - 2026-11-24
+
+- PenGuru Android 0.9.6-beta: replace the fixed 2.5-second voice timeout with
+  an adaptive RMS voice-activity detector. The in-app microphone and the
+  persistent SonarBird listener now finalise as soon as the owner stops talking,
+  while `onEndOfSpeech()` remains the authoritative fast path on recognizers
+  that provide it.
+- Make **tap to talk, tap again to stop / transcribe / send** the default
+  Conversation mic action. Add Conversation and Settings controls for
+  `toggle`, `vad` (auto-send when you stop talking, 0.5–2.5 s end silence) and
+  `fixed` (record 5 seconds, then transcribe and send).
+- Make **Speak a message** always keep the microphone open for five seconds and
+  then transcribe and send everything captured in that window.
+- Add native voice-command recognition shared by the foreground mic and
+  SonarBird: `stop`, `stop listening`, `cancel`, `never mind`, `that's all`,
+  `send`, `send it`, and `Penguru stop` / `Penguru send` wake commands.
+- Make the persistent notification show live partial speech (“Heard: …”),
+  finish on VAD-detected end-of-speech, and expose a **Send now** action in
+  addition to **Stop listening**.
+- Add speech-recognition engine selection so installed GrapheneOS / Google /
+  vendor recognizers can be chosen explicitly, plus talkback engine discovery
+  for Piper / Spark when the phone exposes them as Android TTS engines.
+- Add Android `NoiseSuppressor`, AGC and echo-cancellation diagnostics and a
+  `VOICE_RECOGNITION` audio-source hint. Add pinned optional **Silero VAD ONNX**
+  (MIT) and **RNNoise 0.2** (BSD-3-Clause) packages to the Model library.
+- Rebuild PenGuru Squad 0.9.6-beta (`versionCode=906`) and update the APK,
+  checksums and verification notes.
+
 ## [v0.9.5-beta] - 2026-11-24
 
 - PenGuru Android 0.9.5-beta: keep SonarBird armed while the app is open

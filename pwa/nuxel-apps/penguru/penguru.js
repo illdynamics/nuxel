@@ -133,6 +133,107 @@ const voice = voiceControls(call, () => !request, text => autoSendText(text));
 const talkback = talkbackControls();
 window.addEventListener('penguru:transcript-ready', () => page('chat'));
 
+// A voice command heard by the persistent SonarBird listener (for example
+// "Penguru stop" or "Penguru cancel") controls the foreground conversation too.
+window.__penguruVoiceCommand = command => {
+  const value = String(command || '').toLowerCase();
+  if (value === 'stop' || value === 'cancel') {
+    voice.stop().catch(() => {});
+    if (request) call('cancel', {request_id: request}).catch(() => {});
+    notice(value === 'stop' ? 'Stopped by voice command.' : 'Cancelled by voice command.');
+    page('chat');
+    return true;
+  }
+  if (value === 'send') {
+    const text = $('prompt').value.trim();
+    if (text) sendMessage(text).catch(error => notice(error.message));
+    return true;
+  }
+  return false;
+};
+
+/* ------------------------------------------------ speech engine selection */
+
+function populateSpeechEngines() {
+  const select = $('speech-engine');
+  if (!select || document.activeElement === select) return;
+  const host = window.NuxelAndroid;
+  if (!host || typeof host.speechEngines !== 'function') {
+    select.replaceChildren();
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = 'System default recognizer';
+    select.append(option);
+    if ($('speech-engine-status')) {
+      $('speech-engine-status').textContent = 'Speech-engine selection is available in the Android APK.';
+    }
+    return;
+  }
+  let engines = [];
+  try {
+    const raw = host.speechEngines();
+    const parsed = JSON.parse(raw || '[]');
+    if (Array.isArray(parsed)) engines = parsed;
+  } catch (error) { /* keep the default entry */ }
+  if (!engines.length) engines = [{component: '', label: 'System default recognizer', default: true}];
+  const current = wakeJson(host.speechConfig && host.speechConfig()).engine || '';
+  select.replaceChildren();
+  for (const engine of engines) {
+    const option = document.createElement('option');
+    option.value = engine.component || '';
+    option.textContent = engine.label || engine.component || 'System default recognizer';
+    select.append(option);
+  }
+  select.value = current;
+  select.onchange = () => {
+    if (typeof host.speechConfigure === 'function') {
+      host.speechConfigure(JSON.stringify({engine: select.value}));
+    }
+    if ($('speech-engine-status')) {
+      $('speech-engine-status').textContent = select.value
+        ? 'Selected recognizer: ' + (select.selectedOptions[0]?.textContent || select.value)
+        : 'Using the phone\'s system default recognizer.';
+    }
+  };
+  if ($('speech-engine-status')) {
+    $('speech-engine-status').textContent = engines.length > 1
+      ? engines.length + ' recognizers found. GrapheneOS / Google / vendor engines can be chosen here.'
+      : 'Only the system default recognizer was found. Install a speech-recognition service to add more choices.';
+  }
+}
+
+function updateVoiceDiagnostics() {
+  const host = window.NuxelAndroid;
+  if (!$('voice-diagnostics')) return;
+  if (!host || typeof host.voiceDiagnostics !== 'function') {
+    $('voice-diagnostics').textContent = 'VAD and noise diagnostics are available in the Android APK.';
+    return;
+  }
+  const state = wakeJson(host.voiceDiagnostics());
+  const noise = state.noise_suppressor ? 'Android NoiseSuppressor on'
+    : state.noise_mode === 'off' ? 'noise suppression off' : 'noise suppression unavailable';
+  const silero = state.native_silero_installed ? 'Silero VAD package installed'
+    : 'Silero VAD package not installed';
+  const rnnoise = state.native_rnnoise_installed ? 'RNNoise package installed'
+    : 'RNNoise package not installed';
+  $('voice-diagnostics').textContent = [
+    'VAD: ' + (state.vad || 'off') + ' · end-of-speech ' + ((state.end_silence_ms || 0) / 1000).toFixed(2) + ' s',
+    noise,
+    state.acoustic_echo_canceler ? 'echo cancellation available' : 'no echo cancellation',
+    state.automatic_gain_control ? 'AGC available' : 'no AGC',
+    silero,
+    rnnoise,
+    state.engine ? 'recognizer: ' + state.engine : 'recognizer: system default'
+  ].join(' · ');
+}
+
+if ($('speech-engine')) {
+  populateSpeechEngines();
+  setInterval(updateVoiceDiagnostics, 4000);
+  setInterval(populateSpeechEngines, 8000);
+  updateVoiceDiagnostics();
+}
+
 async function call(op, params = {}) {
   if (engineMode === 'local') {
     let result;
@@ -290,14 +391,18 @@ function updateWakePanel() {
   stop.disabled = !running;
   let summary;
   if (running) {
+    const partial = state.last_partial ? ` · heard “${state.last_partial}”` : '';
     const heard = state.last_heard ? ` · last heard “${state.last_heard}”` : '';
     const error = state.last_error ? ` · ${state.last_error}` : '';
+    const endpoint = state.vad ? ` · VAD ${state.vad}` : '';
     if (state.in_app_speech) {
       summary = 'SonarBird is paused while the in-app microphone is recording. It resumes automatically.';
     } else if (state.handoff) {
       summary = 'SonarBird heard your request and is sending it to the conversation…';
+    } else if (state.command_pending) {
+      summary = 'SonarBird is hearing your sentence' + partial + ' · it sends when you stop talking' + endpoint;
     } else if (state.listening) {
-      summary = 'SonarBird is listening for “Penguru” · persistent notification active' + heard + error;
+      summary = 'SonarBird is listening for “Penguru” · persistent notification active' + heard + error + endpoint;
     } else if (state.paused) {
       summary = 'SonarBird is reopening the speech session…' + heard + error;
     } else {

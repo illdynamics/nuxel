@@ -51,6 +51,8 @@ const MINILM_REV = '1110a243fdf4706b3f48f1d95db1a4f5529b4d41';
 const WHISPER_REV = '5359861c739e955e79d9a303bcbc70fb988958b1';
 const SPARK_REV = '642071559bfc6346c2359d19dcb6be3f9dd8a05d';
 const KOKORO_REV = 'f3ff3571791e39611d31c381e3a41a3af07b4987';
+const SILERO_VAD_REV = 'bfa5f8cef40abb5de2bd4a2f4c3f22778172dfec';
+const RNNOISE_REV = 'v0.2';
 
 const MINILM_REPO = 'sentence-transformers/all-MiniLM-L6-v2';
 const MINILM_FILES = [
@@ -93,6 +95,63 @@ const KOKORO_FILES = [
   url: hf(KOKORO_REPO, KOKORO_REV, path)}));
 
 const MODELS = [
+  {
+    model_id: 'silero-vad',
+    name: 'Silero VAD · ONNX voice activity',
+    role: 'voice_activity',
+    variants: [{
+      variant_id: 'silero-vad-onnx',
+      format: 'ONNX',
+      quantization: 'FP32 · VAD',
+      architecture: 'silero-vad',
+      size_bytes: 223977,
+      engine: 'onnxruntime',
+      source_repo: 'snakers4/silero-vad',
+      source_revision: SILERO_VAD_REV,
+      source_url: 'https://raw.githubusercontent.com/snakers4/silero-vad/'
+        + SILERO_VAD_REV + '/src/silero_vad.onnx',
+      files: [{
+        path: 'silero_vad.onnx',
+        size_bytes: 223977,
+        sha256: 'aebb2d9ebe2b348cadde4f07a896d1432d64df71b7c3189bc2fe1a4ca1709499',
+      }],
+      license: {
+        spdx: 'MIT',
+        notice: 'Silero VAD is MIT-licensed. This pinned ONNX file is optional; PenGuru uses adaptive RMS endpointing immediately and can use the ONNX model when an ONNX runtime is installed.',
+      },
+      download_allowed: true,
+      download_reason: 'Pinned upstream Silero VAD ONNX file from the recorded revision.',
+      detail: 'Optional neural voice-activity model for the ONNX runtime. Adaptive endpointing already works without it.',
+    }],
+  },
+  {
+    model_id: 'rnnoise',
+    name: 'RNNoise · noise suppression',
+    role: 'noise_suppression',
+    variants: [{
+      variant_id: 'rnnoise-0.2',
+      format: 'SOURCE_TARBALL',
+      quantization: 'v0.2',
+      architecture: 'rnnoise',
+      size_bytes: 2294308,
+      engine: 'rnnoise',
+      source_repo: 'xiph/rnnoise',
+      source_revision: RNNOISE_REV,
+      source_url: 'https://github.com/xiph/rnnoise/releases/download/v0.2/rnnoise-0.2.tar.gz',
+      files: [{
+        path: 'rnnoise-0.2.tar.gz',
+        size_bytes: 2294308,
+        sha256: '90fce4b00b9ff24c08dbfe31b82ffd43bae383d85c5535676d28b0a2b11c0d37',
+      }],
+      license: {
+        spdx: 'BSD-3-Clause',
+        notice: 'RNNoise is BSD-3-Clause. Separately compiled native runtime required; Android NoiseSuppressor is used automatically in the APK.',
+      },
+      download_allowed: true,
+      download_reason: 'Pinned upstream RNNoise 0.2 source release.',
+      detail: 'Optional RNNoise source/package for a future JNI noise-suppression runtime. Android NoiseSuppressor already runs automatically.',
+    }],
+  },
   {
     model_id: 'chatbird',
     name: 'ChatBird',
@@ -562,7 +621,8 @@ export function createLocalEngine() {
         sonarbird: { available: true, mode: 'built-in language rules' },
         providers: { CPU: { status: 'baseline' }, 'GPU/NPU': { status: 'not validated on this device' } },
         network: { workers: 'not required', local_only: true },
-        voice: { wake_word: wakeWord, foreground_speech: speech, listening: listening },
+        voice: { wake_word: wakeWord, foreground_speech: speech, listening: listening,
+          vad: 'adaptive-rms', noise_suppression: 'system-native' },
         storage: paths(),
       },
     };

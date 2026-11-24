@@ -1,6 +1,13 @@
 export function modelLibrary(container, call) {
   const jobs = new Map();
   let polling = false;
+  const sizeLabel = value => {
+    const n = Number(value) || 0;
+    if (n >= 1e9) return (n / 1e9).toFixed(2) + ' GB';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + ' MB';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + ' KB';
+    return n + ' B';
+  };
   function node(tag, text) {
     const result = document.createElement(tag);
     result.textContent = text;
@@ -24,9 +31,11 @@ export function modelLibrary(container, call) {
       article.append(node('h4', card.name || card.model_id), node('p', 'Model id: ' + card.model_id));
       if (!card.variants.length) article.append(node('p', 'No approved package is available.'));
       for (const variant of card.variants) {
-        article.append(node('p', `${variant.format} · ${variant.quantization} · ${(variant.size_bytes / 1e9).toFixed(2)} GB · ${variant.engine}`));
+        article.append(node('p', `${variant.format} · ${variant.quantization} · ${sizeLabel(variant.size_bytes)} · ${variant.engine}`));
         const source = node('a', variant.source_repo);
-        const sourceUrl = 'https://huggingface.co/' + variant.source_repo + '/tree/' + variant.source_revision;
+        const sourceUrl = variant.source_url && /github\.com|raw\.githubusercontent\.com/.test(variant.source_url)
+          ? variant.source_url
+          : 'https://huggingface.co/' + variant.source_repo + '/tree/' + variant.source_revision;
         source.href = sourceUrl;
         source.target = '_blank';
         source.rel = 'noopener noreferrer';
@@ -119,6 +128,7 @@ export function modelLibrary(container, call) {
         };
         article.append(label, download, remove, cancel, progress, status);
         if (card.model_id !== 'sonarbird'
+            && !['voice_activity', 'noise_suppression', 'talkback_voice'].includes(card.role)
             && !card.variants.some(item => String(item.engine || '').includes('tts'))) article.append(override);
       }
       container.append(article);

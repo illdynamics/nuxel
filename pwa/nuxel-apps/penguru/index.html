@@ -41,15 +41,23 @@
             <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V22h2v-3.08A7 7 0 0 0 19 12h-2Z"/>
           </svg>
         </button>
-        <span id="mic-status" class="mic-status" role="status">Tap the mic to record a request; tap it again to send.</span>
+        <span id="mic-status" class="mic-status" role="status">Tap the mic to talk; tap it again to stop, transcribe and send.</span>
         <label class="toggle"><input id="talkback-toggle" type="checkbox"> Talkback</label>
-        <label class="compact">Auto-send after silence
+        <label class="compact">Mic action
+          <select id="convo-mode">
+            <option value="toggle" selected>Stop to transcribe &amp; send</option>
+            <option value="vad">Auto-send when I stop talking</option>
+            <option value="fixed">Record 5 s, then send</option>
+          </select>
+        </label>
+        <label class="compact">End-of-speech silence
           <select id="convo-silence">
-            <option value="0">Off · tap mic again</option>
-            <option value="1500">1.5 s</option>
-            <option value="2500">2.5 s</option>
-            <option value="4000">4 s</option>
-            <option value="7000">7 s</option>
+            <option value="500">0.50 s</option>
+            <option value="700">0.70 s</option>
+            <option value="900">0.90 s</option>
+            <option value="1200">1.20 s</option>
+            <option value="1800">1.80 s</option>
+            <option value="2500">2.50 s</option>
           </select>
         </label>
       </div>
@@ -110,26 +118,51 @@
     <p class="hint">llama.cpp and ONNX Runtime archives can be installed above. This build also ships a built-in local responder so conversation, routing, device status and voice work immediately without a Nuxel host.</p>
 
     <h3>Voice · on-device speech</h3>
-    <p>Android speech recognition uses the phone's speech service. The microphone closes as soon as speech ends, the transcript is placed in the message field and <strong>sent automatically</strong>. PenGuru never sends audio to a Nuxel host; depending on the phone's recognizer, Android may process speech online. MiniLM routing is optional; the built-in rules work without it.</p>
+    <p>Android speech recognition uses the phone's speech service. PenGuru now detects when you actually stop talking with an adaptive RMS voice-activity detector, then transcribes and sends. The default conversation behaviour is <strong>tap to talk, tap again to stop, transcribe and send</strong>. PenGuru never sends audio to a Nuxel host; depending on the phone's recognizer, Android may process speech online.</p>
     <div class="controls">
-      <button id="voice-talk" type="button">Speak a message</button>
+      <button id="voice-talk" type="button">Speak a message · 5 seconds</button>
       <button id="voice-wake" type="button">Listen for “Penguru” while open</button>
       <button id="voice-stop" type="button" disabled>Stop microphone</button>
     </div>
     <p id="voice-status" role="status">Microphone closed</p>
-    <label>Auto-send after silence
-      <select id="voice-silence">
-        <option value="0">Off · tap the mic again to send</option>
-        <option value="1500">1.5 seconds</option>
-        <option value="2500">2.5 seconds</option>
-        <option value="4000">4 seconds</option>
-        <option value="7000">7 seconds</option>
+    <label>Conversation mic action
+      <select id="voice-mode">
+        <option value="toggle">Tap to talk · tap again to stop, transcribe &amp; send</option>
+        <option value="vad">Auto-send when I stop talking (adaptive VAD)</option>
+        <option value="fixed">Record 5 seconds, then transcribe &amp; send</option>
       </select>
     </label>
-    <p class="hint">With auto-send off, tap the conversation mic to start and tap it again to send. The same setting is available on the conversation page. Foreground dictation stops when you hide the app or turn PenGuru off. Speech never authorizes privileged actions.</p>
+    <label>End-of-speech silence (VAD)
+      <select id="voice-silence">
+        <option value="500">0.50 seconds</option>
+        <option value="700">0.70 seconds</option>
+        <option value="900">0.90 seconds</option>
+        <option value="1200">1.20 seconds</option>
+        <option value="1800">1.80 seconds</option>
+        <option value="2500">2.50 seconds</option>
+      </select>
+    </label>
+    <p class="hint">"Speak a message" always keeps the microphone open for 5 seconds, then transcribes and sends everything you said in that window. The conversation mic follows the mode above. Foreground dictation stops when you hide the app or turn PenGuru off. Speech never authorizes privileged actions.</p>
+
+    <h3>Speech engine · recognition</h3>
+    <label>Android speech recognition engine
+      <select id="speech-engine"><option value="">System default recognizer</option></select>
+    </label>
+    <p class="hint" id="speech-engine-status">Checking installed recognizers…</p>
+
+    <h3>Voice activity, commands &amp; noise</h3>
+    <label class="toggle"><input id="voice-commands" type="checkbox" checked> Voice commands (“stop”, “send it”, “Penguru stop”)</label>
+    <label>Noise suppression
+      <select id="voice-noise">
+        <option value="auto">Auto · Android NoiseSuppressor / AGC / echo cancellation</option>
+        <option value="off">Off · raw microphone</option>
+      </select>
+    </label>
+    <p id="voice-diagnostics" class="hint" role="status">Checking adaptive VAD, noise suppression and optional Silero / RNNoise packages…</p>
+    <p class="hint">The always-available endpointing is an adaptive RMS voice-activity detector. Optional <strong>Silero VAD</strong> and <strong>RNNoise</strong> packages are listed in the Model library; Android's built-in NoiseSuppressor is used automatically when present.</p>
 
     <h3>Talkback · spoken answers</h3>
-    <p class="hint">Talkback reads PenGuru's answers aloud using an installed Android TextToSpeech engine. It works immediately with the phone's system voices. Spark-TTS and Kokoro voice packages are in the Model library as pinned, verified downloads for the on-device neural talkback runtime.</p>
+    <p class="hint">Talkback reads PenGuru's answers aloud using an installed Android TextToSpeech engine. It works immediately with the phone's system voices. If the phone exposes Piper or Spark-TTS as an Android TTS engine, it appears in the engine list below. The pinned Spark-TTS and Kokoro packages are also in the Model library for the on-device neural voice runtime.</p>
     <label class="toggle"><input id="talkback-enabled" type="checkbox"> Read PenGuru answers aloud</label>
     <label>Android talkback engine
       <select id="talkback-engine"><option value="">System default engine</option></select>
@@ -145,7 +178,7 @@
     <p id="talkback-status" role="status">Checking the Android talkback engine…</p>
 
     <h3>SonarBird background listening</h3>
-    <p class="hint">Keep PenGuru on duty after you leave the app. A persistent notification shows that the microphone is in use; say <strong>“Penguru”</strong> followed by a question and it is sent to the conversation automatically. The phone's Android speech service handles the audio (it may use the network); PenGuru does not send it to a Nuxel host. Android may stop the listener when battery saver is aggressive — the battery exemption below prevents that.</p>
+    <p class="hint">Keep PenGuru on duty after you leave the app. A persistent notification shows that the microphone is in use; say <strong>“Penguru”</strong> and then your sentence. The notification shows the partial transcript live and the sentence is finalised as soon as the adaptive VAD detects that you stopped talking. Say <strong>“Penguru stop”</strong> (or tap the notification action) to stop the listener, and <strong>“Penguru send”</strong> to send the sentence captured so far. The phone's Android speech service handles the audio (it may use the network); PenGuru does not send it to a Nuxel host. Android may stop the listener when battery saver is aggressive — the battery exemption below prevents that.</p>
     <div class="controls">
       <button id="wake-service-start" type="button">Start background listening</button>
       <button id="wake-service-stop" type="button" disabled>Stop background listening</button>

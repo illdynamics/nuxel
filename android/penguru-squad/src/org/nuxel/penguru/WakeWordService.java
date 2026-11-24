@@ -1,11 +1,13 @@
 package org.nuxel.penguru;
 
 import android.Manifest;
+import android.media.MediaRecorder;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -17,6 +19,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.PowerManager;
+import android.os.SystemClock;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
@@ -47,6 +50,7 @@ public class WakeWordService extends Service {
 
     public static final String ACTION_START = "org.nuxel.penguru.action.WAKE_START";
     public static final String ACTION_STOP = "org.nuxel.penguru.action.WAKE_STOP";
+    public static final String ACTION_FINISH = "org.nuxel.penguru.action.WAKE_FINISH";
     public static final String EXTRA_COMMAND = "penguru_command";
 
     static final String PREFS = "penguru_wake";
@@ -104,6 +108,11 @@ public class WakeWordService extends Service {
     private Runnable pendingPartialDispatch;
     private int consecutiveErrors;
     private int session;
+    // Adaptive endpointing and command capture for the persistent listener.
+    private VoiceActivityDetector vad;
+    private String commandBuffer = "";
+    private long commandBufferAt;
+    private boolean voiceStopRequested;
 
     public static boolean isRunning() {
         return running;
@@ -208,6 +217,10 @@ public class WakeWordService extends Service {
             out.put("in_app_speech", inAppSpeech);
             out.put("last_error", service == null || service.stayingQuiet ? "" : service.lastError);
             out.put("last_heard", service == null ? "" : service.lastHeard);
+            out.put("last_partial", service == null ? "" : service.commandBuffer);
+            out.put("command_pending", service != null && !service.commandBuffer.isEmpty());
+            out.put("vad", service != null && service.vad != null ? "adaptive-rms" : "idle");
+            out.put("engine", VoiceSettings.engineComponent(context));
             out.put("sessions", service == null ? 0 : service.session);
         } catch (Exception error) {
             // JSONObject only receives primitive values.
@@ -255,6 +268,10 @@ public class WakeWordService extends Service {
             shutdown();
             stopSelf();
             return START_NOT_STICKY;
+        }
+        if (intent != null && ACTION_FINISH.equals(intent.getAction())) {
+            finishFromNotification();
+            return START_STICKY;
         }
 
         getSharedPreferences(PREFS, MODE_PRIVATE).edit()
@@ -382,6 +399,8 @@ public class WakeWordService extends Service {
         PendingIntent content = PendingIntent.getActivity(this, 8802, open, flags);
         PendingIntent stop = PendingIntent.getService(this, 8803,
                 new Intent(this, WakeWordService.class).setAction(ACTION_STOP), flags);
+        PendingIntent finish = PendingIntent.getService(this, 8804,
+                new Intent(this, WakeWordService.class).setAction(ACTION_FINISH), flags);
 
         Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
                 ? new Notification.Builder(this, CHANNEL_ID)
@@ -398,6 +417,7 @@ public class WakeWordService extends Service {
                 .setShowWhen(false)
                 .setContentIntent(content)
                 .setCategory(Notification.CATEGORY_SERVICE)
+                .addAction(0, "Send now", finish)
                 .addAction(0, "Stop listening", stop);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             builder.setColor(0xFF0B1422);
@@ -455,7 +475,17 @@ public class WakeWordService extends Service {
         stopRecognizer();
         final int token = session;
         try {
-            recognizer = SpeechRecognizer.createSpeechRecognizer(this);
+            ComponentName engine = VoiceSettings.recognizer(this);
+            if (engine != null) {
+                try {
+                    recognizer = SpeechRecognizer.createSpeechRecognizer(this, engine);
+                } catch (RuntimeException unavailable) {
+                    recognizer = null;
+                }
+            }
+            if (recognizer == null) {
+                recognizer = SpeechRecognizer.createSpeechRecognizer(this);
+            }
             recognizer.setRecognitionListener(new SessionListener(token));
         } catch (RuntimeException error) {
             recognizer = null;
@@ -466,6 +496,11 @@ public class WakeWordService extends Service {
         listening = true;
         dispatchedThisSession = false;
         lastPartial = "";
+        commandBuffer = "";
+        commandBufferAt = 0L;
+        voiceStopRequested = false;
+        vad = new VoiceActivityDetector(
+                Math.max(450L, Math.min(2500L, VoiceSettings.endSilenceMs(this))), 15000L);
         cancelPendingPartial();
         lastSessionAt = System.currentTimeMillis();
         awaitingCommand = awaitingCommand
@@ -510,9 +545,14 @@ public class WakeWordService extends Service {
         // offline-only recognizers have no language pack installed and then
         // hold the microphone open forever, so do not force offline here.
         intent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, false);
-        // Ask compliant recognizers to finish short wake phrases promptly.
-        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 700L);
-        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 700L);
+        intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE,
+                MediaRecorder.AudioSource.VOICE_RECOGNITION);
+        // Ask compliant recognizers to finish at our adaptive endpoint. The
+        // RMS detector below catches services that ignore these hints.
+        long silence = Math.max(450L, Math.min(2500L, VoiceSettings.endSilenceMs(this)));
+        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, silence);
+        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, silence);
+        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 400L);
         return intent;
     }
 
@@ -573,40 +613,211 @@ public class WakeWordService extends Service {
     private void handleText(String raw) {
         String text = raw == null ? "" : raw.trim();
         if (text.isEmpty()) {
-            scheduleNext(500L);
+            // If a wake phrase was already heard, keep the follow-up window
+            // open rather than dropping the owner's next sentence.
+            if (awaitingCommand
+                    && System.currentTimeMillis() - awaitingSince < COMMAND_FOLLOW_UP_MS) {
+                scheduleNext(350L);
+            } else {
+                awaitingCommand = false;
+                scheduleNext(500L);
+            }
             return;
         }
         lastHeard = shorten(text);
         consecutiveErrors = 0;
-        Matcher match = WAKE.matcher(text);
-        if (match.find()) {
-            String rest = match.group(1) == null ? "" : match.group(1).trim();
-            if (!rest.isEmpty()) {
-                awaitingCommand = false;
-                dispatch(rest);
-                return;
-            }
+
+        String withoutWake = VoiceCommandRouter.stripWake(text);
+        if (VoiceCommandRouter.wakeOnly(text)) {
             awaitingCommand = true;
             awaitingSince = System.currentTimeMillis();
+            commandBuffer = "";
+            commandBufferAt = 0L;
             updateNotification("Heard “Penguru” · listening for your message…");
-            scheduleNext(250L);
+            scheduleNext(180L);
             return;
         }
+
+        if (VoiceCommandRouter.hasWake(text)) {
+            if (withoutWake.isEmpty()) {
+                awaitingCommand = true;
+                awaitingSince = System.currentTimeMillis();
+                updateNotification("Heard “Penguru” · listening for your message…");
+                scheduleNext(180L);
+                return;
+            }
+            awaitingCommand = false;
+            if (handleVoiceCommand(withoutWake)) {
+                return;
+            }
+            dispatch(withoutWake);
+            return;
+        }
+
         if (awaitingCommand) {
             if (System.currentTimeMillis() - awaitingSince > COMMAND_FOLLOW_UP_MS) {
                 awaitingCommand = false;
+                commandBuffer = "";
                 scheduleNext(500L);
                 return;
             }
             awaitingCommand = false;
+            if (handleVoiceCommand(text)) {
+                return;
+            }
             dispatch(text);
+            return;
+        }
+
+        // A bare "stop" / "cancel" is accepted while the listener is armed so
+        // the owner can stop it without first saying the wake word.
+        if (handleVoiceCommand(text)) {
             return;
         }
         scheduleNext(500L);
     }
 
+    /**
+     * Returns true when the transcript was a microphone command rather than a
+     * message. "Penguru stop" stops the persistent listener; "Penguru send"
+     * sends the sentence captured so far.
+     */
+    private boolean handleVoiceCommand(String text) {
+        String command = VoiceCommandRouter.classify(text);
+        if (VoiceCommandRouter.STOP.equals(command)) {
+            stopByVoice();
+            return true;
+        }
+        if (VoiceCommandRouter.SEND.equals(command)) {
+            String captured = !commandBuffer.isEmpty() ? commandBuffer
+                    : (!lastPartial.isEmpty() ? lastPartial : "");
+            commandBuffer = "";
+            if (!captured.isEmpty()) {
+                dispatch(captured);
+            } else {
+                updateNotification("Nothing to send yet · listening for your message…");
+                scheduleNext(250L);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private void stopByVoice() {
+        voiceStopRequested = true;
+        stoppingForHandoff = false;
+        awaitingCommand = false;
+        commandBuffer = "";
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+                .putBoolean(PREF_ENABLED, false)
+                .apply();
+        updateNotification("Stopped listening by voice command");
+        handler.postDelayed(() -> {
+            shutdown();
+            stopSelf();
+        }, 650L);
+    }
+
+    /** Notification "Send now" action: finalise the sentence captured so far. */
+    private void finishFromNotification() {
+        String captured = !commandBuffer.isEmpty() ? commandBuffer
+                : (!lastPartial.isEmpty() ? lastPartial : "");
+        commandBuffer = "";
+        if (!captured.isEmpty()) {
+            dispatch(captured);
+            return;
+        }
+        updateNotification("Nothing to send yet · listening for your message…");
+        if (!listening && !paused && !inAppSpeech && !destroyed) {
+            scheduleNext(200L);
+        }
+    }
+
+    /**
+     * Feed partial hypotheses into the command buffer as the recognizer hears
+     * them. This is what makes the ongoing notification visibly react to
+     * "Penguru" and the sentence after it before the final result arrives.
+     */
+    private void handlePartial(String text) {
+        String value = text == null ? "" : text.trim();
+        if (value.isEmpty()) {
+            return;
+        }
+        lastPartial = value;
+        lastHeard = shorten(value);
+        Matcher match = WAKE.matcher(value);
+        if (match.find()) {
+            String rest = match.group(1) == null ? "" : match.group(1).trim();
+            if (!rest.isEmpty()) {
+                awaitingCommand = true;
+                awaitingSince = System.currentTimeMillis();
+                commandBuffer = rest;
+                commandBufferAt = System.currentTimeMillis();
+                updateNotification("Heard: " + shorten(rest) + " · still listening…");
+            } else if (!awaitingCommand) {
+                awaitingCommand = true;
+                awaitingSince = System.currentTimeMillis();
+                commandBuffer = "";
+                updateNotification("Heard “Penguru” · listening for your message…");
+            }
+            return;
+        }
+        if (awaitingCommand) {
+            commandBuffer = value;
+            commandBufferAt = System.currentTimeMillis();
+            updateNotification("Heard: " + shorten(value) + " · finishing when you stop…");
+        }
+    }
+
+    /** The RMS detector says the owner stopped talking. Finalise quickly. */
+    private void onVadEndpoint() {
+        if (voiceStopRequested) {
+            return;
+        }
+        if (awaitingCommand && !commandBuffer.isEmpty()) {
+            final String captured = commandBuffer;
+            // Give onResults a brief head start so the final hypothesis can
+            // replace the partial when it is better.
+            handler.postDelayed(() -> {
+                if (destroyed || paused || inAppSpeech || captured.isEmpty()) {
+                    return;
+                }
+                // onResults may already have dispatched this sentence. The
+                // 5-second duplicate guard in dispatch() makes the retry safe.
+                commandBuffer = "";
+                awaitingCommand = false;
+                dispatch(captured);
+            }, 180L);
+            return;
+        }
+        // Wake word alone, or noise-only energy: close this session and keep
+        // the follow-up window open for the next sentence.
+        if (listening && recognizer != null) {
+            try {
+                recognizer.stopListening();
+            } catch (RuntimeException ignored) {
+                // already finishing
+            }
+        }
+    }
+
     private void dispatch(String command) {
-        final String text = command == null ? "" : command.trim();
+        String text = command == null ? "" : command.trim();
+        text = VoiceCommandRouter.stripWake(text);
+        String classified = VoiceCommandRouter.classify(text);
+        if (VoiceCommandRouter.STOP.equals(classified)) {
+            stopByVoice();
+            return;
+        }
+        if (VoiceCommandRouter.SEND.equals(classified)) {
+            String captured = !commandBuffer.isEmpty() ? commandBuffer
+                    : (!lastPartial.isEmpty() ? lastPartial : "");
+            commandBuffer = "";
+            if (captured.isEmpty() || captured.equalsIgnoreCase(text)) {
+                return;
+            }
+            text = VoiceCommandRouter.stripWake(captured);
+        }
         if (text.isEmpty()) {
             return;
         }
@@ -618,12 +829,9 @@ public class WakeWordService extends Service {
         lastDispatchAt = now;
         dispatchedThisSession = true;
         cancelPendingPartial();
-        // The sentence has been heard and finalised. Release the microphone
-        // while MainActivity opens, sends the transcript and shows the
-        // conversation page. Listening then re-arms automatically; the in-app
-        // microphone can pause it again at any moment.
-        restartQueued = false;
+        commandBuffer = "";
         awaitingCommand = false;
+        restartQueued = false;
         lastError = "";
         stoppingForHandoff = true;
         stopRecognizer();
@@ -689,9 +897,18 @@ public class WakeWordService extends Service {
         }
 
         @Override public void onBeginningOfSpeech() { }
-        @Override public void onRmsChanged(float rmsdB) { }
         @Override public void onBufferReceived(byte[] buffer) { }
         @Override public void onEvent(int eventType, Bundle params) { }
+
+        @Override
+        public void onRmsChanged(float rmsdB) {
+            if (stale() || vad == null) {
+                return;
+            }
+            if (vad.update(rmsdB)) {
+                onVadEndpoint();
+            }
+        }
 
         @Override
         public void onPartialResults(Bundle partialResults) {
@@ -707,25 +924,7 @@ public class WakeWordService extends Service {
             if (text.isEmpty() || text.equals(lastPartial)) {
                 return;
             }
-            lastPartial = text;
-            Matcher match = WAKE.matcher(text);
-            if (!match.find()) {
-                return;
-            }
-            String rest = match.group(1) == null ? "" : match.group(1).trim();
-            if (!rest.isEmpty()) {
-                awaitingCommand = false;
-                lastHeard = shorten(text);
-                schedulePartialDispatch(rest);
-                return;
-            }
-            // "Penguru" alone: keep this session alive and accept the next
-            // sentence either as a later partial or in onResults.
-            if (!awaitingCommand) {
-                awaitingCommand = true;
-                awaitingSince = System.currentTimeMillis();
-                updateNotification("Heard “Penguru” · listening for your message…");
-            }
+            handlePartial(text);
         }
 
         @Override
@@ -733,14 +932,25 @@ public class WakeWordService extends Service {
             if (stale() || !listening || recognizer == null) {
                 return;
             }
-            // Ask the recognizer to return its final hypothesis promptly. This is
-            // what releases the microphone on devices that never send onResults
-            // after a natural end-of-speech.
-            try {
-                recognizer.stopListening();
-            } catch (RuntimeException ignored) {
-                // already stopping
+            if (vad != null) {
+                vad.onEndOfSpeech();
             }
+            // Ask the recognizer to return its final hypothesis promptly. This
+            // removes the old fixed multi-second wait after the owner stops
+            // talking; the RMS detector has already confirmed real speech.
+            handler.postDelayed(() -> {
+                if (stale() || !listening || recognizer == null) {
+                    return;
+                }
+                if (awaitingCommand && !commandBuffer.isEmpty()) {
+                    updateNotification("Finishing: " + shorten(commandBuffer) + "…");
+                }
+                try {
+                    recognizer.stopListening();
+                } catch (RuntimeException ignored) {
+                    // already stopping
+                }
+            }, 140L);
         }
 
         @Override
@@ -754,6 +964,20 @@ public class WakeWordService extends Service {
             stopRecognizer();
             lastError = speechErrorName(error);
             consecutiveErrors++;
+            // A recognizer that times out after partial hypotheses is exactly
+            // the "owner stopped talking" case. Send what we captured instead
+            // of throwing the sentence away.
+            if (error == SpeechRecognizer.ERROR_NO_MATCH
+                    || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
+                String captured = commandBuffer;
+                if (awaitingCommand && !captured.isEmpty()) {
+                    commandBuffer = "";
+                    awaitingCommand = false;
+                    dispatch(captured);
+                    return;
+                }
+                commandBuffer = "";
+            }
             if (error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) {
                 updateNotification("Microphone permission is missing · open PenGuru");
                 scheduleNext(8000L);
@@ -802,6 +1026,7 @@ public class WakeWordService extends Service {
             ArrayList<String> matches = results == null ? null
                     : results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
             String text = matches == null || matches.isEmpty() ? "" : matches.get(0);
+            String captured = commandBuffer;
             stopRecognizer();
             lastError = "";
             stayingQuiet = false;
@@ -811,6 +1036,14 @@ public class WakeWordService extends Service {
             }
             if ((text == null || text.trim().isEmpty()) && !lastPartial.isEmpty()) {
                 text = lastPartial;
+            }
+            // The final hypothesis can be a bare sentence after a previous
+            // "Penguru" session. Prefer the captured partial when it contains
+            // more of what the owner actually said.
+            if (awaitingCommand && captured != null && !captured.isEmpty()
+                    && (text == null || text.trim().isEmpty()
+                        || !VoiceCommandRouter.hasWake(text))) {
+                text = captured;
             }
             handleText(text);
         }

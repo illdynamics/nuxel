@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ComponentName;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -12,6 +13,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Color;
+import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Build;
@@ -21,6 +23,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.os.StatFs;
+import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.speech.RecognitionListener;
@@ -122,6 +125,21 @@ public class MainActivity extends Activity {
     // 0 = manual dictation; > 0 = finish automatically after this much silence.
     private int speechSilenceMs;
     private int pendingSpeechSilence;
+    // Endpointing / recorder configuration passed by the PWA.
+    private String speechMode = "toggle";
+    private String pendingSpeechMode = "toggle";
+    private long speechRecordMs;
+    private long pendingSpeechRecordMs;
+    private int speechEndSilenceMs = VoiceSettings.DEFAULT_END_SILENCE_MS;
+    private boolean speechCommandsEnabled = true;
+    private boolean pendingSpeechCommands = true;
+    private String speechEngineLabel = "";
+    private VoiceActivityDetector speechVad;
+    private long speechStartedAt;
+    private boolean speechFinalizeRequested;
+    // In tap-to-talk mode a recognizer may end on its own before the second
+    // tap. Hold that hypothesis so the tap still means "transcribe and send".
+    private String speechHeldText = "";
     // Partial hypotheses are kept so a recognizer that never sends a final
     // result (common on Android 13/14) still produces a transcript.
     private String speechPartialText = "";
@@ -368,7 +386,8 @@ public class MainActivity extends Activity {
             if (!granted) {
                 deliverSpeech("", wake, "microphone_permission_denied", speechToken);
             } else if (shouldStart) {
-                beginSpeech(wake, pendingSpeechSilence);
+                beginSpeech(pendingSpeechMode, pendingSpeechSilence,
+                        pendingSpeechRecordMs, pendingSpeechCommands);
             }
             return;
         }
@@ -887,6 +906,7 @@ public class MainActivity extends Activity {
                 }
                 pendingSpeech = false;
                 speechRunning = false;
+                speechHeldText = "";
                 speechNoMatchCount = 0;
                 // Invalidate any queued restart so a stop is final even if the
                 // recognizer was still connecting or a permission dialog was open.
@@ -904,31 +924,113 @@ public class MainActivity extends Activity {
          */
         @JavascriptInterface
         public boolean startSpeechRecognitionEx(final String mode, final int silenceMs) {
-            final boolean wake = !"dictate".equals(mode);
+            String normalized = mode == null ? "toggle" : mode.trim().toLowerCase(Locale.ROOT);
+            if ("dictate".equals(normalized)) {
+                normalized = silenceMs > 0 ? "vad" : "toggle";
+            }
+            final String requested = normalized;
             final int silence = Math.max(0, Math.min(silenceMs, 120000));
-            runOnUiThread(() -> {
-                if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
-                        != PackageManager.PERMISSION_GRANTED) {
-                    pendingSpeech = true;
-                    pendingSpeechWake = wake;
-                    pendingSpeechSilence = silence;
-                    requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, SPEECH_REQUEST);
-                    return;
-                }
-                if (!speechAvailable()) {
-                    if (hasSystemSpeechActivity()) {
-                        WakeWordService.pauseForActivity(() -> {
-                            final int token = ++speechToken;
-                            launchSystemSpeech(wake, silence, token);
-                        });
-                    } else {
-                        deliverSpeech("", wake, "speech_recognizer_unavailable", speechToken);
-                    }
-                    return;
-                }
-                beginSpeech(wake, silence);
-            });
+            runOnUiThread(() -> beginSpeech(requested, silence, silence, true));
             return true;
+        }
+
+        /**
+         * Full voice configuration from the page.
+         * {mode, end_silence_ms, record_ms, commands, engine, noise}
+         */
+        @JavascriptInterface
+        public boolean startSpeechRecognitionConfig(final String optionsJson) {
+            String mode = "toggle";
+            int endSilence = VoiceSettings.endSilenceMs(MainActivity.this);
+            long recordMs = 5000L;
+            boolean commands = VoiceSettings.commandsEnabled(MainActivity.this);
+            try {
+                JSONObject options = new JSONObject(
+                        optionsJson == null || optionsJson.trim().isEmpty() ? "{}" : optionsJson);
+                mode = options.optString("mode", "toggle");
+                endSilence = options.optInt("end_silence_ms", endSilence);
+                recordMs = options.optLong("record_ms", recordMs);
+                commands = options.optBoolean("commands", commands);
+                String engine = options.optString("engine", "");
+                String noise = options.optString("noise", "");
+                if (!engine.trim().isEmpty()) {
+                    VoiceSettings.setEngineComponent(MainActivity.this, engine);
+                }
+                if (!noise.trim().isEmpty()) {
+                    VoiceSettings.setNoiseMode(MainActivity.this, noise);
+                }
+                if (options.has("end_silence_ms") && endSilence > 0) {
+                    VoiceSettings.setEndSilenceMs(MainActivity.this, endSilence);
+                }
+                VoiceSettings.setCommandsEnabled(MainActivity.this, commands);
+            } catch (JSONException error) {
+                // Use the persisted defaults on malformed input.
+            }
+            final String requested = normalizeSpeechMode(mode);
+            final int silence = Math.max(0, Math.min(endSilence, 5000));
+            final long record = Math.max(0L, Math.min(recordMs, 60000L));
+            final boolean useCommands = commands;
+            runOnUiThread(() -> beginSpeech(requested, silence, record, useCommands));
+            return true;
+        }
+
+        @JavascriptInterface
+        public String speechEngines() {
+            return VoiceSettings.recognitionEnginesJson(MainActivity.this);
+        }
+
+        @JavascriptInterface
+        public String speechConfig() {
+            try {
+                JSONObject out = new JSONObject();
+                out.put("engine", VoiceSettings.engineComponent(MainActivity.this));
+                out.put("end_silence_ms", VoiceSettings.endSilenceMs(MainActivity.this));
+                out.put("commands", VoiceSettings.commandsEnabled(MainActivity.this));
+                out.put("vad", VoiceSettings.vadEnabled(MainActivity.this));
+                out.put("noise", VoiceSettings.noiseMode(MainActivity.this));
+                out.put("speech_available", speechAvailable());
+                out.put("system_voice_input", hasSystemSpeechActivity());
+                return out.toString();
+            } catch (JSONException error) {
+                return "{}";
+            }
+        }
+
+        @JavascriptInterface
+        public boolean speechConfigure(String optionsJson) {
+            try {
+                JSONObject options = new JSONObject(
+                        optionsJson == null ? "{}" : optionsJson);
+                if (options.has("engine")) {
+                    VoiceSettings.setEngineComponent(MainActivity.this,
+                            options.optString("engine", ""));
+                }
+                if (options.has("end_silence_ms")) {
+                    VoiceSettings.setEndSilenceMs(MainActivity.this,
+                            options.optInt("end_silence_ms",
+                                    VoiceSettings.DEFAULT_END_SILENCE_MS));
+                }
+                if (options.has("commands")) {
+                    VoiceSettings.setCommandsEnabled(MainActivity.this,
+                            options.optBoolean("commands", true));
+                }
+                if (options.has("vad")) {
+                    VoiceSettings.setVadEnabled(MainActivity.this,
+                            options.optBoolean("vad", true));
+                }
+                if (options.has("noise")) {
+                    VoiceSettings.setNoiseMode(MainActivity.this,
+                            options.optString("noise", "auto"));
+                }
+                return true;
+            } catch (JSONException error) {
+                return false;
+            }
+        }
+
+        @JavascriptInterface
+        public String voiceDiagnostics() {
+            return VoiceSettings.audioDiagnosticsJson(MainActivity.this);
         }
 
         /**
@@ -939,28 +1041,23 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void finishSpeechRecognition() {
             runOnUiThread(() -> {
+                final int token = speechToken;
+                // The recognizer already ended on its own in tap-to-talk mode:
+                // the second tap sends the held hypothesis.
+                if (!speechHeldText.isEmpty()) {
+                    final String held = speechHeldText;
+                    speechHeldText = "";
+                    speechRunning = false;
+                    deliverSpeech(held, speechWake, null, token);
+                    return;
+                }
                 if (speechRecognizer == null || !speechRunning) {
                     return;
                 }
-                final int token = speechToken;
-                try {
-                    speechRecognizer.stopListening();
-                } catch (RuntimeException error) {
-                    deliverSpeech("", speechWake, "speech_stop_failed", token);
-                    return;
-                }
-                // If the recognizer ignores stopListening(), release the
-                // microphone and tell the page instead of holding it forever.
-                mainHandler.postDelayed(() -> {
-                    if (token == speechToken && speechRunning) {
-                        // The second tap often arrives while the recognizer is
-                        // still composing the final hypothesis. Give it time,
-                        // then send the best partial instead of losing it.
-                        deliverSpeech(speechPartialText.trim(), speechWake,
-                                speechPartialText.trim().isEmpty()
-                                        ? "no_speech_detected" : null, token);
-                    }
-                }, 9000L);
+                // Give the recognizer a short chance to produce the final
+                // hypothesis, then send the best partial. The previous 9 s
+                // fallback made the second tap look like a dead button.
+                requestFinalize(token, 2200L);
             });
         }
 
@@ -1212,12 +1309,50 @@ public class MainActivity extends Activity {
 
     /* ----------------------------------------------------------- speech */
 
+    private static String normalizeSpeechMode(String raw) {
+        String mode = raw == null ? "" : raw.trim().toLowerCase(Locale.ROOT);
+        if ("wake".equals(mode) || "followup".equals(mode) || "vad".equals(mode)
+                || "fixed".equals(mode) || "toggle".equals(mode)) {
+            return mode;
+        }
+        return "toggle";
+    }
+
+    private static boolean modeUsesWakeWord(String mode) {
+        return "wake".equals(mode) || "followup".equals(mode);
+    }
+
+    private static long modeHardDeadlineMs(String mode, long recordMs) {
+        if ("fixed".equals(mode)) {
+            return Math.max(1000L, recordMs) + 8000L;
+        }
+        if ("vad".equals(mode)) {
+            return 26000L;
+        }
+        if ("wake".equals(mode) || "followup".equals(mode)) {
+            return 20000L;
+        }
+        return 95000L;
+    }
+
     private boolean ensureSpeechRecognizer() {
         if (speechRecognizer != null) {
             return true;
         }
+        ComponentName engine = VoiceSettings.recognizer(this);
+        if (engine != null) {
+            try {
+                speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this, engine);
+                speechEngineLabel = engine.flattenToShortString();
+                return true;
+            } catch (RuntimeException error) {
+                speechEngineLabel = "";
+                speechRecognizer = null;
+            }
+        }
         try {
             speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
+            speechEngineLabel = "";
             return true;
         } catch (RuntimeException error) {
             speechRecognizer = null;
@@ -1234,6 +1369,8 @@ public class MainActivity extends Activity {
         SpeechRecognizer recognizer = speechRecognizer;
         speechPartialText = "";
         speechRecognizer = null;
+        speechVad = null;
+        speechFinalizeRequested = false;
         if (recognizer == null) {
             return;
         }
@@ -1259,6 +1396,11 @@ public class MainActivity extends Activity {
         intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
         intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
         intent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, preferOffline);
+        // Ask the recognizer for its voice-recognition source, which includes
+        // the platform's echo cancellation / noise suppression path on most
+        // devices. Recognizers that do not support the hint ignore it.
+        intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE,
+                MediaRecorder.AudioSource.VOICE_RECOGNITION);
         String language = speechLanguage;
         if (language == null || language.isEmpty()) {
             language = Locale.getDefault().toLanguageTag();
@@ -1268,44 +1410,68 @@ public class MainActivity extends Activity {
     }
 
     private void beginSpeech(final boolean wake) {
-        beginSpeech(wake, 0);
+        beginSpeech(wake ? "wake" : "toggle", 0, 0L, true);
     }
 
     private void beginSpeech(final boolean wake, final int silenceMs) {
+        beginSpeech(wake ? (silenceMs > 0 ? "vad" : "wake") : "toggle",
+                silenceMs, 0L, true);
+    }
+
+    /**
+     * Start a microphone session with an explicit endpointing policy.
+     *
+     * mode:
+     *   toggle   tap once to talk, tap again to stop / transcribe / send.
+     *   vad      adaptive end-of-speech detection sends automatically.
+     *   fixed    record for recordMs (the "Speak a message" 5-second mode).
+     *   wake     foreground "Penguru" + next-sentence session.
+     *   followup the sentence after a foreground "Penguru".
+     */
+    private void beginSpeech(final String modeRaw, final int endSilenceMs,
+                             final long recordMs, final boolean commands) {
+        final String mode = normalizeSpeechMode(modeRaw);
+        speechMode = mode;
+        speechEndSilenceMs = Math.max(0, Math.min(endSilenceMs, 5000));
+        speechRecordMs = Math.max(0L, Math.min(recordMs, 60000L));
+        speechCommandsEnabled = commands;
+        speechWake = modeUsesWakeWord(mode);
+        speechHeldText = "";
+        pendingSpeechMode = mode;
+        pendingSpeechSilence = speechEndSilenceMs;
+        pendingSpeechRecordMs = speechRecordMs;
+        pendingSpeechCommands = commands;
+
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
             pendingSpeech = true;
-            pendingSpeechWake = wake;
-            pendingSpeechSilence = Math.max(0, silenceMs);
+            pendingSpeechWake = speechWake;
             requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, SPEECH_REQUEST);
             return;
         }
         pendingSpeech = false;
-        pendingSpeechSilence = 0;
-        speechSilenceMs = Math.max(0, silenceMs);
         // Cancel any previous foreground session immediately so its callbacks
         // cannot race the new one or surface a bogus client_error.
         final int requestToken = ++speechToken;
         speechRunning = false;
+        speechFinalizeRequested = false;
         releaseSpeechRecognizer();
         // The persistent SonarBird listener and this foreground session share
         // the one microphone Android exposes. Wait until the service has
-        // actually destroyed its recognizer before creating ours; starting
-        // immediately is what produced ERROR_RECOGNIZER_BUSY ("speech service
-        // busy") when both paths overlapped.
+        // actually destroyed its recognizer before creating ours.
         WakeWordService.pauseForActivity(() -> mainHandler.postDelayed(() -> {
             if (requestToken != speechToken || isFinishing()) {
                 return;
             }
             if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
                     != PackageManager.PERMISSION_GRANTED) {
-                deliverSpeech("", wake, "microphone_permission_denied", requestToken);
+                deliverSpeech("", speechWake, "microphone_permission_denied", requestToken);
                 return;
             }
             if (!SpeechRecognizer.isRecognitionAvailable(this) || !ensureSpeechRecognizer()) {
                 // No in-process recognizer (common on de-Googled builds). Use
                 // the system voice-input activity instead of failing silently.
-                launchSystemSpeech(wake, speechSilenceMs, requestToken);
+                launchSystemSpeech(speechWake, speechEndSilenceMs, requestToken);
                 return;
             }
             speechRetryCount = 0;
@@ -1315,91 +1481,128 @@ public class MainActivity extends Activity {
             speechPreferOffline = false;
             speechLanguage = "";
             speechPartialText = "";
-            startSpeechNow(wake);
-        }, 420L));
+            speechFinalizeRequested = false;
+            startSpeechNow();
+        }, 320L));
     }
 
-    private void restartSpeech(final boolean wake, long delayMillis) {
-        final int silenceMs = speechSilenceMs;
+    private void restartSpeech(long delayMillis) {
         speechRunning = false;
+        speechFinalizeRequested = false;
         releaseSpeechRecognizer();
         final int token = ++speechToken;
+        final String mode = speechMode;
+        final int endSilence = speechEndSilenceMs;
+        final long record = speechRecordMs;
         // A busy/client error means the speech binder from the previous
         // session (usually SonarBird's recognizer) has not finished releasing.
-        // Pause the service again and re-check before each retry instead of
-        // immediately creating another recognizer.
         WakeWordService.pauseForActivity(() -> mainHandler.postDelayed(() -> {
             if (token != speechToken || isFinishing()) {
                 return;
             }
-            speechSilenceMs = silenceMs;
-            startSpeechNow(wake);
+            speechMode = mode;
+            speechEndSilenceMs = endSilence;
+            speechRecordMs = record;
+            startSpeechNow();
         }, delayMillis));
     }
 
-    private void startSpeechNow(boolean wake) {
+    private void startSpeechNow() {
         if (!SpeechRecognizer.isRecognitionAvailable(this) || !ensureSpeechRecognizer()) {
-            launchSystemSpeech(wake, speechSilenceMs, speechToken);
+            launchSystemSpeech(speechWake, speechEndSilenceMs, speechToken);
             return;
         }
         final int token = ++speechToken;
-        final int silenceMs = speechSilenceMs;
-        speechWake = wake;
+        final String mode = speechMode;
+        final long maxSpeechMs = modeHardDeadlineMs(mode, speechRecordMs);
         speechRunning = true;
+        speechFinalizeRequested = false;
         speechPartialText = "";
+        speechHeldText = "";
+        speechStartedAt = SystemClock.elapsedRealtime();
+        final long endSilence = "fixed".equals(mode) || "toggle".equals(mode)
+                ? 0L : Math.max(450L, speechEndSilenceMs);
+        speechVad = new VoiceActivityDetector(endSilence, maxSpeechMs);
         speechRecognizer.setRecognitionListener(new PenGuruSpeechListener(token));
         Intent intent = speechIntent(speechPreferOffline);
-        if (silenceMs > 0) {
-            // Let the phone's recognizer endpoint on the owner-selected silence
-            // window instead of the recognizer's short default.
+        if ("fixed".equals(mode)) {
+            // Keep the recognizer's own endpoint from cutting the five-second
+            // window short. The explicit timer below closes it.
+            long record = Math.max(1000L, speechRecordMs);
             intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS,
-                    (long) silenceMs);
+                    record + 2500L);
             intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS,
-                    (long) silenceMs);
-            intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 900L);
-        } else if (!wake) {
+                    record + 2500L);
+            intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, record);
+        } else if ("toggle".equals(mode)) {
             // Manual "tap the mic again to send" dictation: ask compliant
             // recognizers to wait a long time before deciding the sentence is
             // over. The owner ends it with the second tap.
             intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 30000L);
             intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 30000L);
-            intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 900L);
+            intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 600L);
+        } else {
+            // Adaptive endpointing: give the recognizer the same short silence
+            // window our RMS detector uses, so compliant services finalise at
+            // the same time instead of waiting for their 2.5 s default.
+            long silence = Math.max(450L, speechEndSilenceMs);
+            intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, silence);
+            intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, silence);
+            intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 500L);
         }
         try {
             speechRecognizer.startListening(intent);
         } catch (RuntimeException error) {
-            deliverSpeech("", wake, "speech_start_failed", token);
+            deliverSpeech("", speechWake, "speech_start_failed", token);
             return;
         }
+
+        if ("fixed".equals(mode)) {
+            long record = Math.max(1000L, speechRecordMs);
+            mainHandler.postDelayed(() -> requestFinalize(token, 1800L), record);
+        }
+
         // Native hard deadline: no matter what the speech service does, the
-        // mic is cancelled and the UI is told the session ended. Manual
-        // dictation gets a long window because only the second mic tap ends it.
-        long hardDeadline = wake ? 16000L
-                : (silenceMs > 0 ? Math.max(16000L, silenceMs + 12000L) : 45000L);
+        // mic is cancelled and the UI is told the session ended.
         mainHandler.postDelayed(() -> {
             if (token != speechToken || !speechRunning) {
                 return;
             }
-            if (!speechPartialText.trim().isEmpty()) {
-                deliverSpeech(speechPartialText.trim(), wake, null, token);
+            String partial = speechPartialText.trim();
+            if (!partial.isEmpty()) {
+                deliverSpeech(partial, speechWake, null, token);
             } else {
-                deliverSpeech("", wake, "speech_timeout", token);
+                deliverSpeech("", speechWake, "speech_timeout", token);
             }
-        }, hardDeadline);
-        if (!wake && silenceMs > 0) {
-            // Belt-and-braces: some recognizers ignore the silence extras.
-            // Ask for the final hypothesis shortly after the silence window.
-            mainHandler.postDelayed(() -> {
-                if (token != speechToken || !speechRunning || speechRecognizer == null) {
-                    return;
-                }
-                try {
-                    speechRecognizer.stopListening();
-                } catch (RuntimeException ignored) {
-                    // already finished
-                }
-            }, silenceMs + 3500L);
+        }, maxSpeechMs);
+    }
+
+    /** Ask the recognizer for its final hypothesis, then fall back to the best
+     *  partial so a second mic tap is never stuck waiting on the service. */
+    private void requestFinalize(final int token, final long fallbackMs) {
+        if (token != speechToken || !speechRunning || speechFinalizeRequested) {
+            return;
         }
+        speechFinalizeRequested = true;
+        if (speechRecognizer == null) {
+            deliverSpeech(speechPartialText.trim(), speechWake,
+                    speechPartialText.trim().isEmpty() ? "no_speech_detected" : null, token);
+            return;
+        }
+        try {
+            speechRecognizer.stopListening();
+        } catch (RuntimeException error) {
+            deliverSpeech(speechPartialText.trim(), speechWake,
+                    speechPartialText.trim().isEmpty() ? "speech_stop_failed" : null, token);
+            return;
+        }
+        mainHandler.postDelayed(() -> {
+            if (token == speechToken && speechRunning) {
+                deliverSpeech(speechPartialText.trim(), speechWake,
+                        speechPartialText.trim().isEmpty()
+                                ? "no_speech_detected" : null, token);
+            }
+        }, fallbackMs);
     }
 
     private void deliverSpeech(final String text, final boolean wake,
@@ -1419,8 +1622,11 @@ public class MainActivity extends Activity {
             effectiveError = null;
         }
         speechRunning = false;
+        speechFinalizeRequested = false;
         speechSilenceMs = 0;
         speechPartialText = "";
+        speechHeldText = "";
+        speechVad = null;
         if (!finalText.isEmpty()) {
             speechNoMatchCount = 0;
         }
@@ -1428,11 +1634,17 @@ public class MainActivity extends Activity {
         try {
             JSONObject result = new JSONObject();
             result.put("ok", effectiveError == null);
+            result.put("mode", speechMode);
+            result.put("engine", speechEngineLabel == null ? "" : speechEngineLabel);
             if (effectiveError == null) {
                 result.put("text", finalText);
                 result.put("wake", wake);
             } else {
                 result.put("error", effectiveError);
+                String command = VoiceCommandRouter.label(effectiveError);
+                if (!command.isEmpty()) {
+                    result.put("command", command);
+                }
             }
             final String script = "window.__nuxelSpeechResult && window.__nuxelSpeechResult("
                     + result.toString() + ")";
@@ -1458,15 +1670,30 @@ public class MainActivity extends Activity {
             this.token = token;
         }
 
+        private boolean stale() {
+            return token != speechToken || !speechRunning;
+        }
+
         @Override public void onReadyForSpeech(Bundle params) { }
         @Override public void onBeginningOfSpeech() { }
-        @Override public void onRmsChanged(float rmsdB) { }
         @Override public void onBufferReceived(byte[] buffer) { }
         @Override public void onEvent(int eventType, Bundle params) { }
 
         @Override
+        public void onRmsChanged(float rmsdB) {
+            if (stale() || speechVad == null) {
+                return;
+            }
+            if (speechVad.update(rmsdB)) {
+                // The owner stopped talking. Ask for the final hypothesis now
+                // instead of waiting for the recognizer's fixed silence timer.
+                requestFinalize(token, "toggle".equals(speechMode) ? 2400L : 1500L);
+            }
+        }
+
+        @Override
         public void onPartialResults(Bundle partialResults) {
-            if (token != speechToken || !speechRunning || partialResults == null) {
+            if (stale() || partialResults == null) {
                 return;
             }
             ArrayList<String> matches = partialResults
@@ -1475,34 +1702,36 @@ public class MainActivity extends Activity {
                 String value = matches.get(0);
                 if (value != null && !value.trim().isEmpty()) {
                     speechPartialText = value.trim();
+                    final String text = speechPartialText;
+                    if (speechCommandsEnabled) {
+                        String command = VoiceCommandRouter.classify(text);
+                        if (VoiceCommandRouter.STOP.equals(command)) {
+                            requestFinalize(token, 500L);
+                        } else if (VoiceCommandRouter.SEND.equals(command)) {
+                            requestFinalize(token, 500L);
+                        }
+                    }
                 }
             }
         }
 
         @Override
         public void onEndOfSpeech() {
-            if (token != speechToken || !speechRunning || speechRecognizer == null) {
+            if (stale()) {
                 return;
             }
-            // Do not call stopListening() synchronously here. Several
-            // recognizers drop their final hypothesis when it arrives inside
-            // onEndOfSpeech. Give the service a moment to deliver onResults;
-            // the watchdog still stops a session that never finishes.
-            mainHandler.postDelayed(() -> {
-                if (token != speechToken || !speechRunning || speechRecognizer == null) {
-                    return;
-                }
-                try {
-                    speechRecognizer.stopListening();
-                } catch (RuntimeException ignored) {
-                    // already stopping
-                }
-            }, 1200L);
+            // "fixed" deliberately keeps its full five-second window.
+            // "toggle" deliberately waits for the second mic tap: a natural
+            // pause is not permission to send in push-to-talk mode.
+            if ("fixed".equals(speechMode) || "toggle".equals(speechMode)) {
+                return;
+            }
+            mainHandler.postDelayed(() -> requestFinalize(token, 1400L), 160L);
         }
 
         @Override
         public void onError(int error) {
-            if (token != speechToken || !speechRunning) {
+            if (stale()) {
                 return;
             }
             final boolean transientBusy = error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY
@@ -1512,11 +1741,8 @@ public class MainActivity extends Activity {
             // for Android to release the recognizer instead of surfacing the
             // old "wait a moment and tap again" message on the first tap.
             final int maxRetries = transientBusy ? 6 : 2;
+            speechFinalizeRequested = false;
             if (speechRetryCount < maxRetries && shouldRetrySpeech(error)) {
-                // Offline-only recognition frequently fails with error 12/13
-                // when no language pack is installed. Busy/client errors are
-                // usually the previous recognizer still releasing. Retry with
-                // a fresh instance, the normal recognizer and en-US fallback.
                 speechRetryCount++;
                 speechPreferOffline = false;
                 if (error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE
@@ -1527,7 +1753,7 @@ public class MainActivity extends Activity {
                 long delay = transientBusy
                         ? Math.min(2600L, 350L * speechRetryCount)
                         : 700L * speechRetryCount;
-                restartSpeech(speechWake, delay);
+                restartSpeech(delay);
                 return;
             }
             final boolean nothingHeard = error == SpeechRecognizer.ERROR_NO_MATCH
@@ -1547,7 +1773,7 @@ public class MainActivity extends Activity {
                     && (speechNoMatchCount >= 2 || !nothingHeard)
                     && hasSystemSpeechActivity()) {
                 speechNoMatchCount = 0;
-                launchSystemSpeech(speechWake, speechSilenceMs, token);
+                launchSystemSpeech(speechWake, speechEndSilenceMs, token);
                 return;
             }
             deliverSpeech("", speechWake, speechErrorName(error), token);
@@ -1555,12 +1781,49 @@ public class MainActivity extends Activity {
 
         @Override
         public void onResults(Bundle results) {
-            if (token != speechToken || !speechRunning) {
+            if (stale()) {
                 return;
             }
             ArrayList<String> matches = results == null ? null
                     : results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
             String text = matches == null || matches.isEmpty() ? "" : matches.get(0);
+            if (text == null) {
+                text = "";
+            }
+            if ("toggle".equals(speechMode) && !speechFinalizeRequested) {
+                // The phone's recognizer decided the utterance was over before
+                // the owner tapped again. Hold the transcript and wait for the
+                // tap instead of auto-sending in push-to-talk mode.
+                String held = text.trim();
+                if (held.isEmpty()) {
+                    held = speechPartialText.trim();
+                }
+                speechRunning = false;
+                speechFinalizeRequested = false;
+                releaseSpeechRecognizer();
+                if (held.isEmpty()) {
+                    deliverSpeech("", speechWake, "no_speech_detected", token);
+                } else {
+                    speechHeldText = held;
+                }
+                return;
+            }
+            if (speechCommandsEnabled) {
+                String command = VoiceCommandRouter.classify(text);
+                if (VoiceCommandRouter.STOP.equals(command)) {
+                    deliverSpeech("", speechWake, "voice_stop_command", token);
+                    return;
+                }
+                if (VoiceCommandRouter.SEND.equals(command)) {
+                    String partial = speechPartialText.trim();
+                    if (!partial.isEmpty() && !partial.equalsIgnoreCase(text.trim())) {
+                        deliverSpeech(partial, speechWake, null, token);
+                    } else {
+                        deliverSpeech("", speechWake, "voice_send_command", token);
+                    }
+                    return;
+                }
+            }
             deliverSpeech(text, speechWake,
                     text == null || text.trim().isEmpty() ? "no_speech_detected" : null, token);
         }
