@@ -45,11 +45,19 @@ final class WhisperRecognizer {
     };
     private static final int SAMPLE_RATE = 16000;
     private static final int BYTES_PER_SAMPLE = 2;
-    private static final long MAX_CAPTURE_MS = 120000L;
+    private static final long MAX_CAPTURE_MS = 300000L;
+    // If AudioRecord cannot produce a single sample for this long, the
+    // microphone is genuinely unavailable (usually another app or a stale
+    // speech-service binder still owns it). Fail loudly instead of recording
+    // minutes of silence and reporting "no speech".
+    private static final long NO_AUDIO_TIMEOUT_MS = 4000L;
 
     interface Callback {
         /** text is the transcript; error is null for success. */
         void onResult(String text, String error);
+
+        /** Recording stopped and local transcription is about to begin. */
+        default void onTranscribing() { }
     }
 
     private final Context context;
@@ -207,44 +215,64 @@ final class WhisperRecognizer {
         AudioRecord record = null;
         ByteArrayOutputStream pcm = new ByteArrayOutputStream(SAMPLE_RATE * BYTES_PER_SAMPLE * 8);
         try {
-            AudioFormat format = new AudioFormat.Builder()
-                    .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                    .setSampleRate(SAMPLE_RATE)
-                    .setChannelMask(AudioFormat.CHANNEL_IN_MONO)
-                    .build();
-            record = new AudioRecord.Builder()
-                    .setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
-                    .setAudioFormat(format)
-                    .setBufferSizeInBytes(bufferBytes * 2)
-                    .build();
+            // For local ASR the plain microphone source is the most reliable.
+            // VOICE_RECOGNITION is tuned for vendor speech services and on
+            // several devices returns heavily processed or silent PCM when no
+            // such service is installed, which made Whisper report "no speech"
+            // even though the owner was talking. Try MIC first and keep
+            // VOICE_RECOGNITION as a fallback.
+            record = openAudioRecord(MediaRecorder.AudioSource.MIC, bufferBytes);
+            if (record == null || record.getState() != AudioRecord.STATE_INITIALIZED) {
+                releaseRecord(record);
+                record = openAudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, bufferBytes);
+            }
             recorder = record;
-            if (record.getState() != AudioRecord.STATE_INITIALIZED) {
+            if (record == null || record.getState() != AudioRecord.STATE_INITIALIZED) {
                 callback.onResult("", "whisper_audio_unavailable");
                 return;
             }
-            record.startRecording();
+            if (!startRecordingWithRetry(record)) {
+                callback.onResult("", "whisper_audio_unavailable");
+                return;
+            }
+            try {
+                VoiceSettings.attachNoiseSuppression(context, record.getAudioSessionId(), record);
+            } catch (RuntimeException ignored) {
+                // Audio effects are advisory; never fail the recording for them.
+            }
             Log.i(TAG, "whisper capture started mode=" + mode + " silence=" + endSilenceMs
                     + " fixed=" + fixedMs + " deadline=" + deadlineMs);
             byte[] chunk = new byte[Math.max(1600, bufferBytes / 2)];
             long startedAt = SystemClock.elapsedRealtime();
+            long lastDataAt = startedAt;
             long lastVoiceAt = startedAt;
             long speechStartedAt = 0L;
             double noiseFloorDb = -58.0;
             int voicedChunks = 0;
             boolean speechStarted = false;
+            boolean audioFailed = false;
 
             while (!cancelled.get()) {
+                long now = SystemClock.elapsedRealtime();
                 int read = record.read(chunk, 0, chunk.length);
                 if (read <= 0) {
                     if (read == AudioRecord.ERROR_INVALID_OPERATION
                             || read == AudioRecord.ERROR_BAD_VALUE
                             || read == AudioRecord.ERROR_DEAD_OBJECT) {
+                        audioFailed = true;
+                        break;
+                    }
+                    // A broken/monopolised microphone can return 0 forever.
+                    // Do not sit here recording silence until the deadline; if
+                    // we already captured speech, finish and transcribe it.
+                    if (now - lastDataAt >= NO_AUDIO_TIMEOUT_MS) {
+                        audioFailed = true;
                         break;
                     }
                     continue;
                 }
+                lastDataAt = now;
                 pcm.write(chunk, 0, read);
-                long now = SystemClock.elapsedRealtime();
                 double level = rmsDb(chunk, read);
                 if (!speechStarted) {
                     if (level < noiseFloorDb) {
@@ -287,7 +315,11 @@ final class WhisperRecognizer {
             }
             if (!cancelled.get()) {
                 Log.i(TAG, "whisper capture stopped bytes=" + pcm.size()
-                        + " speech=" + speechStarted);
+                        + " speech=" + speechStarted + " failed=" + audioFailed);
+                if (audioFailed && pcm.size() == 0) {
+                    callback.onResult("", "whisper_audio_unavailable");
+                    return;
+                }
                 if (pcm.size() < SAMPLE_RATE * BYTES_PER_SAMPLE / 2) {
                     callback.onResult("", "no_speech_detected");
                     return;
@@ -298,7 +330,8 @@ final class WhisperRecognizer {
                     callback.onResult("", "no_speech_detected");
                     return;
                 }
-                transcribe(runtime, model, pcm.toByteArray(), callback);
+                callback.onTranscribing();
+                transcribe(runtime, model, pcm.toByteArray(), speechStarted, callback);
             }
         } catch (SecurityException error) {
             callback.onResult("", "microphone_permission_denied");
@@ -325,7 +358,64 @@ final class WhisperRecognizer {
         }
     }
 
-    private void transcribe(File runtime, File model, byte[] pcm, Callback callback) {
+    private static AudioRecord openAudioRecord(int source, int bufferBytes) {
+        try {
+            AudioFormat format = new AudioFormat.Builder()
+                    .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                    .setSampleRate(SAMPLE_RATE)
+                    .setChannelMask(AudioFormat.CHANNEL_IN_MONO)
+                    .build();
+            return new AudioRecord.Builder()
+                    .setAudioSource(source)
+                    .setAudioFormat(format)
+                    .setBufferSizeInBytes(bufferBytes * 2)
+                    .build();
+        } catch (RuntimeException error) {
+            Log.w(TAG, "Could not build AudioRecord source=" + source, error);
+            return null;
+        }
+    }
+
+    private static boolean startRecordingWithRetry(AudioRecord record) {
+        // The speech service can take a second or two to release the mic after
+        // SonarBird or a vendor recognizer is stopped.
+        for (int attempt = 0; attempt < 8; attempt++) {
+            try {
+                record.startRecording();
+            } catch (RuntimeException error) {
+                Log.w(TAG, "AudioRecord.startRecording failed attempt=" + attempt, error);
+            }
+            if (record.getRecordingState() == AudioRecord.RECORDSTATE_RECORDING) {
+                return true;
+            }
+            try {
+                Thread.sleep(250L);
+            } catch (InterruptedException error) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+        return false;
+    }
+
+    private static void releaseRecord(AudioRecord record) {
+        if (record == null) {
+            return;
+        }
+        try {
+            record.stop();
+        } catch (RuntimeException ignored) {
+            // not recording
+        }
+        try {
+            record.release();
+        } catch (RuntimeException ignored) {
+            // already released
+        }
+    }
+
+    private void transcribe(File runtime, File model, byte[] pcm, boolean speechDetected,
+                            Callback callback) {
         File wav = null;
         File outBase = null;
         File log = null;
@@ -350,7 +440,11 @@ final class WhisperRecognizer {
             command.add("-l");
             command.add("en");
             command.add("-t");
-            command.add("2");
+            // Use a couple of cores on a phone, but do not let a 300 s
+            // recording monopolise every core while the UI is still alive.
+            int threads = Math.max(2, Math.min(4,
+                    Runtime.getRuntime().availableProcessors() / 2));
+            command.add(String.valueOf(threads));
             command.add("-nt");
             command.add("-otxt");
             command.add("-of");
@@ -365,7 +459,7 @@ final class WhisperRecognizer {
             Process running = builder.start();
             process = running;
             Log.i(TAG, "whisper transcribing pcm=" + pcm.length + " bytes");
-            boolean completed = running.waitFor(90L, TimeUnit.SECONDS);
+            boolean completed = running.waitFor(300L, TimeUnit.SECONDS);
             if (!completed) {
                 running.destroyForcibly();
                 if (!cancelled.get()) {
@@ -380,7 +474,7 @@ final class WhisperRecognizer {
             String text = transcript.isFile()
                     ? new String(Files.readAllBytes(transcript.toPath()), StandardCharsets.UTF_8)
                     : "";
-            text = cleanTranscript(text);
+            text = cleanTranscript(text, speechDetected);
             if (text.isEmpty()) {
                 String detail = readLog(log);
                 Log.w(TAG, "Whisper produced no transcript"
@@ -459,7 +553,7 @@ final class WhisperRecognizer {
         return 20.0 * Math.log10(Math.max(1.0, rms) / 32768.0);
     }
 
-    private static String cleanTranscript(String raw) {
+    private static String cleanTranscript(String raw, boolean speechDetected) {
         if (raw == null) {
             return "";
         }
@@ -467,9 +561,11 @@ final class WhisperRecognizer {
         text = text.replaceAll("\\[(?:BLANK_AUDIO|silence|Silence|MUSIC|music)\\]", " ");
         text = text.replaceAll("\\((?:silence|Silence)\\)", " ");
         text = text.replaceAll("\\s+", " ").trim();
-        if (text.toLowerCase(Locale.ROOT).matches("^(you|thank you|thanks|bye|okay|ok)\\.?$")) {
-            // Whisper tiny sometimes emits these on silence. They are safe to
-            // drop because the owner can simply speak again.
+        // Drop Whisper tiny's common silence hallucinations only when the RMS
+        // detector never saw voice energy. An owner who really says "okay" or
+        // "thank you" must still get that transcript sent.
+        if (!speechDetected
+                && text.toLowerCase(Locale.ROOT).matches("^(you|thank you|thanks|bye|okay|ok)\\.?$")) {
             return "";
         }
         return text;

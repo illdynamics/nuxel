@@ -118,7 +118,7 @@
     <p class="hint">llama.cpp and ONNX Runtime archives can be installed above. This build also ships a built-in local responder so conversation, routing, device status and voice work immediately without a Nuxel host.</p>
 
     <h3>Voice · on-device speech</h3>
-    <p>Android speech recognition uses the phone's speech service when one is installed. PenGuru now detects when you actually stop talking with an adaptive RMS voice-activity detector, then transcribes and sends. If the phone has no recognition service, or Android keeps returning “no speech”, the bundled <strong>Whisper tiny.en</strong> engine transcribes locally after you download that model from the Model library. The default conversation behaviour is <strong>tap to talk, tap again to stop, transcribe and send</strong>. PenGuru never sends audio to a Nuxel host; depending on the phone's recognizer, Android may process speech online.</p>
+    <p>When the <strong>Whisper tiny.en</strong> model is installed, the Conversation mic records with PenGuru's own microphone from the first tap and transcribes on this phone. The phone's speech recognizer remains selectable in Settings and is used when Whisper is not ready. The microphone opens immediately, keeps recording until you tap again, and a long recording is not discarded while it is being transcribed. The default conversation behaviour is <strong>tap to talk, tap again to stop, transcribe and send</strong>. PenGuru never sends audio to a Nuxel host; if you explicitly select an online Android recognizer, Android may process that speech online.</p>
     <div class="controls">
       <button id="voice-talk" type="button">Speak a message · 5 seconds</button>
       <button id="voice-wake" type="button">Listen for “Penguru” while open</button>

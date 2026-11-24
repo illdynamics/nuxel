@@ -115,11 +115,21 @@ public final class VoiceSettings {
     public static String recognitionEnginesJson(Context context) {
         JSONArray out = new JSONArray();
         try {
+            String selected = engineComponent(context);
+            JSONObject auto = new JSONObject();
+            auto.put("component", "");
+            auto.put("label", "Automatic · local Whisper when installed, otherwise system");
+            auto.put("package", "");
+            auto.put("default", selected == null || selected.trim().isEmpty());
+            out.put(auto);
+
             JSONObject system = new JSONObject();
-            system.put("component", "");
-            system.put("label", "System default recognizer");
+            // A non-empty sentinel keeps "always use the phone's recognizer"
+            // distinct from "automatic (prefer bundled Whisper)".
+            system.put("component", "system");
+            system.put("label", "Android system default recognizer");
             system.put("package", "");
-            system.put("default", true);
+            system.put("default", "system".equalsIgnoreCase(selected == null ? "" : selected.trim()));
             out.put(system);
 
             JSONObject whisper = new JSONObject();
@@ -135,7 +145,6 @@ public final class VoiceSettings {
             Intent intent = new Intent(RecognitionService.SERVICE_INTERFACE);
             List<ResolveInfo> services = pm.queryIntentServices(intent,
                     PackageManager.MATCH_ALL);
-            String selected = engineComponent(context);
             for (ResolveInfo info : services) {
                 if (info == null || info.serviceInfo == null) {
                     continue;

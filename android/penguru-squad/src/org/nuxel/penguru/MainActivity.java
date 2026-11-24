@@ -137,6 +137,7 @@ public class MainActivity extends Activity {
     private VoiceActivityDetector speechVad;
     private WhisperRecognizer whisperRecognizer;
     private boolean whisperRunning;
+    private int whisperAudioRetries;
     private long speechStartedAt;
     private boolean speechFinalizeRequested;
     // In tap-to-talk mode a recognizer may end on its own before the second
@@ -1067,6 +1068,9 @@ public class MainActivity extends Activity {
             runOnUiThread(() -> {
                 final int token = speechToken;
                 if (whisperRunning && whisperRecognizer != null) {
+                    speechFinalizeRequested = true;
+                    reportSpeechState("transcribing",
+                            "Recorded · transcribing on this device…");
                     whisperRecognizer.finish();
                     return;
                 }
@@ -1360,7 +1364,15 @@ public class MainActivity extends Activity {
         if ("wake".equals(mode) || "followup".equals(mode)) {
             return 20000L;
         }
-        return 95000L;
+        // Tap-to-talk can legitimately run for minutes. The owner's second tap
+        // is the endpoint; this is only a last-resort watchdog.
+        return 180000L;
+    }
+
+    /** True when the owner explicitly pinned a vendor recognition service. */
+    private boolean hasExplicitRecognizerSelection() {
+        String selected = VoiceSettings.engineComponent(this);
+        return selected != null && !selected.trim().isEmpty();
     }
 
     private boolean ensureSpeechRecognizer() {
@@ -1465,6 +1477,7 @@ public class MainActivity extends Activity {
         speechCommandsEnabled = commands;
         speechWake = modeUsesWakeWord(mode);
         speechHeldText = "";
+        whisperAudioRetries = 0;
         pendingSpeechMode = mode;
         pendingSpeechSilence = speechEndSilenceMs;
         pendingSpeechRecordMs = speechRecordMs;
@@ -1499,15 +1512,32 @@ public class MainActivity extends Activity {
             }
             boolean selectedWhisper = VoiceSettings.usesWhisper(MainActivity.this);
             boolean whisperReady = WhisperRecognizer.available(MainActivity.this);
-            if (selectedWhisper || (!SpeechRecognizer.isRecognitionAvailable(MainActivity.this)
-                    && whisperReady)) {
-                // Bundled whisper.cpp path. This is what makes the microphone
-                // work on de-Googled phones with no Android recognition
-                // service, and it can be selected explicitly in Settings.
+            if (selectedWhisper) {
+                if (whisperReady) {
+                    startWhisperSession(requestToken);
+                } else {
+                    // Do not silently fall through to a vendor recognizer the
+                    // owner did not choose; explain which download is missing.
+                    deliverSpeech("", speechWake, "whisper_model_missing", requestToken);
+                }
+                return;
+            }
+            // If no vendor recognizer was pinned, prefer the bundled
+            // AudioRecord + Whisper path whenever its model is ready. It opens
+            // this app's own microphone synchronously (so the Android privacy
+            // indicator and UI agree), records continuously until the second
+            // tap, and never starts a fresh capture after the owner has
+            // already spoken. That late fresh capture was what produced
+            // "No speech detected" after a long dictation.
+            if (whisperReady && !hasExplicitRecognizerSelection()) {
                 startWhisperSession(requestToken);
                 return;
             }
             if (!SpeechRecognizer.isRecognitionAvailable(this) || !ensureSpeechRecognizer()) {
+                if (whisperReady) {
+                    startWhisperSession(requestToken);
+                    return;
+                }
                 // No in-process recognizer and no Whisper model. Use the
                 // system voice-input activity instead of failing silently.
                 launchSystemSpeech(speechWake, speechEndSilenceMs, requestToken);
@@ -1559,6 +1589,7 @@ public class MainActivity extends Activity {
         speechPartialText = "";
         speechHeldText = "";
         speechStartedAt = SystemClock.elapsedRealtime();
+        reportSpeechState("recording", "Microphone open · listening now");
         final long endSilence = "fixed".equals(mode) || "toggle".equals(mode)
                 ? 0L : Math.max(450L, speechEndSilenceMs);
         speechVad = new VoiceActivityDetector(endSilence, maxSpeechMs);
@@ -1623,6 +1654,15 @@ public class MainActivity extends Activity {
      * the PWA does not need a second result contract.
      */
     private void startWhisperSession(final int token) {
+        startWhisperSession(token, false);
+    }
+
+    /**
+     * @param retryAfterVendorFailure true when the vendor recognizer failed
+     *        before it could capture the sentence. The page is told that the
+     *        local recorder is now open and the sentence should be repeated.
+     */
+    private void startWhisperSession(final int token, final boolean retryAfterVendorFailure) {
         if (token != speechToken || isFinishing()) {
             return;
         }
@@ -1639,20 +1679,57 @@ public class MainActivity extends Activity {
         releaseSpeechRecognizer();
         speechRunning = true;
         whisperRunning = true;
+        speechEngineLabel = "whisper.cpp · tiny.en";
         speechFinalizeRequested = false;
         speechPartialText = "";
         speechHeldText = "";
         speechStartedAt = SystemClock.elapsedRealtime();
+        reportSpeechState("recording", retryAfterVendorFailure
+                ? "Android missed that · recording on this device now · please say it again"
+                : "Microphone open · recording on this device");
         String error = whisperRecognizer.start(mode, silence, record, deadline,
-                (text, failure) -> mainHandler.post(() -> {
-                    if (token != speechToken || !whisperRunning) {
-                        return;
+                new WhisperRecognizer.Callback() {
+                    @Override
+                    public void onResult(String text, String failure) {
+                        mainHandler.post(() -> {
+                            if (token != speechToken || !whisperRunning) {
+                                return;
+                            }
+                            // The background listener (or the previous vendor
+                            // recognizer) can still be releasing the microphone
+                            // for a few hundred milliseconds. Retry opening our
+                            // own AudioRecord before blaming the owner's device.
+                            if ("whisper_audio_unavailable".equals(failure)
+                                    && !speechFinalizeRequested
+                                    && whisperAudioRetries < 2 && !isFinishing()) {
+                                whisperAudioRetries++;
+                                reportSpeechState("recording",
+                                        "Waiting for the microphone to be released…");
+                                mainHandler.postDelayed(() -> {
+                                    if (token == speechToken && !speechFinalizeRequested
+                                            && !isFinishing()) {
+                                        startWhisperSession(token);
+                                    }
+                                }, 700L * whisperAudioRetries);
+                                return;
+                            }
+                            whisperRunning = false;
+                            speechFinalizeRequested = false;
+                            releaseSpeechRecognizer();
+                            deliverSpeech(text == null ? "" : text, wake, failure, token);
+                        });
                     }
-                    whisperRunning = false;
-                    speechFinalizeRequested = false;
-                    releaseSpeechRecognizer();
-                    deliverSpeech(text == null ? "" : text, wake, failure, token);
-                }));
+
+                    @Override
+                    public void onTranscribing() {
+                        mainHandler.post(() -> {
+                            if (token == speechToken && whisperRunning) {
+                                reportSpeechState("transcribing",
+                                        "Recorded · transcribing on this device…");
+                            }
+                        });
+                    }
+                });
         if (error != null) {
             whisperRunning = false;
             speechRunning = false;
@@ -1693,6 +1770,29 @@ public class MainActivity extends Activity {
                                 ? "no_speech_detected" : null, token);
             }
         }, fallbackMs);
+    }
+
+    /** Push a live microphone state to the page so its indicator matches the
+     *  real recorder instead of guessing from a timer. */
+    private void reportSpeechState(final String state, final String text) {
+        final WebView view = webView;
+        if (view == null) {
+            return;
+        }
+        try {
+            JSONObject payload = new JSONObject();
+            payload.put("state", state == null ? "" : state);
+            payload.put("text", text == null ? "" : text);
+            final String script = "window.__nuxelSpeechStatus && window.__nuxelSpeechStatus("
+                    + payload.toString() + ")";
+            view.post(() -> {
+                if (webView != null) {
+                    webView.evaluateJavascript(script, null);
+                }
+            });
+        } catch (JSONException ignored) {
+            // primitive values only
+        }
     }
 
     private void deliverSpeech(final String text, final boolean wake,
@@ -1865,15 +1965,33 @@ public class MainActivity extends Activity {
                     && (speechNoMatchCount >= 2 || !nothingHeard)
                     && WhisperRecognizer.available(MainActivity.this)) {
                 speechNoMatchCount = 0;
+                // Do NOT quietly open a fresh microphone after a no-match or a
+                // timeout: the owner already spoke, and a new capture would
+                // only contain the silence that follows. Keep any partial
+                // hypothesis, otherwise ask the page to start a new local
+                // recording so the owner knows to repeat the sentence.
+                String partial = speechPartialText.trim();
+                if (!partial.isEmpty()) {
+                    deliverSpeech(partial, speechWake, null, token);
+                    return;
+                }
+                if (nothingHeard) {
+                    deliverSpeech("", speechWake, "speech_retry_needed", token);
+                    return;
+                }
+                // A busy/client/network failure can happen before the vendor
+                // recognizer ever captured audio. Switching to the bundled
+                // recorder is safe there, but say clearly that the sentence
+                // must be repeated because the old capture is gone.
                 speechRunning = false;
                 speechFinalizeRequested = false;
                 releaseSpeechRecognizer();
-                final int retryToken = speechToken;
+                final int retryToken = ++speechToken;
                 mainHandler.postDelayed(() -> {
                     if (retryToken == speechToken && !isFinishing()) {
-                        startWhisperSession(retryToken);
+                        startWhisperSession(retryToken, true);
                     }
-                }, 220L);
+                }, 260L);
                 return;
             }
             // If no Whisper model is installed, offer the visible system
@@ -1914,6 +2032,8 @@ public class MainActivity extends Activity {
                     deliverSpeech("", speechWake, "no_speech_detected", token);
                 } else {
                     speechHeldText = held;
+                    reportSpeechState("held",
+                            "Recorded · tap the mic again to transcribe and send");
                 }
                 return;
             }

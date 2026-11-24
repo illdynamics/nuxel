@@ -2,6 +2,36 @@
 
 All notable changes to the Nuxel Phone OS repository are documented here.
 
+## [v0.9.8-beta] - 2026-11-24
+
+- Fix the Android speech path so the microphone is captured from the first
+  tap instead of after a vendor recognizer gives up. When the bundled Whisper
+  tiny.en model is installed, the engine menu's **Automatic** entry now uses
+  PenGuru's own `AudioRecord` capture. This opens the microphone immediately,
+  keeps recording until the second tap, and cannot lose the sentence when a
+  vendor recognizer starts late. A separate **Android system default
+  recognizer** entry still forces the phone's service.
+- Stop the silent “fresh Whisper capture” fallback that opened the microphone
+  only after the owner had finished speaking and then reported
+  `no_speech_detected`. Any partial hypothesis is preserved; otherwise the page
+  is told to start a new local recording so the owner knows to repeat.
+- Record with `AudioSource.MIC` first (falling back to `VOICE_RECOGNITION`)
+  and retry while SonarBird / the speech service releases the microphone.
+  Attach the existing NoiseSuppressor / AGC / echo-cancellation path when the
+  device supports it.
+- Detect a dead or monopolised `AudioRecord` after four seconds instead of
+  recording silence until the deadline, and transcribe any speech captured
+  before the failure.
+- Rework the page-side session state: recording, transcribing, and
+  ready-to-send are distinct states; the mic pulse now reflects the real
+  recorder. The post-tap watchdog was raised from 14 seconds to 5.5 minutes so
+  a long dictation (for example 56 s) is not discarded while Whisper is still
+  transcribing.
+- Allow tap-to-talk sessions up to three minutes (previously 95 s) and raise
+  the Whisper transcription limit to five minutes. Do not drop short real
+  utterances such as “okay” or “thank you” when voice energy was detected.
+- Rebuild PenGuru Squad 0.9.8-beta (`versionCode=908`).
+
 ## [v0.9.7-beta] - 2026-11-24
 
 - Fix the Silero VAD install 404: the pinned file is

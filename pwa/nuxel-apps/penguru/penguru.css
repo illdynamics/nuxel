@@ -5,6 +5,7 @@ input[type=url],input[type=password],input[type=text]{display:block;width:100%;m
 .mic-button{display:inline-flex;align-items:center;justify-content:center;width:54px;height:54px;min-height:54px;padding:0;border-radius:50%;background:#236e69;border:1px solid #7dd9cc;flex:0 0 auto}
 .mic-button svg{width:26px;height:26px;fill:currentColor;pointer-events:none}
 .mic-button.recording{background:#8f2f34;border-color:#ff8f8f;animation:mic-pulse 1.1s ease-in-out infinite}
+.mic-button.transcribing{background:#6b4d1f;border-color:#ffd27d;animation:mic-pulse 1.1s ease-in-out infinite}
 .mic-button[aria-pressed=true]:not(.recording){background:#3b5a80;border-color:#8bded4}
 @keyframes mic-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,143,143,.45)}50%{box-shadow:0 0 0 10px rgba(255,143,143,0)}}
 .mic-status{flex:1 1 220px;min-width:180px;color:#a8bace;font-size:14px;line-height:1.45}

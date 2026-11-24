@@ -2,14 +2,70 @@
 
 **Date:** 2026-11-24
 **Branch checked:** `feat/android-penguru-squad`
-**HEAD:** v0.9.7-beta follow-up on `feat/android-penguru-squad`
-**Working tree:** v0.9.7 Whisper fallback, Silero URL repair and rebuilt APK
+**HEAD:** v0.9.8-beta follow-up on `feat/android-penguru-squad`
+**Working tree:** v0.9.8 immediate local capture, long-dictation and state-machine repair
 **Artifact:** `dist/android/penguru-squad-debug.apk`
-**SHA-256:** `c8105d0b2b3d8b3326b17a0871407affe92c4c3816c0daedc0b0620ad9f44e9d`
-**Package/version:** `org.nuxel.penguru` / `versionCode=907`, `versionName=0.9.7-beta`
+**SHA-256:** `b3962f5b1a52585572eadca0167fa658b389f2fbb6ab8319deb43d1258f40395`
+**Package/version:** `org.nuxel.penguru` / `versionCode=908`, `versionName=0.9.8-beta`
 **Min/target SDK:** 26 / 35
 **Signing:** debug identity, APK Signature Scheme v2 + v3 verified
 **Verification device:** headless Android 15 (API 35) x86_64 emulator
+
+---
+
+## v0.9.8-beta — immediate local capture and long-dictation repair
+
+- **Date:** 2026-11-24
+- **Artifact:** `dist/android/penguru-squad-debug.apk`
+- **SHA-256:** `b3962f5b1a52585572eadca0167fa658b389f2fbb6ab8319deb43d1258f40395`
+- **Version:** `0.9.8-beta` (`versionCode=908`)
+- **Size:** 3,762,703 bytes
+- **Min/target SDK:** 26 / 35
+- **Signing:** debug identity, APK Signature Scheme v2 + v3 verified
+- **Native code:** `arm64-v8a` + `x86_64`
+
+  **Microphone capture now starts with the first tap.** When the Whisper
+  tiny.en model is ready and the engine menu is left on **Automatic**, PenGuru
+  uses its own `AudioRecord` capture and bundled whisper.cpp engine instead of
+  waiting for Android's recognition service. This removes the late hand-off
+  that opened a *new* microphone after the owner had already spoken and then
+  returned `no_speech_detected`. The engine menu now distinguishes
+  **Automatic** (empty component: local Whisper when installed) from an
+  explicit **Android system default recognizer** entry, so the phone service
+  can still be forced when preferred.
+
+  **No more silent fallback capture.** If a vendor recognizer fails after the
+  owner has spoken, any partial hypothesis is kept. Otherwise the page receives
+  `speech_retry_needed` and tells the owner to start a new local recording
+  rather than quietly recording silence.
+
+  **Long dictations survive transcription.** The page watchdog after the second
+  tap was raised from 14 s to 330 s, and the recording, transcribing and
+  ready-to-send states are now distinct. A 56 s dictation is no longer dropped
+  while Whisper is still working. Tap-to-talk recording is allowed for three
+  minutes; Whisper transcription waits up to five minutes.
+
+  **Recorder hardening.** `AudioSource.MIC` is tried before
+  `VOICE_RECOGNITION`, microphone acquisition is retried for about two seconds
+  while SonarBird releases the mic, a four-second no-audio guard fails loudly
+  instead of recording silence, and the existing noise-suppression / AGC /
+  echo-cancellation path is attached when supported. Short real utterances
+  such as “okay” and “thank you” are no longer discarded when voice energy was
+  detected.
+
+  **Emulator verification (API 35 x86_64, headless, no audio input):**
+  installed `versionCode=908` / `versionName=0.9.8-beta`; the page loaded and
+  reported `whisper_ready=true`. With the persisted engine set to `whisper`
+  and again with the default engine (`""`) the first mic tap immediately
+  produced **“Microphone open · recording on this device”** and logcat showed
+  `whisper capture started mode=toggle silence=0 fixed=0 deadline=180000`.
+  The second tap switched the UI to **“Recorded · transcribing on this
+  device…”** (`mic-button transcribing`), the bundled CLI transcribed the
+  2.8 s silent emulator capture in 12.1 s, and the session ended cleanly with
+  **“No speech detected”** (expected because this emulator was started with
+  `-no-audio`). `node pwa/nuxel-apps/penguru/test-voice.mjs` also passes,
+  including a late-result check that proves the old 14 s watchdog no longer
+  discards a transcript.
 
 ---
 

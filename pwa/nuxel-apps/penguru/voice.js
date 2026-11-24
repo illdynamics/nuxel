@@ -24,6 +24,10 @@ const KEY_NOISE = 'penguru-voice-noise';
 const DEFAULT_END_SILENCE_MS = 900;
 const FIXED_RECORD_MS = 5000;
 const MODES = ['toggle', 'vad', 'fixed'];
+// Whisper tiny.en on a phone can take a while for a long dictation. The old
+// 14 s watchdog released the UI and threw away the transcript while the
+// recorder was still working.
+const TRANSCRIBE_WATCHDOG_MS = 330000;
 
 function stored(key, fallback) {
   try {
@@ -60,6 +64,8 @@ export function voiceControls(call, available, onText) {
   let pendingText = '';
   let currentMode = mode;
   let finishing = false;
+  let transcribing = false;
+  let held = false;
 
   const status = text => {
     for (const id of ['voice-status', 'mic-status']) {
@@ -147,15 +153,21 @@ export function voiceControls(call, available, onText) {
   function updateMicUi() {
     const mic = $('mic');
     if (mic) {
-      const recording = active;
+      const recording = active && !transcribing && !held;
+      const busy = active && transcribing;
+      const readyToSend = !!pendingText || held;
       mic.classList.toggle('recording', recording);
-      mic.setAttribute('aria-pressed', String(recording || !!pendingText));
-      mic.setAttribute('aria-label', recording
-        ? 'Stop recording and send request'
-        : pendingText ? 'Send recorded request' : 'Record a request');
-      mic.title = recording
-        ? 'Stop, transcribe and send'
-        : pendingText ? 'Send recorded request' : 'Record a request';
+      mic.classList.toggle('transcribing', busy);
+      mic.classList.toggle('pending', readyToSend);
+      mic.setAttribute('aria-pressed', String(recording || readyToSend));
+      mic.setAttribute('aria-label', busy
+        ? 'Transcribing recording'
+        : recording ? 'Stop recording and send request'
+          : readyToSend ? 'Send recorded request' : 'Record a request');
+      mic.title = busy
+        ? 'Transcribing on this device'
+        : recording ? 'Stop, transcribe and send'
+          : readyToSend ? 'Send recorded request' : 'Record a request';
     }
     if ($('voice-stop')) $('voice-stop').disabled = !active;
     if ($('voice-talk')) $('voice-talk').disabled = active;
@@ -166,6 +178,8 @@ export function voiceControls(call, available, onText) {
     active = false;
     finishing = false;
     manualStop = false;
+    transcribing = false;
+    held = false;
     clearTimeout(timer);
     timer = null;
     updateMicUi();
@@ -196,6 +210,8 @@ export function voiceControls(call, available, onText) {
   async function stop() {
     active = false;
     manualStop = false;
+    transcribing = false;
+    held = false;
     pendingText = '';
     epoch++;
     busyRetries = 0;
@@ -225,24 +241,27 @@ export function voiceControls(call, available, onText) {
     }
     finishing = true;
     manualStop = true;
+    transcribing = true;
+    held = false;
+    updateMicUi();
     status(reason === 'fixed'
-      ? 'Five seconds recorded · transcribing and sending…'
+      ? 'Five seconds recorded · transcribing on this device…'
       : reason === 'timeout'
         ? 'Finishing your request…'
-        : 'Stopping the mic · transcribing and sending…');
+        : 'Stopping the mic · transcribing on this device…');
     if (host && typeof host.finishSpeechRecognition === 'function') {
       try {
         host.finishSpeechRecognition();
-        // If the bridge disappears, release the UI rather than showing a
-        // permanently active microphone.
+        // Transcription of a long recording can legitimately take minutes.
+        // Keep the session alive so the native result is not discarded by the
+        // page before it arrives.
         clearTimeout(timer);
         timer = setTimeout(() => {
           if (active) {
             finishNative();
-            finishing = false;
-            status('Microphone released. Tap the mic to try again.');
+            status('Transcription took too long. Tap the mic to try again.');
           }
-        }, 14000);
+        }, TRANSCRIBE_WATCHDOG_MS);
         return;
       } catch (error) { /* fall back */ }
     }
@@ -277,6 +296,8 @@ export function voiceControls(call, available, onText) {
         return 'The phone is switching microphones. PenGuru is retrying automatically — keep the app open for a moment.';
       case 'no_speech_detected':
         return 'No speech detected. Tap the mic and try again.';
+      case 'speech_retry_needed':
+        return 'Android’s recognizer did not capture that sentence. Tap the mic to record again with the on-device engine.';
       case 'whisper_model_missing':
         return 'Whisper is not ready. Open Model library → Whisper · tiny.en speech recognition and download it to this phone.';
       case 'whisper_runtime_missing':
@@ -395,6 +416,8 @@ export function voiceControls(call, available, onText) {
     active = true;
     finishing = false;
     manualStop = false;
+    transcribing = false;
+    held = false;
     currentMode = nextMode;
     const own = ++epoch;
     updateMicUi();
@@ -409,6 +432,25 @@ export function voiceControls(call, available, onText) {
             : 'Microphone on · tap the mic again to stop, transcribe and send');
 
     window.__nuxelSpeechResult = result => handleNativeResult(result, nextMode, own);
+    window.__nuxelSpeechStatus = update => {
+      if (!active || own !== epoch) return;
+      const state = update && update.state;
+      if (state === 'recording') {
+        transcribing = false;
+        held = false;
+        finishing = false;
+      } else if (state === 'transcribing') {
+        transcribing = true;
+        held = false;
+        finishing = true;
+      } else if (state === 'held') {
+        transcribing = false;
+        held = true;
+        finishing = false;
+      }
+      updateMicUi();
+      if (update && update.text) status(update.text);
+    };
 
     try {
       if (typeof host.startSpeechRecognitionConfig === 'function') {
@@ -429,11 +471,12 @@ export function voiceControls(call, available, onText) {
       status(error.message);
       return;
     }
-    // Native endpointing is authoritative. This timer only releases the UI if
-    // the WebView or bridge disappears.
-    const fallback = nextMode === 'fixed' ? FIXED_RECORD_MS + 22000
-      : nextMode === 'vad' ? 45000
-      : nextMode === 'wake' || nextMode === 'followup' ? 35000 : 125000;
+    // Native endpointing is authoritative. These timers only release the UI if
+    // the WebView or bridge disappears, so they must outlive a long local
+    // transcription instead of closing the session early.
+    const fallback = nextMode === 'fixed' ? FIXED_RECORD_MS + 1000
+      : nextMode === 'vad' ? 150000
+      : nextMode === 'wake' || nextMode === 'followup' ? 60000 : 305000;
     timer = setTimeout(() => {
       if (!active || own !== epoch) return;
       finishNow('timeout');
@@ -446,10 +489,6 @@ export function voiceControls(call, available, onText) {
         if (!active || own !== epoch) return;
         finishNow('fixed');
       }, FIXED_RECORD_MS + 250);
-      timer = setTimeout(() => {
-        if (!active || own !== epoch) return;
-        finishNow('timeout');
-      }, FIXED_RECORD_MS + 12000);
     }
   }
 

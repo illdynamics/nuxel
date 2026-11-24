@@ -162,7 +162,7 @@ function populateSpeechEngines() {
     select.replaceChildren();
     const option = document.createElement('option');
     option.value = '';
-    option.textContent = 'System default recognizer';
+    option.textContent = 'Automatic · local Whisper when installed';
     select.append(option);
     if ($('speech-engine-status')) {
       $('speech-engine-status').textContent = 'Speech-engine selection is available in the Android APK.';
@@ -175,7 +175,7 @@ function populateSpeechEngines() {
     const parsed = JSON.parse(raw || '[]');
     if (Array.isArray(parsed)) engines = parsed;
   } catch (error) { /* keep the default entry */ }
-  if (!engines.length) engines = [{component: '', label: 'System default recognizer', default: true}];
+  if (!engines.length) engines = [{component: '', label: 'Automatic · local Whisper when installed', default: true}];
   const current = wakeJson(host.speechConfig && host.speechConfig()).engine || '';
   select.replaceChildren();
   for (const engine of engines) {
@@ -190,9 +190,11 @@ function populateSpeechEngines() {
       host.speechConfigure(JSON.stringify({engine: select.value}));
     }
     if ($('speech-engine-status')) {
-      $('speech-engine-status').textContent = select.value
-        ? 'Selected recognizer: ' + (select.selectedOptions[0]?.textContent || select.value)
-        : 'Using the phone\'s system default recognizer.';
+      $('speech-engine-status').textContent = select.value === 'system'
+        ? 'Using the phone\'s system default recognizer.'
+        : select.value
+          ? 'Selected recognizer: ' + (select.selectedOptions[0]?.textContent || select.value)
+          : 'Automatic: PenGuru records locally when the Whisper model is installed, otherwise it uses the phone\'s recognizer.';
     }
   };
   if ($('speech-engine-status')) {
