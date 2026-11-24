@@ -302,8 +302,11 @@ static const char *fmt_sub_name(uint8_t main, uint8_t sub)
         case IPC41_GPRS_IP_CONFIGURATION: return "GPRS_IP_CONFIGURATION";
         case IPC41_GPRS_CALL_STATUS: return "GPRS_CALL_STATUS";
         case IPC41_GPRS_PIN_CTRL: return "GPRS_PIN_CTRL";
+        case IPC41_GPRS_LTE_ATTACH_APN_INFO: return "GPRS_LTE_ATTACH_APN_INFO";
         case IPC41_GPRS_SET_APN_INFO: return "GPRS_SET_APN_INFO";
         case IPC41_GPRS_MOBILE_DATA_STATUS: return "GPRS_MOBILE_DATA_STATUS";
+        case IPC41_GPRS_SET_ALWAYS_ON_PDN: return "GPRS_SET_ALWAYS_ON_PDN";
+        case IPC41_GPRS_SYNC_PROFILE_INFO: return "GPRS_SYNC_PROFILE_INFO";
         default: break;
         }
         break;
@@ -515,10 +518,14 @@ static void dispatch_rfs(uint8_t ch, const uint8_t *data, size_t len)
     g.stats.rfs_ops++;
     if (req.op == RFS_OP_UNLINK_FILE) g.stats.rfs_destructive++;
 
+    /* For NV ops the `param` word is the NV item id (ProcessNVRead reads the
+     * u32 at offset 6 as the item id and the u32 at offset 10 as the length).
+     * Surface it read-only so the CP's exact NV item IDs become observable;
+     * we STILL do not serve the read (fail-closed) and never log a path. */
     diagf("rfs_rx", "\"ch\":%u,\"op\":%u,\"opname\":\"%s\",\"seq\":%u,"
-          "\"special\":%d,\"rlen\":%u",
+          "\"special\":%d,\"rlen\":%u,\"item_id\":%u",
           ch, req.op, rfs_op_name(req.op), req.seq,
-          req.special_delete_all_vis ? 1 : 0, req.total_len);
+          req.special_delete_all_vis ? 1 : 0, req.total_len, req.param);
 
     /* POLICY GATE: build a fail-closed response. Only the no-op boot marker
      * (DELETE_ALL_VIS) is answered with success. We never mention the path in

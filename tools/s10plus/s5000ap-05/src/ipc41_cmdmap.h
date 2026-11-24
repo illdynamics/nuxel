@@ -160,9 +160,20 @@ enum ipc41_gprs_subcmd {
     IPC41_GPRS_PIN_CTRL                  = 15,
     IPC41_GPRS_CALL_STATUS               = 16,
     IPC41_GPRS_PORT_LIST                 = 17,
-    IPC41_GPRS_SET_APN_INFO              = 23,
-    IPC41_GPRS_MOBILE_DATA_STATUS        = 25,
-    IPC41_GPRS_SET_ALWAYS_ON_PDN         = 27,
+    IPC41_GPRS_LTE_QOS_PROFILE           = 18,
+    IPC41_GPRS_NW_INITIATED_PDN_DISCONNECT = 19,
+    IPC41_GPRS_LTE_ATTACH_APN_INFO       = 20,
+    IPC41_GPRS_EPDG_HANDOVER             = 21,
+    IPC41_GPRS_EPDG_STATUS               = 22,
+    IPC41_GPRS_FD_INFORMATION            = 23,
+    IPC41_GPRS_OPERATOR_RESERVED_PCO     = 24,
+    IPC41_GPRS_LTE_CA_STATUS             = 25,
+    IPC41_GPRS_BACKOFF_TIMER             = 26,
+    IPC41_GPRS_SET_APN_INFO              = 27,
+    IPC41_GPRS_TRAFFIC_CHANNEL_STATUS    = 28,
+    IPC41_GPRS_MOBILE_DATA_STATUS        = 29,
+    IPC41_GPRS_SET_ALWAYS_ON_PDN         = 34,
+    IPC41_GPRS_SYNC_PROFILE_INFO         = 37,
 };
 
 /* DISP (main=7) — status heartbeat. table @0x3a8768. */
