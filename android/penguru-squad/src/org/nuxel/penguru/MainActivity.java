@@ -29,8 +29,6 @@ import android.provider.Settings;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
-import android.speech.tts.TextToSpeech;
-import android.speech.tts.UtteranceProgressListener;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
@@ -71,7 +69,6 @@ import java.util.concurrent.Executors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -100,10 +97,6 @@ public class MainActivity extends Activity {
     private static final String UI_PREFS = "penguru_ui";
     private static final String PREF_BATTERY_PROMPT_AT = "battery_prompt_at";
     private static final String PREF_STORAGE_PROMPT_AT = "storage_prompt_at";
-    private static final String PREF_TTS_ENGINE = "tts_engine";
-    private static final String PREF_TTS_RATE = "tts_rate";
-    private static final String PREF_TTS_PITCH = "tts_pitch";
-    private static final String PREF_TTS_LANGUAGE = "tts_language";
     private static final String MODELS_DIR_NAME = "Models";
     private static final String RUNTIMES_DIR_NAME = "Runtimes";
 
@@ -153,16 +146,12 @@ public class MainActivity extends Activity {
     // useful audio trigger the visible system voice-input activity.
     private int speechNoMatchCount;
     private long lastSpeechNoMatchAt;
-    // Talkback (Android TextToSpeech). The engine is created lazily so a phone
-    // without any TTS engine never blocks the app from starting.
-    private TextToSpeech tts;
-    private volatile boolean ttsReady;
-    private volatile String ttsLastError = "";
+    // Talkback (Android TextToSpeech). The persistent SonarBird service owns
+    // the engine whenever it is running so answers are still spoken when this
+    // Activity is stopped or never becomes visible. The local engine is only
+    // used when background listening is off.
+    private TalkbackEngine talkback;
     private volatile String ttsActiveState = "idle";
-    private String ttsLanguage = "";
-    private float ttsRate = 1.0f;
-    private float ttsPitch = 1.0f;
-    private String pendingTtsText = "";
     private boolean pageReady;
     private boolean startupChecked;
     private boolean batteryDialogShowing;
@@ -1121,98 +1110,37 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String ttsStatus() {
-            runOnUiThread(MainActivity.this::ensureTalkback);
-            try {
-                JSONObject out = new JSONObject();
-                boolean available = ttsReady;
-                if (!available && tts != null) {
-                    try {
-                        available = tts.getEngines() != null && !tts.getEngines().isEmpty();
-                    } catch (RuntimeException ignored) {
-                        available = false;
-                    }
-                }
-                out.put("available", available);
-                out.put("ready", ttsReady);
-                out.put("engine", tts != null && ttsReady && tts.getDefaultEngine() != null
-                        ? tts.getDefaultEngine() : "");
-                out.put("language", ttsLanguage);
-                out.put("rate", ttsRate);
-                out.put("pitch", ttsPitch);
-                out.put("speaking", tts != null && ttsReady && tts.isSpeaking());
-                out.put("state", ttsActiveState);
-                out.put("error", ttsLastError);
-                return out.toString();
-            } catch (JSONException | RuntimeException error) {
-                return "{\"available\":false,\"ready\":false}";
+            // While SonarBird is running its engine is the one that actually
+            // voices replies, including with the screen off.
+            String serviceStatus = WakeWordService.talkbackStatusJson();
+            if (serviceStatus != null) {
+                return serviceStatus;
             }
+            runOnUiThread(MainActivity.this::ensureTalkback);
+            TalkbackEngine engine = talkback;
+            return engine == null ? "{\"available\":false,\"ready\":false}"
+                    : engine.statusJson();
         }
 
         @JavascriptInterface
         public String ttsEngines() {
-            runOnUiThread(MainActivity.this::ensureTalkback);
-            JSONArray out = new JSONArray();
-            try {
-                JSONObject system = new JSONObject();
-                system.put("name", "");
-                system.put("label", "System default engine");
-                out.put(system);
-                if (tts == null) {
-                    return out.toString();
-                }
-                for (TextToSpeech.EngineInfo info : tts.getEngines()) {
-                    JSONObject entry = new JSONObject();
-                    entry.put("name", info.name);
-                    String label = info.label == null || info.label.trim().isEmpty()
-                            ? info.name : info.label;
-                    entry.put("label", label);
-                    out.put(entry);
-                }
-            } catch (JSONException | RuntimeException error) {
-                // Return the entries found so far.
+            String serviceEngines = WakeWordService.talkbackEnginesJson();
+            if (serviceEngines != null) {
+                return serviceEngines;
             }
-            return out.toString();
+            runOnUiThread(MainActivity.this::ensureTalkback);
+            TalkbackEngine engine = talkback;
+            return engine == null ? "[]" : engine.enginesJson();
         }
 
         @JavascriptInterface
         public boolean ttsConfigure(String optionsJson) {
-            try {
-                JSONObject options = new JSONObject(optionsJson == null ? "{}" : optionsJson);
-                String engine = options.optString("engine", null);
-                String language = options.optString("language", null);
-                if (options.has("rate")) {
-                    ttsRate = (float) Math.max(0.4, Math.min(2.5, options.optDouble("rate", ttsRate)));
-                }
-                if (options.has("pitch")) {
-                    ttsPitch = (float) Math.max(0.4, Math.min(2.5, options.optDouble("pitch", ttsPitch)));
-                }
-                if (language != null && !language.trim().isEmpty()) {
-                    ttsLanguage = language;
-                }
-                SharedPreferences prefs = getSharedPreferences(UI_PREFS, MODE_PRIVATE);
-                final boolean engineChanged = engine != null
-                        && !engine.equals(prefs.getString(PREF_TTS_ENGINE, ""));
-                SharedPreferences.Editor editor = prefs.edit();
-                editor.putFloat(PREF_TTS_RATE, ttsRate);
-                editor.putFloat(PREF_TTS_PITCH, ttsPitch);
-                editor.putString(PREF_TTS_LANGUAGE, ttsLanguage);
-                if (engine != null) {
-                    editor.putString(PREF_TTS_ENGINE, engine);
-                }
-                editor.apply();
-                runOnUiThread(() -> {
-                    if (engineChanged) {
-                        shutdownTalkback();
-                        ensureTalkback();
-                    } else {
-                        applyTalkbackConfig();
-                    }
-                });
+            if (WakeWordService.configureTalkback(optionsJson)) {
                 return true;
-            } catch (JSONException | RuntimeException error) {
-                ttsLastError = String.valueOf(error.getMessage());
-                return false;
             }
+            ensureTalkback();
+            TalkbackEngine engine = talkback;
+            return engine != null && engine.configure(optionsJson);
         }
 
         @JavascriptInterface
@@ -1221,12 +1149,21 @@ public class MainActivity extends Activity {
                 return false;
             }
             final String safe = text.length() > 12000 ? text.substring(0, 12000) : text;
+            // Prefer the foreground service while it is alive. This is the
+            // fix for "no talkback when the app was not in the foreground":
+            // the Activity no longer has to remain visible for the answer to
+            // be spoken.
+            if (WakeWordService.speakReply(MainActivity.this, safe)) {
+                reportTalkbackState("speaking");
+                return true;
+            }
             runOnUiThread(() -> speakWithTalkback(safe));
             return true;
         }
 
         @JavascriptInterface
         public void ttsStop() {
+            WakeWordService.stopSpeaking();
             runOnUiThread(MainActivity.this::stopTalkback);
         }
 
@@ -2185,156 +2122,44 @@ public class MainActivity extends Activity {
     /* --------------------------------------------------------- talkback */
 
     private void ensureTalkback() {
-        if (tts != null) {
-            return;
+        if (talkback == null) {
+            talkback = new TalkbackEngine(this, this::reportTalkbackState);
         }
-        SharedPreferences prefs = getSharedPreferences(UI_PREFS, MODE_PRIVATE);
-        ttsRate = prefs.getFloat(PREF_TTS_RATE, 1.0f);
-        ttsPitch = prefs.getFloat(PREF_TTS_PITCH, 1.0f);
-        ttsLanguage = prefs.getString(PREF_TTS_LANGUAGE, "");
-        final String engine = prefs.getString(PREF_TTS_ENGINE, "");
-        TextToSpeech.OnInitListener listener = status -> {
-            if (status == TextToSpeech.SUCCESS && tts != null) {
-                ttsReady = true;
-                ttsLastError = "";
-                try {
-                    tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
-                        @Override public void onStart(String utteranceId) {
-                            reportTalkbackState("speaking");
-                        }
-                        @Override public void onDone(String utteranceId) {
-                            reportTalkbackState("idle");
-                        }
-                        @Override public void onError(String utteranceId) {
-                            reportTalkbackState("error");
-                        }
-                        @Override public void onError(String utteranceId, int errorCode) {
-                            ttsLastError = "tts_error_" + errorCode;
-                            reportTalkbackState("error");
-                        }
-                    });
-                } catch (RuntimeException ignored) {
-                    // Progress callbacks are optional.
-                }
-                applyTalkbackConfig();
-                String pending = pendingTtsText;
-                pendingTtsText = "";
-                if (!pending.isEmpty()) {
-                    speakWithTalkback(pending);
-                }
-            } else {
-                ttsReady = false;
-                ttsLastError = "tts_init_failed";
-                reportTalkbackState("unavailable");
-            }
-        };
-        try {
-            if (engine != null && !engine.isEmpty()) {
-                tts = new TextToSpeech(getApplicationContext(), listener, engine);
-            } else {
-                tts = new TextToSpeech(getApplicationContext(), listener);
-            }
-            ttsLastError = "";
-        } catch (RuntimeException error) {
-            tts = null;
-            ttsReady = false;
-            ttsLastError = String.valueOf(error.getMessage());
-        }
-    }
-
-    private boolean sameEngine(String requested) {
-        if (tts == null) {
-            return false;
-        }
-        try {
-            String current = tts.getDefaultEngine();
-            return requested != null && requested.equals(current);
-        } catch (RuntimeException error) {
-            return false;
-        }
-    }
-
-    private void applyTalkbackConfig() {
-        if (tts == null || !ttsReady) {
-            return;
-        }
-        try {
-            int result;
-            if (ttsLanguage != null && !ttsLanguage.isEmpty()) {
-                result = tts.setLanguage(Locale.forLanguageTag(ttsLanguage));
-            } else {
-                result = tts.setLanguage(Locale.getDefault());
-            }
-            if (result == TextToSpeech.LANG_MISSING_DATA
-                    || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                ttsLastError = "language_not_supported";
-            }
-            tts.setSpeechRate(ttsRate);
-            tts.setPitch(ttsPitch);
-        } catch (RuntimeException error) {
-            ttsLastError = String.valueOf(error.getMessage());
-        }
-    }
-
-    /** Android TTS otherwise pronounces decorative separators literally. */
-    private static String speakableText(String text) {
-        if (text == null) {
-            return "";
-        }
-        String value = text.replace('·', ' ').replace('•', ' ')
-                .replace('…', '.').replace('\n', ' ').replace('\r', ' ');
-        value = value.replaceAll("[\t ]{2,}", " ").trim();
-        return value;
+        talkback.ensure();
     }
 
     private void speakWithTalkback(final String text) {
-        String speakable = speakableText(text);
+        String speakable = TalkbackEngine.sanitize(text);
         if (speakable.isEmpty()) {
             return;
         }
+        // The service path is preferred in ttsSpeak(). This local engine is
+        // the fallback when background listening is off.
         ensureTalkback();
-        if (tts == null || !ttsReady) {
-            pendingTtsText = speakable;
-            return;
-        }
-        try {
-            tts.speak(speakable, TextToSpeech.QUEUE_FLUSH, null,
-                    "penguru-" + System.currentTimeMillis());
-            reportTalkbackState("speaking");
-        } catch (RuntimeException error) {
-            ttsLastError = String.valueOf(error.getMessage());
-            reportTalkbackState("error");
+        TalkbackEngine engine = talkback;
+        if (engine != null) {
+            engine.speak(speakable);
         }
     }
 
+    /**
+     * Called when the Activity leaves the screen. Only the Activity-owned
+     * engine is stopped; a reply that is being spoken by the SonarBird service
+     * must continue, otherwise background chat would go silent again.
+     */
     private void stopTalkback() {
-        pendingTtsText = "";
-        if (tts != null) {
-            try {
-                tts.stop();
-            } catch (RuntimeException ignored) {
-                // already stopped
-            }
+        TalkbackEngine engine = talkback;
+        if (engine != null) {
+            engine.stop();
         }
         reportTalkbackState("idle");
     }
 
     private void shutdownTalkback() {
-        pendingTtsText = "";
-        TextToSpeech current = tts;
-        tts = null;
-        ttsReady = false;
-        if (current != null) {
-            try {
-                current.stop();
-            } catch (RuntimeException ignored) {
-                // already stopped
-            }
-            try {
-                current.shutdown();
-            } catch (RuntimeException ignored) {
-                // already shut down
-            }
+        TalkbackEngine engine = talkback;
+        talkback = null;
+        if (engine != null) {
+            engine.shutdown();
         }
     }
 

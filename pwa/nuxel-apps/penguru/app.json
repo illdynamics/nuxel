@@ -7,7 +7,7 @@
   "category": "productivity",
   "type": "pwa",
   "url": "/pwa/nuxel-apps/penguru/index.html",
-  "description": "Local ChatBird, CodeBird and Squad assistants",
+  "description": "PenGuru, a NUXAI virtual penguin: local ChatBird, CodeBird and Squad assistants",
   "capabilities": [
     "system:inspect",
     "microphone"

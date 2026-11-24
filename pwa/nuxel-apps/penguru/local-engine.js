@@ -399,6 +399,25 @@ function firstLine(text, max) {
   return clean.length > max ? clean.slice(0, max - 1) + '…' : clean;
 }
 
+// PenGuru's identity is part of the engine itself, not only the page copy.
+// The host-side system prompt carries the same facts in optional Nuxel mode.
+export const PENGURU_IDENTITY = 'I am PenGuru, a virtual penguin and the most '
+  + 'advanced AI subsystem of NUXAI. NUXAI was originally designed for Nuxel, '
+  + 'and now I also run on Android.';
+
+export function identityReply() {
+  return PENGURU_IDENTITY + '\n\n'
+    + 'I can chat, outline code, check this phone\'s status and keep the '
+    + 'conversation on-device. What would you like to do?';
+}
+
+function identityQuestion(text) {
+  const value = String(text || '').toLowerCase();
+  return /\b(who are you|what are you|what(?:'s| is) your name|your name|introduce yourself|tell me about yourself)\b/.test(value)
+    || /\b(who is penguru|what is penguru|what(?:'s| is) penguru|who is pengu ru)\b/.test(value)
+    || /\b(nuxai|nux ai)\b/.test(value);
+}
+
 function routeFor(text, mode) {
   if (mode === 'chatbird') return 'CHAT';
   if (mode === 'codebird') return 'CODE';
@@ -479,7 +498,7 @@ function codeReply(text) {
 function chatReply(text) {
   const value = String(text || '').toLowerCase();
   if (/^(hi|hello|hey|yo|good morning|good evening)\b/.test(value)) {
-    return 'Hi — PenGuru is running entirely on this phone.\n\n' +
+    return 'Hi. ' + PENGURU_IDENTITY + '\n\n' +
       'I can report device status, outline code, help route a request, and keep the conversation local. ' +
       'No Nuxel server, API URL or token is involved. Use the Model library to download models and Settings → On-device dependencies to stage runtimes.';
   }
@@ -497,18 +516,20 @@ function chatReply(text) {
     return 'On this phone it is ' + new Date().toLocaleString() + '.';
   }
   return 'PenGuru · on-device\n\nI received: "' + firstLine(text, 300) + '"\n\n' +
-    'This standalone build keeps the conversation on the handset and answers with local logic. ' +
-    'Ask about device status, request a code outline, or use the voice button. ' +
-    'For full neural answers, download a model and install a runtime in Settings.';
+    'I am PenGuru, the NUXAI penguin running on this phone. This standalone build keeps the ' +
+    'conversation on the handset and answers with local logic. Ask about device status, request ' +
+    'a code outline, or use the voice button. For full neural answers, download a model and ' +
+    'install a runtime in Settings.';
 }
 
 function askReply(text) {
-  return 'I can help, but I need one detail first.\n\n' +
+  return 'I am PenGuru, and I can help. I need one detail first.\n\n' +
     'You asked: "' + firstLine(text, 300) + '"\n\n' +
     'Which outcome do you want — a short explanation, a code example, or a device/storage check?';
 }
 
 function replyFor(text, route) {
+  if (identityQuestion(text)) return identityReply();
   if (route === 'SYSTEM') return formatDevice();
   if (route === 'CODE') return codeReply(text);
   if (route === 'ASK') return askReply(text);

@@ -9,12 +9,12 @@ dist/android/penguru-squad-debug.apk
 ```
 
 That is the complete standalone PenGuru Squad Android app (label **PenGuru
-Squad**, package `org.nuxel.penguru`, version `0.9.9-beta` / versionCode
-`909`). There is no other APK to install. The matching checksum is in
+Squad**, package `org.nuxel.penguru`, version `0.9.10-beta` / versionCode
+`910`). There is no other APK to install. The matching checksum is in
 `dist/android/SHA256SUMS`:
 
 ```
-847b68829052059e521bdde3faf2309057fc20ff6400d5b56c237907faca5cf0  penguru-squad-debug.apk
+956adbd13640c9d2eb4a8505503057511c81fd7462262ab165add74051934c78  penguru-squad-debug.apk
 ```
 
 The APK is signed with the repository's stable debug identity, so it installs
@@ -65,11 +65,15 @@ The app no longer asks for a Nuxel API URL or launcher token. It starts an
 - **Settings → SonarBird background listening** starts a persistent microphone
   foreground service with a notification. Say “Penguru” (or “Peng Guru”,
   “Pen Guru”, “Penguro”, “Pinguru”) and then a question to talk to PenGuru while
-  the app is in the background. SonarBird stays armed while the app is open and
-  pauses only while the in-app mic is recording; the Conversation page shows its
-  live state. Android may require you to allow notifications and to tap the
-  ongoing notification to bring the chat forward on some releases/OEMs; the
-  heard command is still auto-sent.
+  the app is in the background. The answer is spoken by the SonarBird foreground
+  service when talkback is enabled, even with the screen off or PenGuru behind
+  another app. After the answer finishes, the microphone re-arms for a
+  follow-up, so you can keep chatting without saying “Penguru” again. SonarBird
+  stays armed while the app is open and pauses only while the in-app mic is
+  recording; the Conversation page shows its live state. Android may require
+  you to allow notifications and to tap the ongoing notification to bring the
+  chat forward on some releases/OEMs; the heard command is still auto-sent and
+  the answer still spoken.
 - On every launch PenGuru checks microphone, notification, battery and storage
   permissions and restores the listener if you had enabled it. Accept the
   battery-optimization prompt so Android does not stop background work, and

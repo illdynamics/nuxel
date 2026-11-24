@@ -44,7 +44,7 @@ globalThis.localStorage = {
   setItem: (key, value) => storage.set(key, String(value)),
   removeItem: key => storage.delete(key),
 };
-const calls = { finish: 0, results: [] };
+const calls = { finish: 0, results: [], spokenNative: 0, lastSpoken: '' };
 globalThis.window = {
   NuxelAndroid: {
     isStandalone: () => true,
@@ -54,6 +54,13 @@ globalThis.window = {
     startSpeechRecognitionConfig: () => true,
     stopSpeechRecognition: () => {},
     finishSpeechRecognition: () => { calls.finish++; },
+    ttsConfigure: () => true,
+    ttsStatus: () => JSON.stringify({ available: true, ready: true, engine: 'test' }),
+    ttsSpeak: text => {
+      calls.spokenNative++;
+      calls.lastSpoken = text;
+      return true;
+    },
   },
   addEventListener: () => {},
   parent: null,
@@ -63,7 +70,8 @@ let clock = 0;
 globalThis.performance = { now: () => clock++ };
 
 const { voiceControls, parseVoiceText } = await import(new URL('./voice.js', import.meta.url));
-const { speakable } = await import(new URL('./talkback.js', import.meta.url));
+const { speakable, talkbackControls } = await import(new URL('./talkback.js', import.meta.url));
+const { identityReply, PENGURU_IDENTITY } = await import(new URL('./local-engine.js', import.meta.url));
 const voice = voiceControls(async () => ({}), () => true, (text, auto, meta) => {
   calls.results.push({ text, auto, meta: meta || {} });
 });
@@ -84,6 +92,26 @@ if (spoken.includes('·') || spoken.includes('•')) {
 }
 if (!spoken.includes('PenGuru on-device')) {
   throw new Error('talkback header was not cleaned: ' + spoken);
+}
+
+// Talkback must route through the native bridge so it can be handed to the
+// foreground service when the Activity is not visible.
+const talkback = talkbackControls();
+talkback.setEnabled(true);
+if (!talkback.speak('PenGuru · on-device answer')) {
+  throw new Error('native talkback speak was rejected');
+}
+if (calls.spokenNative !== 1 || !calls.lastSpoken.includes('PenGuru on-device answer')) {
+  throw new Error('native talkback was not called: ' + JSON.stringify(calls));
+}
+
+// The on-device engine must know its name and origin.
+const identity = identityReply();
+for (const fact of ['PenGuru', 'virtual penguin', 'NUXAI', 'Nuxel', 'Android']) {
+  if (!identity.includes(fact)) throw new Error('identity is missing ' + fact + ': ' + identity);
+}
+if (!PENGURU_IDENTITY.includes('most advanced AI subsystem')) {
+  throw new Error('identity does not describe NUXAI: ' + PENGURU_IDENTITY);
 }
 
 voice.start();

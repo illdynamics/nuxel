@@ -1,7 +1,10 @@
 # PenGuru Squad — Android APK
 
-This directory packages PenGuru Squad as a standalone Android application. The
-APK bundles the app's HTML/CSS/JS and serves it from a private virtual origin
+This directory packages PenGuru Squad as a standalone Android application.
+PenGuru identifies itself as a virtual penguin and the most advanced AI
+subsystem of **NUXAI**, originally designed for Nuxel and now running on
+Android. The APK bundles the app's HTML/CSS/JS and serves it from a private
+virtual origin
 (`https://appassets.androidplatform.net`); it is not a shortcut to a remote
 website and does not require Android Studio.
 
@@ -92,8 +95,8 @@ token, launcher or root access.
 | Downloads | `DownloadService` (a `dataSync` foreground service) streams from Hugging Face/GitHub, resumes `.part` files, verifies the pinned SHA-256, and writes an `installed.json` marker. It holds a partial wake lock and Wi-Fi lock so locking the screen does not pause or interrupt the transfer. |
 | Runtimes | **Settings → On-device dependencies** installs llama.cpp arm64, llama.cpp Snapdragon/OpenCL, and ONNX Runtime Android (AAR), unpacking tar.gz/zip. An interrupted job resumes from the persisted spec after a rebuild or process restart. |
 | Voice | With the Whisper tiny.en model installed, the Conversation mic records 16 kHz PCM with `AudioRecord` and transcribes locally through the bundled whisper.cpp `tiny.en` engine **from the first tap**; this is the default because it does not depend on a vendor recognizer opening its own microphone. The system recognizer remains selectable in Settings and is used automatically when Whisper is not ready. Settings offers `toggle` (tap to talk, tap again to send), `vad` (auto-send when you stop talking; 0.5–2.5 s end-of-speech window) and `fixed` (record 5 seconds, then send). **Speak a message** always records for five seconds and sends the whole window. The engine picker lists every installed Android recognizer (GrapheneOS / Google / vendor) **and the bundled offline Whisper engine**. An `AudioRecord` that is still waiting for the speech service to release the microphone is retried, and a four-second no-audio guard fails loudly instead of recording silence. Voice commands (`stop`, `cancel`, `never mind`, `send`, `send it`, `Penguru stop`, `Penguru send`) work in the foreground and in SonarBird. Noise suppression / AGC / echo cancellation are attached when supported, and optional Silero VAD / RNNoise packages are downloadable. Partial hypotheses are kept when a vendor recognizer is explicitly selected. |
-| Background listening | **Settings → SonarBird background listening** starts a microphone foreground service with a persistent notification. Say “Penguru <question>” in one go, or say “Penguru” alone and then the next sentence; common renderings such as “Peng Guru”, “Pen Guru”, “Penguro”, “Pinguru” and “Panguru” are accepted. The notification shows the live partial sentence and finishes as soon as the adaptive VAD detects that you stopped talking. Say **“Penguru stop”** to stop the listener, **“Penguru send”** to send the captured sentence, or use the notification's **Send now** / **Stop listening** actions. SonarBird stays armed while PenGuru is open and pauses only while the in-app microphone records. Each recognizer session has its own token and error backoff, so stale callbacks no longer create competing sessions. Boot/package-replaced receivers re-arm an enabled listener. |
-| Talkback | **Conversation → Talkback** and **Settings → Talkback · spoken answers** read each completed assistant answer aloud through an installed Android TextToSpeech engine. The engine, speech rate and pitch are configurable; the Test button speaks a sample. No download is needed. The pinned Spark-TTS and Kokoro packages are staged for the future on-device neural voice runtime. |
+| Background listening | **Settings → SonarBird background listening** starts a microphone foreground service with a persistent notification. Say “Penguru <question>” in one go, or say “Penguru” alone and then the next sentence; common renderings such as “Peng Guru”, “Pen Guru”, “Penguro”, “Pinguru” and “Panguru” are accepted. The notification shows the live partial sentence and finishes as soon as the adaptive VAD detects that you stopped talking. The completed answer is spoken by the foreground service through talkback and the microphone re-arms afterwards for an interactive follow-up. Say **“Penguru stop”** to stop the listener, **“Penguru send”** to send the captured sentence, or use the notification's **Send now** / **Stop listening** actions. SonarBird stays armed while PenGuru is open and pauses only while the in-app microphone records. Each recognizer session has its own token and error backoff, so stale callbacks no longer create competing sessions. Boot/package-replaced receivers re-arm an enabled listener. |
+| Talkback | **Conversation → Talkback** and **Settings → Talkback · spoken answers** read each completed assistant answer aloud through an installed Android TextToSpeech engine. While SonarBird background listening is running, the foreground service owns the engine, so the answer is spoken with the screen off or PenGuru behind another app. After speaking, SonarBird re-arms the microphone for a follow-up without requiring the wake word again. The engine, speech rate and pitch are configurable; the Test button speaks a sample. No download is needed. The pinned Spark-TTS and Kokoro packages are staged for the future on-device neural voice runtime. |
 | Permissions | On launch the app requests microphone and notification access, restores a previously enabled listener, and prompts once a week for the battery-optimization exemption and All files access until granted. |
 | Reinstall reuse | With **All files access**, models and runtimes live in `Download/PenGuru` and are discovered after an uninstall/reinstall by validating each file and byte length. Without it, `Android/media/<package>` survives APK updates but not a full uninstall. |
 | Diagnostics | Battery, storage, Android version, CPU ABIs, model/runtime paths. |
@@ -157,16 +160,21 @@ bridge must allow the APK origin for CORS; the current
 ## Verification performed
 
 - `node --check` on every bundled JS file.
-- `node pwa/nuxel-apps/penguru/test-voice.mjs` — long-transcript and held
-  tap-to-send state-machine regression test.
+- `node pwa/nuxel-apps/penguru/test-voice.mjs` — long-transcript, held
+  tap-to-send, native-talkback routing and PenGuru/NUXAI identity checks.
 - `node pwa/nuxel-common/verify-wiring.js` — all 7 PWA surfaces OK.
 - `node pwa/nuxel-common/test-bridge.js` — all shared-bridge tests pass.
 - A Node harness with a mocked `NuxelAndroid` bridge exercised the on-device
   engine: status, model cards, model download spec (pinned URL/SHA-256),
   download-status → installed transition, runtime install spec, SYSTEM and CODE
   replies, and diagnostics.
-- APK rebuilt, `apksigner verify` shows v2 + v3 signatures, `versionCode=909`,
-  `versionName=0.9.9-beta`.
+- APK rebuilt, `apksigner verify` shows v2 + v3 signatures, `versionCode=910`,
+  `versionName=0.9.10-beta`.
+- API 35 emulator: with SonarBird running, **Test talkback** routed through the
+  foreground service (`PenGuru is speaking`) and pressing Home mid-utterance
+  did not stop it. The notification then returned to **Listening for your
+  message…** and `RecognitionService#onStartListening` confirmed the follow-up
+  microphone re-armed while PenGuru was behind the launcher.
 - The bundled x86_64 `whisper-cli` transcribed the whisper.cpp `jfk.wav` sample
   on the API 35 emulator: “And so my fellow Americans ask not what your country
   can do for you, ask what you can do for your country.” (4.8 s for 11 s of

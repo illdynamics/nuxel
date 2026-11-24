@@ -207,13 +207,21 @@ class Controller:
             s.lifecycle.set("IDLE")
         return result
 
+    PENGURU_IDENTITY = (
+        "Your name is PenGuru. You are a virtual penguin and the most advanced "
+        "AI subsystem of NUXAI. NUXAI was originally designed for Nuxel, and "
+        "now it also runs on Android. Never claim to be another assistant or "
+        "product; introduce yourself as PenGuru.")
+
     def _system_prompt(self, model: str) -> str:
         if model == "codebird":
-            return ("You are CodeBird, a local coding assistant. Output code or "
-                    "patch suggestions only. You cannot execute commands or "
-                    "change the system.")
-        return ("You are ChatBird, a local assistant. You cannot execute "
-                "commands, change the system or approve actions.")
+            return (self.PENGURU_IDENTITY + " You are PenGuru's CodeBird "
+                    "worker, a local coding assistant. Output code or patch "
+                    "suggestions only. You cannot execute commands or change "
+                    "the system.")
+        return (self.PENGURU_IDENTITY + " You are PenGuru's ChatBird worker, "
+                "a local assistant. You cannot execute commands, change the "
+                "system or approve actions.")
 
 
 # ── local IPC ────────────────────────────────────────────────────────────

@@ -2,14 +2,60 @@
 
 **Date:** 2026-11-24
 **Branch checked:** `feat/android-penguru-squad`
-**HEAD:** v0.9.9-beta on `feat/android-penguru-squad`
-**Working tree:** v0.9.9 wake-word, forced-mode and SonarBird reliability repair
+**HEAD:** v0.9.10-beta on `feat/android-penguru-squad`
+**Working tree:** v0.9.10 background talkback, interactive follow-up and PenGuru/NUXAI identity
 **Artifact:** `dist/android/penguru-squad-debug.apk`
-**SHA-256:** `847b68829052059e521bdde3faf2309057fc20ff6400d5b56c237907faca5cf0`
-**Package/version:** `org.nuxel.penguru` / `versionCode=909`, `versionName=0.9.9-beta`
+**SHA-256:** `956adbd13640c9d2eb4a8505503057511c81fd7462262ab165add74051934c78`
+**Package/version:** `org.nuxel.penguru` / `versionCode=910`, `versionName=0.9.10-beta`
 **Min/target SDK:** 26 / 35
 **Signing:** debug identity, APK Signature Scheme v2 + v3 verified
 **Verification device:** headless Android 15 (API 35) x86_64 emulator
+
+---
+
+## v0.9.10-beta — background talkback and continuous voice conversation
+
+- **Date:** 2026-11-24
+- **Artifact:** `dist/android/penguru-squad-debug.apk`
+- **SHA-256:** `956adbd13640c9d2eb4a8505503057511c81fd7462262ab165add74051934c78`
+- **Version:** `0.9.10-beta` (`versionCode=910`)
+- **Size:** 3,770,895 bytes
+- **Min/target SDK:** 26 / 35
+- **Signing:** debug identity, APK Signature Scheme v2 + v3 verified
+- **Native code:** `arm64-v8a` + `x86_64`
+
+  **Talkback now survives background hand-off.** A shared `TalkbackEngine`
+  lives in the SonarBird microphone foreground service whenever background
+  listening is enabled. `MainActivity.ttsSpeak()` forwards completed answers
+  there instead of using an Activity-owned engine, so hiding or stopping the
+  Activity no longer cuts the answer off. The notification shows **PenGuru is
+  speaking** and returns to **Listening for your reply** when the utterance
+  finishes.
+
+  **Continuous conversation.** The persistent recognizer is stopped before TTS
+  starts, which prevents PenGuru from hearing its own voice, and the follow-up
+  microphone window is armed after the answer. The next sentence is sent
+  without repeating “Penguru”; saying the wake word again still works and
+  resets the window.
+
+  **Name and origin.** The on-device responder and the optional Nuxel host
+  system prompt identify the assistant as **PenGuru**, a virtual penguin and
+  the most advanced AI subsystem of **NUXAI**, originally designed for Nuxel
+  and now also running on Android. Direct identity questions return that
+  answer instead of a generic clarification.
+
+  **Verification:** `node --check` on the bundled JS, the extended
+  `test-voice.mjs` state-machine / native-talkback / identity checks pass, and
+  the APK rebuilt with `versionCode=910`, `versionName=0.9.10-beta`, and v2 +
+  v3 signatures verified. On the API 35 emulator, starting SonarBird and
+  tapping **Test talkback** changed the ongoing notification to **PenGuru is
+  speaking** and produced a Google TTS synthesis request. Pressing Home in the
+  middle of that utterance left the service speaking with the launcher in front,
+  after which the notification returned to **Listening for your message…** and
+  `RecognitionService#onStartListening` was logged. That verifies the Activity
+  no longer owns the reply voice and the follow-up microphone re-arms in the
+  background. Physical on-device audio acceptance is still required for the
+  microphone path; the emulator has no microphone input.
 
 ---
 

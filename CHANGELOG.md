@@ -2,6 +2,25 @@
 
 All notable changes to the Nuxel Phone OS repository are documented here.
 
+## [v0.9.10-beta] - 2026-11-24
+
+- Fix spoken answers while PenGuru is not on screen. Talkback now runs in the
+  persistent SonarBird foreground service whenever background listening is
+  active, and the Activity forwards every `ttsSpeak` request there. Stopping or
+  hiding the Activity no longer tears down the voice engine, so a wake-word
+  answer is spoken with the screen off or with another app in front.
+- Pause the recognizer while an answer is being spoken and re-arm it when the
+  utterance finishes. The next sentence is accepted without repeating
+  “Penguru”, which makes the background voice interaction a continuous
+  conversation. The ongoing notification shows **PenGuru is speaking** and
+  switches to **Listening for your reply** afterwards.
+- Tell PenGuru who it is. The on-device responder and the optional Nuxel-host
+  system prompt now identify it as **PenGuru**, a virtual penguin and the most
+  advanced AI subsystem of **NUXAI**, originally designed for Nuxel and now
+  also running on Android. Identity questions are answered directly instead of
+  falling through to a generic clarification.
+- Rebuild PenGuru Squad 0.9.10-beta (`versionCode=910`).
+
 ## [v0.9.9-beta] - 2026-11-24
 
 - Make the wake word work in every microphone mode, not only the dedicated

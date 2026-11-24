@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="nuxel-app-id" content="org.nuxel.PenGuru">
+<meta name="description" content="PenGuru, a virtual penguin and the NUXAI AI subsystem originally designed for Nuxel, now running on Android.">
 <meta name="theme-color" content="#101b2c">
 <title>PenGuru Squad</title>
 <link rel="manifest" href="manifest.json">
@@ -14,7 +15,7 @@
 <script>try{const u=localStorage.getItem("nuxel-api-url");if(u)globalThis.NUXEL_API_URL=u;const t=localStorage.getItem("nuxel-penguru-token");if(t)globalThis.__NUXEL_TOKEN__=t;}catch(e){}</script>
 <script type="module" src="../../nuxel-common/bridge.js"></script>
 <header>
-  <div><small>NUXAI · LOCAL ASSISTANTS</small><h1>PenGuru Squad</h1></div>
+  <div><small>NUXAI · VIRTUAL PENGUIN</small><h1>PenGuru Squad</h1></div>
   <button id="power">Enable PenGuru</button>
 </header>
 <p id="notice" role="status" aria-live="polite">Starting the on-device engine…</p>
@@ -30,7 +31,7 @@
       <label>Assistant<select id="mode"><option value="squad">PenGuru Squad</option><option value="chatbird">Single ChatBird</option><option value="codebird">Single CodeBird</option></select></label>
       <label>Route for next request<select id="route"><option value="">Automatic</option><option>CHAT</option><option>CODE</option><option>ASK</option></select></label>
     </div>
-    <p class="hint">Runs on this phone. No Nuxel server, API URL or token is required. Voice transcripts are sent automatically; saying “Penguru” first works in every mic mode and strips the wake word. Say “Penguru chat” or “Penguru code” to force ChatBird or CodeBird. Generated code is never run automatically.</p>
+    <p class="hint">PenGuru is a virtual penguin: the most advanced AI subsystem of NUXAI, originally designed for Nuxel and now running on this Android phone. No Nuxel server, API URL or token is required. Voice transcripts are sent automatically; saying “Penguru” first works in every mic mode and strips the wake word. Say “Penguru chat” or “Penguru code” to force ChatBird or CodeBird. Generated code is never run automatically.</p>
     <p id="wake-live" class="hint" role="status" hidden></p>
     <div id="messages" aria-live="polite"></div>
     <form id="compose">
@@ -162,7 +163,7 @@
     <p class="hint">The always-available endpointing is an adaptive RMS voice-activity detector. Optional <strong>Silero VAD</strong> and <strong>RNNoise</strong> packages are listed in the Model library; Android's built-in NoiseSuppressor is used automatically when present. <strong>Whisper tiny.en</strong> is the offline fallback recognizer and is listed both under On-device dependencies (bundled engine) and Model library (downloadable model).</p>
 
     <h3>Talkback · spoken answers</h3>
-    <p class="hint">Talkback reads PenGuru's answers aloud using an installed Android TextToSpeech engine. It works immediately with the phone's system voices. If the phone exposes Piper or Spark-TTS as an Android TTS engine, it appears in the engine list below. The pinned Spark-TTS and Kokoro packages are also in the Model library for the on-device neural voice runtime.</p>
+    <p class="hint">Talkback reads PenGuru's answers aloud using an installed Android TextToSpeech engine. While SonarBird background listening is running, the foreground service owns the voice engine, so answers are still spoken with the screen off or PenGuru behind another app. It works immediately with the phone's system voices. If the phone exposes Piper or Spark-TTS as an Android TTS engine, it appears in the engine list below. The pinned Spark-TTS and Kokoro packages are also in the Model library for the on-device neural voice runtime.</p>
     <label class="toggle"><input id="talkback-enabled" type="checkbox"> Read PenGuru answers aloud</label>
     <label>Android talkback engine
       <select id="talkback-engine"><option value="">System default engine</option></select>
@@ -178,7 +179,7 @@
     <p id="talkback-status" role="status">Checking the Android talkback engine…</p>
 
     <h3>SonarBird background listening</h3>
-    <p class="hint">Keep PenGuru on duty after you leave the app. A persistent notification shows that the microphone is in use; say <strong>“Penguru”</strong> and then your sentence. The notification shows the partial transcript live and the sentence is finalised as soon as the adaptive VAD detects that you stopped talking. Say <strong>“Penguru stop”</strong> (or tap the notification action) to stop the listener, <strong>“Penguru send”</strong> to send the sentence captured so far, and <strong>“Penguru chat”</strong> / <strong>“Penguru code”</strong> to force ChatBird or CodeBird for the next request. If the phone has no Android speech service, SonarBird falls back to the bundled Whisper tiny.en model when it is installed. The phone's Android speech service handles the audio (it may use the network); PenGuru does not send it to a Nuxel host. Android may stop the listener when battery saver is aggressive — the battery exemption below prevents that.</p>
+    <p class="hint">Keep PenGuru on duty after you leave the app. A persistent notification shows that the microphone is in use; say <strong>“Penguru”</strong> and then your sentence. The notification shows the partial transcript live and the sentence is finalised as soon as the adaptive VAD detects that you stopped talking. The completed answer is spoken by the foreground service through talkback, and the microphone re-arms after it finishes so you can reply without repeating the wake word. Say <strong>“Penguru stop”</strong> (or tap the notification action) to stop the listener, <strong>“Penguru send”</strong> to send the sentence captured so far, and <strong>“Penguru chat”</strong> / <strong>“Penguru code”</strong> to force ChatBird or CodeBird for the next request. If the phone has no Android speech service, SonarBird falls back to the bundled Whisper tiny.en model when it is installed. The phone's Android speech service handles the audio (it may use the network); PenGuru does not send it to a Nuxel host. Android may stop the listener when battery saver is aggressive — the battery exemption below prevents that.</p>
     <div class="controls">
       <button id="wake-service-start" type="button">Start background listening</button>
       <button id="wake-service-stop" type="button" disabled>Stop background listening</button>

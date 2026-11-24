@@ -90,7 +90,8 @@ public class WakeWordService extends Service {
             if (destroyed) {
                 return;
             }
-            if (running && !paused && !inAppSpeech && !listening && !restartQueued) {
+            if (running && !paused && !inAppSpeech && !speaking
+                    && !listening && !restartQueued) {
                 lastError = "Listener watchdog restarted recognition";
                 beginListening();
             }
@@ -128,6 +129,12 @@ public class WakeWordService extends Service {
     private String capturedMode = "";
     private long commandBufferAt;
     private boolean voiceStopRequested;
+    // Reply talkback lives in this foreground service, not the Activity, so an
+    // answer is spoken even when PenGuru is not on screen. Recognition is
+    // stopped while the engine talks and re-armed afterwards so the owner can
+    // answer without repeating the wake word.
+    private TalkbackEngine talkback;
+    private boolean speaking;
 
     public static boolean isRunning() {
         return running;
@@ -221,6 +228,57 @@ public class WakeWordService extends Service {
         return service == null || service.destroyed;
     }
 
+    /**
+     * Speak an assistant answer from the persistent listener. MainActivity
+     * routes every talkback request here while SonarBird is running, so the
+     * answer is voiced even when the Activity is stopped, invisible, or was
+     * never brought to the foreground after a wake-word launch.
+     */
+    public static boolean speakReply(Context context, String text) {
+        WakeWordService service = instance;
+        if (service == null || !running || service.destroyed) {
+            return false;
+        }
+        final String value = text == null ? "" : text.trim();
+        if (value.isEmpty()) {
+            return false;
+        }
+        service.handler.post(() -> service.speakReplyOnMain(value));
+        return true;
+    }
+
+    public static void stopSpeaking() {
+        WakeWordService service = instance;
+        if (service != null && !service.destroyed) {
+            service.handler.post(service::stopSpeakingOnMain);
+        }
+    }
+
+    public static String talkbackStatusJson() {
+        WakeWordService service = instance;
+        return service == null || service.destroyed || service.talkback == null
+                ? null : service.talkback.statusJson();
+    }
+
+    public static String talkbackEnginesJson() {
+        WakeWordService service = instance;
+        return service == null || service.destroyed || service.talkback == null
+                ? null : service.talkback.enginesJson();
+    }
+
+    public static boolean configureTalkback(String optionsJson) {
+        WakeWordService service = instance;
+        if (service == null || service.destroyed || service.talkback == null) {
+            return false;
+        }
+        return service.talkback.configure(optionsJson);
+    }
+
+    public static boolean isSpeaking() {
+        WakeWordService service = instance;
+        return service != null && service.speaking;
+    }
+
     public static String statusJson(Context context) {
         JSONObject out = new JSONObject();
         try {
@@ -239,6 +297,9 @@ public class WakeWordService extends Service {
             out.put("awaiting_command", service != null && service.awaitingCommand);
             out.put("handoff", service != null && service.stoppingForHandoff);
             out.put("in_app_speech", inAppSpeech);
+            out.put("speaking", service != null && service.speaking);
+            out.put("talkback_ready", service != null && service.talkback != null
+                    && service.talkback.isReady());
             out.put("last_error", service == null || service.stayingQuiet ? "" : service.lastError);
             out.put("last_heard", service == null ? "" : service.lastHeard);
             out.put("last_partial", service == null ? "" : service.commandBuffer);
@@ -299,6 +360,7 @@ public class WakeWordService extends Service {
         instance = this;
         running = true;
         destroyed = false;
+        talkback = new TalkbackEngine(this, this::onTalkbackState);
         createChannel();
         acquireWakeLock();
         handler.postDelayed(healthCheck, 15000L);
@@ -356,7 +418,12 @@ public class WakeWordService extends Service {
         destroyed = true;
         running = false;
         instance = null;
+        speaking = false;
         stopRecognizer();
+        if (talkback != null) {
+            talkback.shutdown();
+            talkback = null;
+        }
         handler.removeCallbacksAndMessages(null);
         releaseWakeLock();
         stopForeground(true);
@@ -461,6 +528,7 @@ public class WakeWordService extends Service {
                 : new Notification.Builder(this);
         String title = inAppSpeech
                 ? "SonarBird paused"
+                : speaking ? "PenGuru is speaking"
                 : paused || stoppingForHandoff ? "PenGuru request ready"
                 : "SonarBird is listening";
         builder.setContentTitle(title)
@@ -496,6 +564,111 @@ public class WakeWordService extends Service {
         }
     }
 
+    /* ------------------------------------------------------------ talkback */
+
+    /**
+     * Speak a completed answer while the listener owns the microphone. The
+     * recognizer is torn down first so PenGuru does not hear its own voice,
+     * then a short follow-up window is opened when the utterance finishes.
+     */
+    private void speakReplyOnMain(String text) {
+        if (destroyed || talkback == null) {
+            return;
+        }
+        final String value = text == null ? "" : text.trim();
+        if (value.isEmpty()) {
+            return;
+        }
+        // A new answer supersedes any sentence still being captured.
+        speaking = true;
+        restartQueued = false;
+        awaitingCommand = false;
+        commandBuffer = "";
+        capturedMode = "";
+        lastPartial = "";
+        cancelPendingPartial();
+        stopRecognizer();
+        listening = false;
+        updateNotification("Speaking the answer · listening resumes after");
+        // Give Android a moment to release the microphone before the voice
+        // engine starts, otherwise the first syllable can be captured by the
+        // recognizer and trigger a spurious wake command.
+        handler.postDelayed(() -> {
+            if (destroyed || !speaking) {
+                return;
+            }
+            if (!talkback.speak(value)) {
+                lastError = "Talkback is unavailable on this phone";
+                speaking = false;
+                if (!paused && !inAppSpeech) {
+                    awaitingCommand = true;
+                    awaitingSince = System.currentTimeMillis();
+                    updateNotification("Talkback unavailable · microphone open");
+                    scheduleNext(400L);
+                }
+            }
+        }, 260L);
+    }
+
+    private void onTalkbackState(String state) {
+        if (destroyed) {
+            return;
+        }
+        if ("speaking".equals(state)) {
+            speaking = true;
+            updateNotification("Speaking the answer · listening resumes after");
+            return;
+        }
+        if ("idle".equals(state) || "error".equals(state)
+                || "unavailable".equals(state)) {
+            finishSpeaking();
+        }
+    }
+
+    private void finishSpeaking() {
+        if (!speaking) {
+            return;
+        }
+        speaking = false;
+        if (destroyed) {
+            return;
+        }
+        if (voiceStopRequested) {
+            updateNotification("Stopped listening by voice command");
+            return;
+        }
+        if (paused || inAppSpeech) {
+            updateNotification(inAppSpeech
+                    ? "Paused while the in-app microphone is in use"
+                    : "Listening paused");
+            return;
+        }
+        // Interactive follow-up: the owner can answer the spoken reply without
+        // saying "Penguru" again. The next wake word still resets this window.
+        awaitingCommand = true;
+        awaitingSince = System.currentTimeMillis();
+        capturedMode = "";
+        commandBuffer = "";
+        lastPartial = "";
+        updateNotification("Listening for your reply · say anything, or “Penguru stop”");
+        scheduleNext(450L);
+    }
+
+    private void stopSpeakingOnMain() {
+        speaking = false;
+        if (talkback != null) {
+            talkback.stop();
+        }
+        if (!destroyed) {
+            updateNotification(paused || inAppSpeech
+                    ? "Listening paused"
+                    : "Listening for “Penguru” · say it, then your message");
+            if (!paused && !inAppSpeech) {
+                scheduleNext(350L);
+            }
+        }
+    }
+
     private void beginListening() {
         restartQueued = false;
         stoppingForHandoff = false;
@@ -505,7 +678,7 @@ public class WakeWordService extends Service {
             inAppSpeech = false;
             paused = false;
         }
-        if (destroyed || paused || inAppSpeech) {
+        if (destroyed || paused || inAppSpeech || speaking) {
             return;
         }
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
@@ -686,7 +859,7 @@ public class WakeWordService extends Service {
     private void beginWhisperListening() {
         restartQueued = false;
         stoppingForHandoff = false;
-        if (destroyed || paused || inAppSpeech) {
+        if (destroyed || paused || inAppSpeech || speaking) {
             return;
         }
         if (!WhisperRecognizer.available(this)) {
@@ -773,7 +946,7 @@ public class WakeWordService extends Service {
         restartQueued = true;
         handler.postDelayed(() -> {
             restartQueued = false;
-            if (!destroyed && !paused && !inAppSpeech) {
+            if (!destroyed && !paused && !inAppSpeech && !speaking) {
                 beginListening();
             }
         }, delayMillis);
@@ -1353,7 +1526,12 @@ public class WakeWordService extends Service {
         destroyed = true;
         running = false;
         restartQueued = false;
+        speaking = false;
         stopRecognizer();
+        if (talkback != null) {
+            talkback.shutdown();
+            talkback = null;
+        }
         handler.removeCallbacksAndMessages(null);
         releaseWakeLock();
         stopForeground(true);
