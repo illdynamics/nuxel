@@ -2,6 +2,30 @@
 
 All notable changes to the Nuxel Phone OS repository are documented here.
 
+## [v0.9.7-beta] - 2026-11-24
+
+- Fix the Silero VAD install 404: the pinned file is
+  `src/silero_vad/data/silero_vad.onnx` in `snakers4/silero-vad`, not
+  `src/silero_vad.onnx`. Update the size (2,204,103 bytes) and SHA-256
+  (`f6f4407b41e05e277e7f5cfd9b9ae957b1dfe763c6076a934734c0b448e09b31`).
+- Make voice transcription work without Google/vendor speech services. Bundle
+  whisper.cpp `v1.9.6` as `libwhisper-cli.so` for `arm64-v8a` and `x86_64`,
+  extracted by Android into its executable native-library directory. PenGuru
+  records 16 kHz PCM with `AudioRecord`, endpoints with the existing adaptive
+  RMS detector, and transcribes locally with the downloaded Whisper tiny.en
+  model. Android `SpeechRecognizer` remains the fast primary path; Whisper is
+  offered explicitly in the speech-engine picker and is used automatically when
+  no recognizer exists or Android returns “no speech” twice.
+- Add Whisper to both lists: **On-device dependencies** now shows the bundled
+  whisper.cpp engine, and **Model library** names the download
+  **Whisper · tiny.en speech recognition (SonarBird Voice)**. The 77.7 MB
+  `ggml-tiny.en.bin` model keeps its pinned revision and SHA-256.
+- Add actionable `whisper_model_missing`, `whisper_runtime_missing`,
+  `whisper_audio_unavailable`, `whisper_timeout` and `whisper_failed` messages,
+  and show Whisper readiness in Voice diagnostics.
+- Rebuild PenGuru Squad 0.9.7-beta (`versionCode=907`) with the model catalog,
+  app assets, native whisper engine and checksums updated.
+
 ## [v0.9.6-beta] - 2026-11-24
 
 - PenGuru Android 0.9.6-beta: replace the fixed 2.5-second voice timeout with

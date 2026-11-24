@@ -87,6 +87,19 @@ echo "==> d8"
 echo "==> package"
 cp "$BUILD/base.apk" "$BUILD/unaligned.apk"
 (cd "$BUILD/dex" && zip -q "$BUILD/unaligned.apk" classes.dex)
+# The bundled whisper.cpp CLI is packaged as libwhisper-cli.so so Android
+# extracts it into the read-only nativeLibraryDir (executing binaries from
+# writable app data is blocked on Android 10+). Keep the Unix mode executable
+# inside the archive; PackageManager preserves it on extraction.
+for abi in arm64-v8a x86_64; do
+  src="$HERE/jniLibs/$abi/libwhisper-cli.so"
+  test -x "$src" || { echo "Missing bundled Whisper engine: $src" >&2; exit 2; }
+  dest="$BUILD/lib/$abi/libwhisper-cli.so"
+  mkdir -p "$(dirname "$dest")"
+  cp "$src" "$dest"
+  chmod 755 "$dest"
+  (cd "$BUILD" && zip -q "$BUILD/unaligned.apk" "lib/$abi/libwhisper-cli.so")
+done
 "$BT/zipalign" -f 4 "$BUILD/unaligned.apk" "$BUILD/aligned.apk"
 
 # Keep the debug identity outside the disposable build directory so repeated
@@ -106,7 +119,7 @@ APK="$OUTDIR/penguru-squad-debug.apk"
 
 echo "==> verify"
 "$BT/apksigner" verify --verbose --print-certs "$APK" | sed -n '1,12p'
-"$BT/aapt2" dump badging "$APK" | grep -E "^(package|application-label|sdkVersion|targetSdkVersion|launchable-activity)" | head -8
+"$BT/aapt2" dump badging "$APK" | grep -E "^(package|application-label|sdkVersion|targetSdkVersion|native-code|launchable-activity)" | head -8
 ( cd "$(dirname "$APK")" && sha256sum "$(basename "$APK")" > SHA256SUMS )
 echo "APK: $APK"
 cat "$OUTDIR/SHA256SUMS"

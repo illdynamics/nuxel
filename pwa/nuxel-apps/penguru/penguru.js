@@ -197,7 +197,7 @@ function populateSpeechEngines() {
   };
   if ($('speech-engine-status')) {
     $('speech-engine-status').textContent = engines.length > 1
-      ? engines.length + ' recognizers found. GrapheneOS / Google / vendor engines can be chosen here.'
+      ? engines.length + ' speech engines found. The bundled Whisper engine works offline; GrapheneOS / Google / vendor recognizers can also be chosen.'
       : 'Only the system default recognizer was found. Install a speech-recognition service to add more choices.';
   }
 }
@@ -216,6 +216,9 @@ function updateVoiceDiagnostics() {
     : 'Silero VAD package not installed';
   const rnnoise = state.native_rnnoise_installed ? 'RNNoise package installed'
     : 'RNNoise package not installed';
+  const whisper = state.whisper_ready
+    ? 'Whisper offline engine ready'
+    : 'Whisper offline engine needs the tiny.en model';
   $('voice-diagnostics').textContent = [
     'VAD: ' + (state.vad || 'off') + ' · end-of-speech ' + ((state.end_silence_ms || 0) / 1000).toFixed(2) + ' s',
     noise,
@@ -223,7 +226,8 @@ function updateVoiceDiagnostics() {
     state.automatic_gain_control ? 'AGC available' : 'no AGC',
     silero,
     rnnoise,
-    state.engine ? 'recognizer: ' + state.engine : 'recognizer: system default'
+    whisper,
+    state.engine ? 'speech engine: ' + state.engine : 'speech engine: system default'
   ].join(' · ');
 }
 

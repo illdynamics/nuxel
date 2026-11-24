@@ -15,8 +15,11 @@ the old `penguru` RPC namespace and delegates Android-only work to the
   All files access is granted) or app storage;
 - llama.cpp and ONNX Runtime installers download, verify and unpack in a
   foreground service, so screen-off does not interrupt them;
-- Android `SpeechRecognizer` supplies foreground microphone transcripts;
-  every session has a native watchdog and an explicit microphone release;
+- Android `SpeechRecognizer` supplies foreground microphone transcripts when
+  the phone has a speech service; a bundled whisper.cpp engine transcribes
+  locally with the downloaded Whisper tiny.en model when no recognizer is
+  installed or Android keeps returning "no speech". Every session has a native
+  watchdog and an explicit microphone release;
 - a microphone foreground service keeps a persistent SonarBird listener for
   the “Penguru” wake word while the app is in the background;
 - on launch the app checks microphone, notification, battery-optimization and
@@ -85,10 +88,10 @@ token, launcher or root access.
 | Feature | How it works |
 |---|---|
 | Conversation | Local routing plus a built-in responder (device status, code outlines, clarifying questions, chat). |
-| Model library | Shows the pinned ChatBird, CodeBird, SonarBird MiniLM and Voice tiny.en packages, the Spark-TTS 0.5B and Kokoro-82M talkback voice packages, and optional **Silero VAD ONNX** and **RNNoise 0.2** voice components, with **Download to this phone**. |
+| Model library | Shows the pinned ChatBird, CodeBird, SonarBird MiniLM and **Whisper · tiny.en speech recognition** packages, the Spark-TTS 0.5B and Kokoro-82M talkback voice packages, and optional **Silero VAD ONNX** and **RNNoise 0.2** voice components, with **Download to this phone**. The Silero card now uses the real pinned upstream path (`src/silero_vad/data/silero_vad.onnx`); the previous `src/silero_vad.onnx` path returned HTTP 404. |
 | Downloads | `DownloadService` (a `dataSync` foreground service) streams from Hugging Face/GitHub, resumes `.part` files, verifies the pinned SHA-256, and writes an `installed.json` marker. It holds a partial wake lock and Wi-Fi lock so locking the screen does not pause or interrupt the transfer. |
 | Runtimes | **Settings → On-device dependencies** installs llama.cpp arm64, llama.cpp Snapdragon/OpenCL, and ONNX Runtime Android (AAR), unpacking tar.gz/zip. An interrupted job resumes from the persisted spec after a rebuild or process restart. |
-| Voice | Android `SpeechRecognizer` with an adaptive RMS voice-activity detector. The Conversation default is **tap to talk, tap again to stop, transcribe and send**. Settings offers `toggle`, `vad` (auto-send when you stop talking; 0.5–2.5 s end-of-speech window) and `fixed` (record 5 seconds, then send). **Speak a message** always records for five seconds and sends the whole window. The engine picker lists every installed Android recognizer (GrapheneOS / Google / vendor), so the recognizer can be selected explicitly. Voice commands (`stop`, `cancel`, `never mind`, `send`, `send it`, `Penguru stop`, `Penguru send`) work in the foreground and in SonarBird. Noise suppression / AGC / echo cancellation are reported through Android `NoiseSuppressor`, and optional Silero VAD / RNNoise packages are downloadable. Partial hypotheses are kept, the best partial is sent if the final result is lost, and busy/client sessions retry with a fresh recognizer. |
+| Voice | Android `SpeechRecognizer` with an adaptive RMS voice-activity detector. The Conversation default is **tap to talk, tap again to stop, transcribe and send**. Settings offers `toggle`, `vad` (auto-send when you stop talking; 0.5–2.5 s end-of-speech window) and `fixed` (record 5 seconds, then send). **Speak a message** always records for five seconds and sends the whole window. The engine picker lists every installed Android recognizer (GrapheneOS / Google / vendor) **and the bundled offline Whisper engine**. When no recognizer exists, or Android returns no speech twice, PenGuru records 16 kHz PCM with `AudioRecord` and transcribes it locally through the bundled whisper.cpp `tiny.en` path after the Whisper model is downloaded. Voice commands (`stop`, `cancel`, `never mind`, `send`, `send it`, `Penguru stop`, `Penguru send`) work in the foreground and in SonarBird. Noise suppression / AGC / echo cancellation are reported through Android `NoiseSuppressor`, and optional Silero VAD / RNNoise packages are downloadable. Partial hypotheses are kept, the best partial is sent if the final result is lost, and busy/client sessions retry with a fresh recognizer. |
 | Background listening | **Settings → SonarBird background listening** starts a microphone foreground service with a persistent notification. Say “Penguru <question>” in one go, or say “Penguru” alone and then the next sentence; common renderings such as “Peng Guru”, “Pen Guru”, “Penguro”, “Pinguru” and “Panguru” are accepted. The notification shows the live partial sentence and finishes as soon as the adaptive VAD detects that you stopped talking. Say **“Penguru stop”** to stop the listener, **“Penguru send”** to send the captured sentence, or use the notification's **Send now** / **Stop listening** actions. SonarBird stays armed while PenGuru is open and pauses only while the in-app microphone records. Each recognizer session has its own token and error backoff, so stale callbacks no longer create competing sessions. Boot/package-replaced receivers re-arm an enabled listener. |
 | Talkback | **Conversation → Talkback** and **Settings → Talkback · spoken answers** read each completed assistant answer aloud through an installed Android TextToSpeech engine. The engine, speech rate and pitch are configurable; the Test button speaks a sample. No download is needed. The pinned Spark-TTS and Kokoro packages are staged for the future on-device neural voice runtime. |
 | Permissions | On launch the app requests microphone and notification access, restores a previously enabled listener, and prompts once a week for the battery-optimization exemption and All files access until granted. |
@@ -115,6 +118,7 @@ automatically when the grant is enabled.
 
 | Runtime | Source | Size | SHA-256 |
 |---|---|---:|---|
+| whisper.cpp Android speech engine | Bundled in this APK from ggml-org/whisper.cpp `v1.9.6` (arm64-v8a + x86_64) | 4.7 MB | in `jniLibs/README.md` |
 | llama.cpp Android arm64 | ggml-org/llama.cpp release `b12675` | 82.5 MB | `fbe76190…58f6c` |
 | llama.cpp Snapdragon/OpenCL | ggml-org/llama.cpp release `b12675` | 68.6 MB | `bdd94b31…7ede` |
 | ONNX Runtime Android 1.20.0 | Maven Central AAR | 27.9 MB | `07a8f71e…2027` |
@@ -147,6 +151,8 @@ bridge must allow the APK origin for CORS; the current
 - `pwa/nuxel-apps/penguru/manifest.json` and `app.json`
 - `pwa/nuxel-common/bridge.js`, `bridge-version.json`, `theme.css`
 - `assets/nuxel-penguru-squad.png` as the launcher/manifest icon
+- `jniLibs/{arm64-v8a,x86_64}/libwhisper-cli.so` — bundled whisper.cpp
+  `v1.9.6` speech engine (MIT); its model is downloaded separately
 
 ## Verification performed
 
@@ -157,8 +163,15 @@ bridge must allow the APK origin for CORS; the current
   engine: status, model cards, model download spec (pinned URL/SHA-256),
   download-status → installed transition, runtime install spec, SYSTEM and CODE
   replies, and diagnostics.
-- APK rebuilt, `apksigner verify` shows v2 + v3 signatures, `versionCode=905`,
-  `versionName=0.9.6-beta`.
+- APK rebuilt, `apksigner verify` shows v2 + v3 signatures, `versionCode=907`,
+  `versionName=0.9.7-beta`.
+- The bundled x86_64 `whisper-cli` transcribed the whisper.cpp `jfk.wav` sample
+  on the API 35 emulator: “And so my fellow Americans ask not what your country
+  can do for you, ask what you can do for your country.” (4.8 s for 11 s of
+  audio, 2 threads). The same binary can be executed by the APK's UID from the
+  extracted `nativeLibraryDir`.
+- The Silero VAD URL now returns HTTP 200 and the pinned 2,204,103-byte file
+  matches SHA-256 `f6f4407b…09b31`.
 - API 35 emulator checks: launch-time microphone/notification prompts, the
   battery dialog, the All files access dialog, a screen-off download that
   completed in the `dataSync` foreground service, and a full

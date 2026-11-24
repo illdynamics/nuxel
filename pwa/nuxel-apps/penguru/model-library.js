@@ -128,7 +128,7 @@ export function modelLibrary(container, call) {
         };
         article.append(label, download, remove, cancel, progress, status);
         if (card.model_id !== 'sonarbird'
-            && !['voice_activity', 'noise_suppression', 'talkback_voice'].includes(card.role)
+            && !['voice_activity', 'noise_suppression', 'talkback_voice', 'speech_recognition'].includes(card.role)
             && !card.variants.some(item => String(item.engine || '').includes('tts'))) article.append(override);
       }
       container.append(article);

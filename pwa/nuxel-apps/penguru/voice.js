@@ -277,6 +277,17 @@ export function voiceControls(call, available, onText) {
         return 'The phone is switching microphones. PenGuru is retrying automatically — keep the app open for a moment.';
       case 'no_speech_detected':
         return 'No speech detected. Tap the mic and try again.';
+      case 'whisper_model_missing':
+        return 'Whisper is not ready. Open Model library → Whisper · tiny.en speech recognition and download it to this phone.';
+      case 'whisper_runtime_missing':
+        return 'The bundled Whisper speech engine is missing from this APK. Reinstall the latest PenGuru APK.';
+      case 'whisper_audio_unavailable':
+      case 'whisper_capture_failed':
+        return 'Whisper could not open the microphone. Close other voice apps and tap the mic again.';
+      case 'whisper_timeout':
+        return 'Whisper took too long to transcribe. Try a shorter sentence.';
+      case 'whisper_failed':
+        return 'Whisper could not transcribe that recording. Tap the mic and try again.';
       case 'speech_timeout':
         return 'The microphone timed out and has been released. Try again.';
       default:
@@ -420,9 +431,9 @@ export function voiceControls(call, available, onText) {
     }
     // Native endpointing is authoritative. This timer only releases the UI if
     // the WebView or bridge disappears.
-    const fallback = nextMode === 'fixed' ? FIXED_RECORD_MS + 12000
-      : nextMode === 'vad' ? 32000
-      : nextMode === 'wake' || nextMode === 'followup' ? 28000 : 100000;
+    const fallback = nextMode === 'fixed' ? FIXED_RECORD_MS + 22000
+      : nextMode === 'vad' ? 45000
+      : nextMode === 'wake' || nextMode === 'followup' ? 35000 : 125000;
     timer = setTimeout(() => {
       if (!active || own !== epoch) return;
       finishNow('timeout');

@@ -1,17 +1,59 @@
 # PenGuru Squad — Android APK Port Verification Report
 
-**Date:** 2026-11-23  
-**Branch checked:** `feat/android-penguru-squad`  
-**HEAD:** `fc0cbc1c718aed8c324542cc425f940d5c9aea9c` — `feat(android): package PenGuru Squad APK with all settings in-app`  
-**Working tree:** 15 tracked files modified, plus this report and `QUICKSTART.md`  
-**Artifact:** `dist/android/penguru-squad-debug.apk`  
-**SHA-256:** `be8e5b2381c81411ccae5f6b529f33d8999f6e893e6dcef8d7d644dc3e5915e8`  
-**Package/version:** `org.nuxel.penguru` / `versionCode=809`, `versionName=0.8.9-beta`  
-**Min/target SDK:** 26 / 35  
-**Signing:** debug identity, APK Signature Scheme v2 + v3 verified  
+**Date:** 2026-11-24
+**Branch checked:** `feat/android-penguru-squad`
+**HEAD:** v0.9.7-beta follow-up on `feat/android-penguru-squad`
+**Working tree:** v0.9.7 Whisper fallback, Silero URL repair and rebuilt APK
+**Artifact:** `dist/android/penguru-squad-debug.apk`
+**SHA-256:** `c8105d0b2b3d8b3326b17a0871407affe92c4c3816c0daedc0b0620ad9f44e9d`
+**Package/version:** `org.nuxel.penguru` / `versionCode=907`, `versionName=0.9.7-beta`
+**Min/target SDK:** 26 / 35
+**Signing:** debug identity, APK Signature Scheme v2 + v3 verified
 **Verification device:** headless Android 15 (API 35) x86_64 emulator
 
 ---
+
+## v0.9.7-beta — Whisper fallback and Silero 404 repair
+
+- **Date:** 2026-11-24
+- **Artifact:** `dist/android/penguru-squad-debug.apk`
+- **SHA-256:** `c8105d0b2b3d8b3326b17a0871407affe92c4c3816c0daedc0b0620ad9f44e9d`
+- **Version:** `0.9.7-beta` (`versionCode=907`)
+- **Size:** 3,758,607 bytes
+- **Min/target SDK:** 26 / 35
+- **Signing:** debug identity, APK Signature Scheme v2 + v3 verified
+- **Native code:** `arm64-v8a` + `x86_64`
+
+  **Silero VAD 404 fixed.** The pinned upstream path was wrong. The file is
+  `src/silero_vad/data/silero_vad.onnx`, not `src/silero_vad.onnx`. The card now
+  pins 2,204,103 bytes and SHA-256
+  `f6f4407b41e05e277e7f5cfd9b9ae957b1dfe763c6076a934734c0b448e09b31`.
+  Verified on the API 35 emulator through the app's `DownloadService`: job
+  `model-silero-vad-silero-vad-onnx-…` reached `ready`, received 2,204,103
+  bytes, and installed at `…/Models/silero-vad/silero-vad-onnx`.
+
+  **Whisper is now both an install-list and download-list item.**
+  Settings → On-device dependencies shows **Whisper.cpp · on-device speech
+  engine**, bundled in this APK for `arm64-v8a` and `x86_64`. Model library
+  shows **Whisper · tiny.en speech recognition (SonarBird Voice)** with the
+  pinned 77.7 MB `ggml-tiny.en.bin` download.
+
+  **Voice transcription no longer depends on a Google/vendor recognizer.**
+  `WhisperRecognizer` records 16 kHz mono PCM with `AudioRecord`, applies
+  adaptive RMS endpointing, writes a temporary WAV, and runs the bundled
+  whisper.cpp `v1.9.6` CLI against the downloaded model. Android
+  `SpeechRecognizer` remains primary; Whisper is selectable in the speech-engine
+  picker and is used automatically when no recognizer exists or Android returns
+  no speech twice.
+
+  Emulator verification: the bundled `whisper-cli` transcribed the upstream
+  `jfk.wav` sample as “And so my fellow Americans ask not what your country can
+  do for you, ask what you can do for your country.” in 4.8 s (11 s audio,
+  2 threads). The app's own bridge reported `whisper_ready=true`, captured
+  89,600 bytes of silence in `toggle` mode, ran transcription, and returned the
+  expected `no_speech_detected` for the silent input. The extracted
+  `nativeLibraryDir/libwhisper-cli.so` also executed successfully under the
+  APK's UID.
 
 ## v0.9.6-beta — adaptive VAD, tap-to-send and voice commands
 

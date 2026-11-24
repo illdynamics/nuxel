@@ -18,6 +18,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.List;
+import java.util.Locale;
 
 /** Shared voice preferences and Android speech-engine discovery. */
 public final class VoiceSettings {
@@ -29,6 +30,8 @@ public final class VoiceSettings {
     public static final String PREF_NOISE = "noise_suppression";
 
     public static final int DEFAULT_END_SILENCE_MS = 900;
+    /** Persisted engine value for the bundled offline whisper.cpp path. */
+    public static final String ENGINE_WHISPER = "whisper";
 
     private VoiceSettings() { }
 
@@ -80,6 +83,17 @@ public final class VoiceSettings {
                 mode == null ? "auto" : mode.trim()).apply();
     }
 
+    /** True when the owner selected the bundled offline Whisper engine. */
+    public static boolean usesWhisper(Context context) {
+        String raw = engineComponent(context);
+        if (raw == null) {
+            return false;
+        }
+        String value = raw.trim().toLowerCase(Locale.ROOT);
+        return ENGINE_WHISPER.equals(value) || "whisper.cpp".equals(value)
+                || "bundled-whisper".equals(value);
+    }
+
     /** Selected recognizer, or null for the phone's default recognizer. */
     public static ComponentName recognizer(Context context) {
         String raw = engineComponent(context);
@@ -107,6 +121,15 @@ public final class VoiceSettings {
             system.put("package", "");
             system.put("default", true);
             out.put(system);
+
+            JSONObject whisper = new JSONObject();
+            whisper.put("component", ENGINE_WHISPER);
+            whisper.put("label", WhisperRecognizer.available(context)
+                    ? "Whisper · bundled offline (tiny.en ready)"
+                    : "Whisper · bundled offline (download the tiny.en model)");
+            whisper.put("package", "org.nuxel.penguru");
+            whisper.put("default", usesWhisper(context));
+            out.put(whisper);
 
             PackageManager pm = context.getPackageManager();
             Intent intent = new Intent(RecognitionService.SERVICE_INTERFACE);
@@ -166,6 +189,10 @@ public final class VoiceSettings {
                     "model", "silero-vad/silero-vad-onnx"));
             out.put("native_rnnoise_installed", DownloadService.isInstalled(context,
                     "model", "rnnoise/rnnoise-0.2"));
+            out.put("whisper_ready", WhisperRecognizer.available(context));
+            out.put("whisper_runtime", WhisperRecognizer.runtimePath(context));
+            out.put("whisper_model", WhisperRecognizer.modelPath(context));
+            out.put("native_whisper_installed", WhisperRecognizer.available(context));
         } catch (JSONException | RuntimeException error) {
             // primitive values only
         }

@@ -9,12 +9,12 @@ dist/android/penguru-squad-debug.apk
 ```
 
 That is the complete standalone PenGuru Squad Android app (label **PenGuru
-Squad**, package `org.nuxel.penguru`, version `0.9.6-beta` / versionCode
-`906`). There is no other APK to install. The matching checksum is in
+Squad**, package `org.nuxel.penguru`, version `0.9.7-beta` / versionCode
+`907`). There is no other APK to install. The matching checksum is in
 `dist/android/SHA256SUMS`:
 
 ```
-bc7e9e29c34f5d61620c4da9a1d9f5f6d7e6f48cd56d1fd980cd5fa841a19fd2  penguru-squad-debug.apk
+c8105d0b2b3d8b3326b17a0871407affe92c4c3816c0daedc0b0620ad9f44e9d  penguru-squad-debug.apk
 ```
 
 The APK is signed with the repository's stable debug identity, so it installs
@@ -50,8 +50,10 @@ The app no longer asks for a Nuxel API URL or launcher token. It starts an
 - **Model library → Download to this phone** downloads the pinned Hugging Face
   revision directly to the phone, verifies its SHA-256, and records the license
   acknowledgement. Downloads run in a data-sync foreground service and keep
-  going with the screen off.
-- **Settings → On-device dependencies** installs llama.cpp (arm64 or
+  going with the screen off. **Whisper · tiny.en speech recognition** is in the
+  list and powers the bundled offline transcription fallback.
+- **Settings → On-device dependencies** includes the bundled whisper.cpp speech
+  engine (no runtime download) and installs llama.cpp (arm64 or
   Snapdragon/OpenCL) and ONNX Runtime archives, verifies them, and unpacks them.
   An interrupted download resumes from its `.part` file.
 - **Settings → Voice** uses Android's built-in speech recognition, so the

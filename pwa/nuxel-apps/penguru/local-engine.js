@@ -104,16 +104,18 @@ const MODELS = [
       format: 'ONNX',
       quantization: 'FP32 · VAD',
       architecture: 'silero-vad',
-      size_bytes: 223977,
+      size_bytes: 2204103,
       engine: 'onnxruntime',
       source_repo: 'snakers4/silero-vad',
       source_revision: SILERO_VAD_REV,
+      // The ONNX asset lives under src/silero_vad/data/, not src/. The old
+      // path returned HTTP 404 for every install attempt.
       source_url: 'https://raw.githubusercontent.com/snakers4/silero-vad/'
-        + SILERO_VAD_REV + '/src/silero_vad.onnx',
+        + SILERO_VAD_REV + '/src/silero_vad/data/silero_vad.onnx',
       files: [{
         path: 'silero_vad.onnx',
-        size_bytes: 223977,
-        sha256: 'aebb2d9ebe2b348cadde4f07a896d1432d64df71b7c3189bc2fe1a4ca1709499',
+        size_bytes: 2204103,
+        sha256: 'f6f4407b41e05e277e7f5cfd9b9ae957b1dfe763c6076a934734c0b448e09b31',
       }],
       license: {
         spdx: 'MIT',
@@ -234,8 +236,8 @@ const MODELS = [
   },
   {
     model_id: 'sonarbird',
-    name: 'SonarBird · Voice tiny.en',
-    role: 'optional_voice',
+    name: 'Whisper · tiny.en speech recognition (SonarBird Voice)',
+    role: 'speech_recognition',
     variants: [{
       variant_id: 'speech-whisper-tiny-en',
       format: 'WHISPER',
@@ -257,7 +259,7 @@ const MODELS = [
       },
       download_allowed: true,
       download_reason: 'Upstream Whisper tiny.en model, pinned revision.',
-      detail: 'Optional offline speech model for a whisper.cpp runtime. Android speech recognition works without it.',
+      detail: 'Whisper tiny.en is used by the bundled on-device speech engine. Android speech recognition remains the fast primary path; Whisper takes over when no recognizer is installed or it keeps hearing nothing.',
     }],
   },
   {
@@ -311,6 +313,18 @@ const MODELS = [
 ];
 
 const RUNTIMES = [
+  {
+    id: 'whisper.cpp',
+    name: 'Whisper.cpp · on-device speech engine',
+    detail: 'Bundled arm64-v8a + x86_64 whisper-cli v1.9.6 speech engine. Download the Whisper tiny.en model in the Model library; no separate runtime download is needed.',
+    bundled: true,
+    version: 'v1.9.6',
+    url: '',
+    filename: '',
+    size_bytes: 4665944,
+    sha256: '',
+    extract: null,
+  },
   {
     id: 'llama.cpp',
     name: 'llama.cpp for Android arm64',
@@ -575,12 +589,13 @@ export function createLocalEngine() {
 
   function runtimeCatalog() {
     return RUNTIMES.map((runtime) => {
-      const installed = nativeInstalled('runtime', runtime.id,
+      const installed = runtime.bundled ? true : nativeInstalled('runtime', runtime.id,
         [{path: runtime.filename, size: runtime.size_bytes}]);
       return Object.assign({}, runtime, {
         installed,
         status: installed ? 'ready' : 'not_installed',
-        installed_path: installed ? (paths().runtimes || '') + '/' + runtime.id : null,
+        installed_path: runtime.bundled ? 'bundled in this APK'
+          : installed ? (paths().runtimes || '') + '/' + runtime.id : null,
       });
     });
   }
@@ -593,7 +608,11 @@ export function createLocalEngine() {
         if (variant.status === 'ready') ready.push(card.model_id + '/' + variant.variant_id);
       }
     }
-    const speech = !!(host && typeof host.speechAvailable === 'function' && host.speechAvailable());
+    const speech = !!(host && (typeof host.speechInputAvailable === 'function'
+      ? host.speechInputAvailable()
+      : typeof host.speechAvailable === 'function' && host.speechAvailable()));
+    const whisper = !!(host && typeof host.whisperAvailable === 'function'
+      && host.whisperAvailable());
     let wakeWord = false;
     let listening = false;
     if (host && typeof host.wakeServiceStatus === 'function') {
@@ -622,7 +641,8 @@ export function createLocalEngine() {
         providers: { CPU: { status: 'baseline' }, 'GPU/NPU': { status: 'not validated on this device' } },
         network: { workers: 'not required', local_only: true },
         voice: { wake_word: wakeWord, foreground_speech: speech, listening: listening,
-          vad: 'adaptive-rms', noise_suppression: 'system-native' },
+          vad: 'adaptive-rms', noise_suppression: 'system-native', whisper },
+        whisper: { ready: whisper },
         storage: paths(),
       },
     };
@@ -775,11 +795,16 @@ export function createLocalEngine() {
         paths: paths(),
         runtimes: runtimeCatalog(),
         speech: { available: !!(host && host.speechAvailable && host.speechAvailable()) },
+        whisper: host && typeof host.whisperStatus === 'function'
+          ? parseJson(host.whisperStatus(), { ready: false }) : { ready: false },
       };
     }
     if (op === 'install_runtime') {
       const runtime = RUNTIMES.find((item) => item.id === params.id);
       if (!runtime) return { ok: false, error: 'unknown_runtime' };
+      if (runtime.bundled) {
+        return { ok: true, bundled: true, runtime: runtimeCatalog().find((item) => item.id === runtime.id) };
+      }
       return startRemoteJob('runtime', runtime.id, [{
         url: runtime.url,
         path: runtime.filename,

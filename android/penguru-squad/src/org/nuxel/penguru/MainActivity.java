@@ -135,6 +135,8 @@ public class MainActivity extends Activity {
     private boolean pendingSpeechCommands = true;
     private String speechEngineLabel = "";
     private VoiceActivityDetector speechVad;
+    private WhisperRecognizer whisperRecognizer;
+    private boolean whisperRunning;
     private long speechStartedAt;
     private boolean speechFinalizeRequested;
     // In tap-to-talk mode a recognizer may end on its own before the second
@@ -267,6 +269,7 @@ public class MainActivity extends Activity {
         speechRunning = false;
         speechHeldText = "";
         pendingSpeech = false;
+        cancelWhisperSession();
         releaseSpeechRecognizer();
         stopTalkback();
         if (getSharedPreferences(WakeWordService.PREFS, MODE_PRIVATE)
@@ -337,6 +340,7 @@ public class MainActivity extends Activity {
         speechRunning = false;
         speechHeldText = "";
         pendingSpeech = false;
+        cancelWhisperSession();
         mainHandler.removeCallbacksAndMessages(null);
         if (speechRecognizer != null) {
             try {
@@ -868,7 +872,19 @@ public class MainActivity extends Activity {
          *  input activity can return a transcript. */
         @JavascriptInterface
         public boolean speechInputAvailable() {
-            return speechAvailable() || hasSystemSpeechActivity();
+            return speechAvailable() || hasSystemSpeechActivity()
+                    || WhisperRecognizer.available(MainActivity.this);
+        }
+
+        /** True when the bundled whisper.cpp CLI and tiny.en model are ready. */
+        @JavascriptInterface
+        public boolean whisperAvailable() {
+            return WhisperRecognizer.available(MainActivity.this);
+        }
+
+        @JavascriptInterface
+        public String whisperStatus() {
+            return WhisperRecognizer.statusJson(MainActivity.this);
         }
 
         @JavascriptInterface
@@ -882,7 +898,10 @@ public class MainActivity extends Activity {
                     return;
                 }
                 if (!speechAvailable()) {
-                    if (hasSystemSpeechActivity()) {
+                    if (VoiceSettings.usesWhisper(MainActivity.this)
+                            || WhisperRecognizer.available(MainActivity.this)) {
+                        beginSpeech(wake);
+                    } else if (hasSystemSpeechActivity()) {
                         WakeWordService.pauseForActivity(() -> {
                             final int token = ++speechToken;
                             launchSystemSpeech(wake, 0, token);
@@ -913,6 +932,7 @@ public class MainActivity extends Activity {
                 // Invalidate any queued restart so a stop is final even if the
                 // recognizer was still connecting or a permission dialog was open.
                 speechToken++;
+                cancelWhisperSession();
                 releaseSpeechRecognizer();
                 WakeWordService.resumeFromActivity();
             });
@@ -992,6 +1012,8 @@ public class MainActivity extends Activity {
                 out.put("noise", VoiceSettings.noiseMode(MainActivity.this));
                 out.put("speech_available", speechAvailable());
                 out.put("system_voice_input", hasSystemSpeechActivity());
+                out.put("whisper_ready", WhisperRecognizer.available(MainActivity.this));
+                out.put("whisper_model", WhisperRecognizer.modelPath(MainActivity.this));
                 return out.toString();
             } catch (JSONException error) {
                 return "{}";
@@ -1044,6 +1066,10 @@ public class MainActivity extends Activity {
         public void finishSpeechRecognition() {
             runOnUiThread(() -> {
                 final int token = speechToken;
+                if (whisperRunning && whisperRecognizer != null) {
+                    whisperRecognizer.finish();
+                    return;
+                }
                 // The recognizer already ended on its own in tap-to-talk mode:
                 // the second tap sends the held hypothesis.
                 if (!speechHeldText.isEmpty()) {
@@ -1457,6 +1483,7 @@ public class MainActivity extends Activity {
         final int requestToken = ++speechToken;
         speechRunning = false;
         speechFinalizeRequested = false;
+        cancelWhisperSession();
         releaseSpeechRecognizer();
         // The persistent SonarBird listener and this foreground session share
         // the one microphone Android exposes. Wait until the service has
@@ -1470,9 +1497,19 @@ public class MainActivity extends Activity {
                 deliverSpeech("", speechWake, "microphone_permission_denied", requestToken);
                 return;
             }
+            boolean selectedWhisper = VoiceSettings.usesWhisper(MainActivity.this);
+            boolean whisperReady = WhisperRecognizer.available(MainActivity.this);
+            if (selectedWhisper || (!SpeechRecognizer.isRecognitionAvailable(MainActivity.this)
+                    && whisperReady)) {
+                // Bundled whisper.cpp path. This is what makes the microphone
+                // work on de-Googled phones with no Android recognition
+                // service, and it can be selected explicitly in Settings.
+                startWhisperSession(requestToken);
+                return;
+            }
             if (!SpeechRecognizer.isRecognitionAvailable(this) || !ensureSpeechRecognizer()) {
-                // No in-process recognizer (common on de-Googled builds). Use
-                // the system voice-input activity instead of failing silently.
+                // No in-process recognizer and no Whisper model. Use the
+                // system voice-input activity instead of failing silently.
                 launchSystemSpeech(speechWake, speechEndSilenceMs, requestToken);
                 return;
             }
@@ -1579,6 +1616,57 @@ public class MainActivity extends Activity {
         }, maxSpeechMs);
     }
 
+    /**
+     * Start the bundled offline Whisper path for the current speech session.
+     * WhisperRecognizer records PCM with AudioRecord and reports the transcript
+     * through the same deliverSpeech() path as Android's SpeechRecognizer, so
+     * the PWA does not need a second result contract.
+     */
+    private void startWhisperSession(final int token) {
+        if (token != speechToken || isFinishing()) {
+            return;
+        }
+        if (whisperRecognizer == null) {
+            whisperRecognizer = new WhisperRecognizer(this);
+        }
+        final String mode = speechMode;
+        final boolean wake = speechWake;
+        final int silence = ("toggle".equals(mode) || "fixed".equals(mode))
+                ? 0 : Math.max(400, speechEndSilenceMs);
+        final long record = "fixed".equals(mode)
+                ? Math.max(1000L, speechRecordMs) : 0L;
+        final long deadline = modeHardDeadlineMs(mode, speechRecordMs);
+        releaseSpeechRecognizer();
+        speechRunning = true;
+        whisperRunning = true;
+        speechFinalizeRequested = false;
+        speechPartialText = "";
+        speechHeldText = "";
+        speechStartedAt = SystemClock.elapsedRealtime();
+        String error = whisperRecognizer.start(mode, silence, record, deadline,
+                (text, failure) -> mainHandler.post(() -> {
+                    if (token != speechToken || !whisperRunning) {
+                        return;
+                    }
+                    whisperRunning = false;
+                    speechFinalizeRequested = false;
+                    releaseSpeechRecognizer();
+                    deliverSpeech(text == null ? "" : text, wake, failure, token);
+                }));
+        if (error != null) {
+            whisperRunning = false;
+            speechRunning = false;
+            deliverSpeech("", wake, error, token);
+        }
+    }
+
+    private void cancelWhisperSession() {
+        whisperRunning = false;
+        if (whisperRecognizer != null) {
+            whisperRecognizer.cancel();
+        }
+    }
+
     /** Ask the recognizer for its final hypothesis, then fall back to the best
      *  partial so a second mic tap is never stuck waiting on the service. */
     private void requestFinalize(final int token, final long fallbackMs) {
@@ -1624,6 +1712,7 @@ public class MainActivity extends Activity {
             effectiveError = null;
         }
         speechRunning = false;
+        whisperRunning = false;
         speechFinalizeRequested = false;
         speechSilenceMs = 0;
         speechPartialText = "";
@@ -1768,8 +1857,26 @@ public class MainActivity extends Activity {
                 lastSpeechNoMatchAt = now;
                 speechNoMatchCount++;
             }
-            // If the recognizer keeps hearing nothing even though the owner is
-            // speaking, or it fails persistently, offer the visible system
+            // Prefer the fully local whisper.cpp engine over a visible system
+            // dialog when Android's recognizer is missing, broken, or keeps
+            // returning no match. This is the path that works on de-Googled
+            // phones and when the network recognizer is unavailable.
+            if (error != SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS
+                    && (speechNoMatchCount >= 2 || !nothingHeard)
+                    && WhisperRecognizer.available(MainActivity.this)) {
+                speechNoMatchCount = 0;
+                speechRunning = false;
+                speechFinalizeRequested = false;
+                releaseSpeechRecognizer();
+                final int retryToken = speechToken;
+                mainHandler.postDelayed(() -> {
+                    if (retryToken == speechToken && !isFinishing()) {
+                        startWhisperSession(retryToken);
+                    }
+                }, 220L);
+                return;
+            }
+            // If no Whisper model is installed, offer the visible system
             // voice-input activity. Do not do this after a single quiet tap.
             if (error != SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS
                     && (speechNoMatchCount >= 2 || !nothingHeard)

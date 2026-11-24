@@ -93,7 +93,7 @@
 
     <div id="local-panel">
       <h3>On-device dependencies</h3>
-      <p class="hint">Install the runtimes you want to use. Archives are downloaded to <code>Download/PenGuru</code> when All files access is granted (or to app storage otherwise), verified, and unpacked without root. Android's built-in speech recognizer needs no download. Downloads and unpacking continue with the screen off.</p>
+      <p class="hint">Install the runtimes you want to use. Archives are downloaded to <code>Download/PenGuru</code> when All files access is granted (or to app storage otherwise), verified, and unpacked without root. Android's built-in speech recognizer needs no download; the bundled Whisper engine is already installed and only needs the Whisper tiny.en model from the Model library. Downloads and unpacking continue with the screen off.</p>
       <div id="runtimes"></div>
       <h3>Storage</h3>
       <p id="storage-paths" class="hint">Models: …<br>Runtimes: …<br>Exports: Downloads/PenGuru</p>
@@ -118,7 +118,7 @@
     <p class="hint">llama.cpp and ONNX Runtime archives can be installed above. This build also ships a built-in local responder so conversation, routing, device status and voice work immediately without a Nuxel host.</p>
 
     <h3>Voice · on-device speech</h3>
-    <p>Android speech recognition uses the phone's speech service. PenGuru now detects when you actually stop talking with an adaptive RMS voice-activity detector, then transcribes and sends. The default conversation behaviour is <strong>tap to talk, tap again to stop, transcribe and send</strong>. PenGuru never sends audio to a Nuxel host; depending on the phone's recognizer, Android may process speech online.</p>
+    <p>Android speech recognition uses the phone's speech service when one is installed. PenGuru now detects when you actually stop talking with an adaptive RMS voice-activity detector, then transcribes and sends. If the phone has no recognition service, or Android keeps returning “no speech”, the bundled <strong>Whisper tiny.en</strong> engine transcribes locally after you download that model from the Model library. The default conversation behaviour is <strong>tap to talk, tap again to stop, transcribe and send</strong>. PenGuru never sends audio to a Nuxel host; depending on the phone's recognizer, Android may process speech online.</p>
     <div class="controls">
       <button id="voice-talk" type="button">Speak a message · 5 seconds</button>
       <button id="voice-wake" type="button">Listen for “Penguru” while open</button>
@@ -159,7 +159,7 @@
       </select>
     </label>
     <p id="voice-diagnostics" class="hint" role="status">Checking adaptive VAD, noise suppression and optional Silero / RNNoise packages…</p>
-    <p class="hint">The always-available endpointing is an adaptive RMS voice-activity detector. Optional <strong>Silero VAD</strong> and <strong>RNNoise</strong> packages are listed in the Model library; Android's built-in NoiseSuppressor is used automatically when present.</p>
+    <p class="hint">The always-available endpointing is an adaptive RMS voice-activity detector. Optional <strong>Silero VAD</strong> and <strong>RNNoise</strong> packages are listed in the Model library; Android's built-in NoiseSuppressor is used automatically when present. <strong>Whisper tiny.en</strong> is the offline fallback recognizer and is listed both under On-device dependencies (bundled engine) and Model library (downloadable model).</p>
 
     <h3>Talkback · spoken answers</h3>
     <p class="hint">Talkback reads PenGuru's answers aloud using an installed Android TextToSpeech engine. It works immediately with the phone's system voices. If the phone exposes Piper or Spark-TTS as an Android TTS engine, it appears in the engine list below. The pinned Spark-TTS and Kokoro packages are also in the Model library for the on-device neural voice runtime.</p>
