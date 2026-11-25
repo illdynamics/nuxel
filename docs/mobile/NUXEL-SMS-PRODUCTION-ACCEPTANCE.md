@@ -1,5 +1,25 @@
 # Nuxel SMS production acceptance — 2026-11-25
 
+## CodeSeeq Round02 continuation — 2026-11-25
+
+| Gate | Actual result |
+|---|---|
+| Correlation fix | PASS: type-2 sequence correlation and type-3 decode/retain without false attribution |
+| Result diagnostics | PASS: redacted frame type, plen, ack, result, modem ref, correlation, state |
+| Safe reconciliation | PASS: `ResolveSms(3,"superseded")` unblocked, id 3 preserved `unknown` |
+| New authorized `SendSms` | PASS (queued): native id **4** durably `queued`, then gated |
+| Actual modem result | NONE: never transmitted (CS gate refused the denied CS bearer) |
+| Carrier submission | NOT PERFORMED: no evidence-supported SMS bearer |
+| Recipient delivery | NOT VERIFIED |
+| LTE baseline preserved | PASS: data session ACTIVE, native IPv6 on rmnet0 |
+| Installed/running daemon | PASS: matches corrected source, `e439005f...ddf169` |
+
+**SMS production acceptance remains NOT complete.** Blocker: LTE-only network
+mode (`mask=8`) keeps CS registration DENIED, so the CS-domain SMS path has no
+bearer. A real CS/SGs or IMS bearer is required; WCDMA/GSM fallback is an owner
+decision that risks the LTE-only baseline. No speculative changes were made.
+
+
 ## Physical gate update (Round03 result 0x0002) — 2026-11-25
 
 Result 0x0002 root cause established (see `NUXEL-SMS-RESULT-0x0002-REPORT.md`).

@@ -1,5 +1,23 @@
 # Nuxel SMS implementation and evidence
 
+## CodeSeeq Round02 continuation — 2026-11-25
+
+LTE-only network mode (readback `mask=8`) is confirmed as the controllable
+root cause of CS SMS rejection: `NUXEL_NETWORK_MODE=lte` forces LTE-only, CS
+registration stays DENIED, and the CS-domain SMS path has no bearer (raw
+result 2). No speculative domain-byte or network-mode change was made.
+
+Physical state: storage available, DEVICE_READY accepted, SMSC received,
+`registration="cs-denied"`, `ready=false`. `ResolveSms(3,"superseded")` unblocked
+the queue and preserved id 3 as `unknown` with an audit row. One newly
+authorized `SendSms` returned native id **4**, durably `queued`; it was NOT
+transmitted because the CS gate truthfully refuses a submission against the
+denied bearer. LTE baseline preserved (ACTIVE, native IPv6, rmnet0).
+
+Remaining blocker: a real CS/SGs or IMS SMS bearer. Owner decision pending:
+allow WCDMA/GSM fallback (risks LTE-only baseline) or implement SGs/IMS SMS.
+
+
 ## Round03 result-0x0002 root cause — 2026-11-25
 
 Result 0x0002 is decoded: it is a low-level CP CS-domain submission rejection

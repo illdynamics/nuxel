@@ -1,5 +1,22 @@
 # DeepSeek Stage 06 handover — read first
 
+## CodeSeeq Round02 continuation — 2026-11-25
+
+Confirmed the controllable root cause: LTE-only network mode (readback
+`mask=8`, from `NUXEL_NETWORK_MODE=lte`) keeps CS registration DENIED, so the
+CS-domain SMS path has no bearer and reproduces raw result 2. No speculative
+domain-byte or network-mode change was made.
+
+Safe reconciliation `ResolveSms(3,"superseded")` unblocked the queue and
+preserved id 3 as `unknown`. One newly authorized `SendSms` returned native id
+**4**, durably `queued`; the CS gate truthfully refused transmission, so no
+modem result was produced. LTE baseline preserved (ACTIVE, native IPv6).
+
+Remaining blocker for genuine outgoing SMS: a real CS/SGs or IMS bearer.
+Owner decision pending: WCDMA/GSM fallback (risks LTE-only baseline) versus
+SGs/IMS SMS. No merge or push performed.
+
+
 ## SMS Round03 result-0x0002 (DeepSeek) — 2026-11-25
 
 Result 0x0002 was decoded and root-caused against the EFUJ2 vendor RIL. It is
