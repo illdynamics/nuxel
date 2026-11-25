@@ -32,9 +32,16 @@ size_t sms_store_list(struct sms_store *s,uint32_t *ids,size_t cap);
  * the delivered state through a matching TP-ST=0 status report. It is derived
  * from per-message evidence, never latched after a single success. */
 bool sms_store_any_delivered(struct sms_store *s);
-#endif
 /* Safe user-facing reconciliation for an unresolved (unknown) outbound
- * submission. outcome must be "failed" (definitively not delivered) or
- * "delivered" (owner confirmed receipt). This only changes the specific
- * message's parts; it never queues a resend and never posts a delivery report. */
+ * submission. outcome must be "failed" (definitively not delivered),
+ * "delivered" (owner confirmed receipt), or "superseded" (owner authorized a
+ * fresh submission while the original outcome stays unknown). This only
+ * preserves unknown for superseded and writes an audit row; it never
+ * queues a resend and never posts a delivery report. */
 bool sms_store_resolve(struct sms_store *s,uint32_t id,const char *outcome);
+
+bool sms_store_blocked(struct sms_store *s);
+bool sms_store_result(struct sms_store *s,uint32_t candidate,unsigned type,unsigned len,
+                      unsigned ack,unsigned result,unsigned mr,bool correlated,
+                      const char *state,const char *reason);
+#endif

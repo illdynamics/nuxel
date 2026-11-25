@@ -18,6 +18,28 @@ Final state at acceptance: mobile ON/ACTIVE, native IPv6 and translated IPv4 HTT
 
 **DeepSeek owns all remaining SMS, ordinary voice, ABOX call audio, IMS, VoLTE and other telephony work.** None was implemented or exercised here. Existing research below is retained. No merge or push was performed; separate authorization is still required.
 
+## SMS Round02 correlated physical send — 2026-11-25 (DeepSeek continuation)
+
+The corrected native SMS daemon was rebuilt (reproducible hash), all four SMS
+host and AArch64 suites passed, and the daemon was reversibly deployed and
+verified. One owner-authorized physical submission was made through Radio1
+`SendSms` and the full result was captured and durably retained.
+
+Physical outcome: modem rejected the submission with raw result code **2**
+(non-zero), returned MR 158 (not the requested TP-MR), `correlated=false`,
+transitioning native id 3 `queued` → `sending` → `unknown`. The type-3
+unsequenced notification is correctly decoded/persisted but is not correlated
+by modem reference, because EFUJ2's returned MR is not a TP-MR echo. Ids 1 and 2
+remain `unknown`; owner-authorized `superseded` reconciliation links a fresh
+native id without resending or falsely resolving the originals. LTE baseline
+(native IPv6, data session, NM/ZeroTier/SSH) is preserved.
+
+Read [SMS state](NUXEL-SMS-STATE.md) and [SMS production acceptance](NUXEL-SMS-PRODUCTION-ACCEPTANCE.md).
+The demonstrated next blocker is decoding the vendor-specific result code 2
+against the recovered EFUJ2 RIL before any further chargeable attempt. No
+merge or push was performed.
+
+
 ---
 
 ## Finisher handover — 2026-11-25 (supersedes prior deployment notes)

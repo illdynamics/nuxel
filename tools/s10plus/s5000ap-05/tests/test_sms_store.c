@@ -12,6 +12,17 @@ static void state(struct sms_store *s,uint32_t id,const char *expected)
     struct sms_record r;
     CHECK(sms_store_get(s,id,&r));CHECK(!strcmp(r.state,expected));
 }
+static bool retry_link(struct sms_store *s,uint32_t original,uint32_t replacement)
+{
+    sqlite3_stmt *p=NULL;
+    if (sqlite3_prepare_v2(s->db,
+        "SELECT replacement FROM retry_authorizations WHERE original=?",-1,&p,NULL)!=SQLITE_OK)
+        return false;
+    sqlite3_bind_int64(p,1,original);
+    bool ok=sqlite3_step(p)==SQLITE_ROW && sqlite3_column_type(p,0)!=SQLITE_NULL &&
+            (uint32_t)sqlite3_column_int64(p,0)==replacement;
+    sqlite3_finalize(p);return ok;
+}
 int main(void)
 {
     struct sms_store s;struct sms_job job;struct sms_record record;
@@ -19,6 +30,7 @@ int main(void)
     CHECK(!sms_store_any_delivered(&s));
     uint32_t a=0,b=0,received=0;bool changed=false;
     CHECK(sms_store_queue(&s,"+12345678901","hello",&a));
+    CHECK(!sms_store_queue(&s,"+12345678901","hello",&b));
     CHECK(sms_store_next(&s,&job) && job.id==a && job.part==1 && job.total==1);
     uint8_t mr=job.pdu.reference;
     CHECK(sms_store_sending(&s,a,1));state(&s,a,"sending");
@@ -77,8 +89,58 @@ int main(void)
      * resending. It must move out of 'unknown' and become available again. */
     CHECK(sms_store_resolve(&s,a,"failed"));state(&s,a,"failed");
     CHECK(!sms_store_resolve(&s,a,"failed")); /* not unknown anymore */
-    CHECK(!sms_store_resolve(&s,a,"bogus"));  /* only failed/delivered allowed */
+    CHECK(!sms_store_resolve(&s,a,"bogus"));  /* only failed/delivered/superseded allowed */
     uint32_t ids[10];CHECK(sms_store_list(&s,ids,10)>=1 && ids[0]==a);
+    /* Owner-authorized "superseded" outcome: original stays unknown
+     * (not failed, not delivered), yet it is terminal and no longer blocks. */
+    CHECK(sms_store_queue(&s,"+12345678901","uncertain",&a));
+    CHECK(sms_store_sending(&s,a,1));sms_store_close(&s);
+    CHECK(sms_store_open(&s,path));state(&s,a,"unknown");
+    CHECK(sms_store_blocked(&s));
+    CHECK(!sms_store_queue(&s,"+12345678901","uncertain",&b));
+    CHECK(sms_store_resolve(&s,a,"superseded"));state(&s,a,"unknown");
+    CHECK(!sms_store_blocked(&s));
+    CHECK(!sms_store_resolve(&s,a,"superseded"));
+    sms_store_close(&s);CHECK(sms_store_open(&s,path));state(&s,a,"unknown");
+    CHECK(!sms_store_blocked(&s));
+    CHECK(!sms_store_next(&s,&job)); /* superseded is never re-queued */
+    /* Audit row records the owner authorization + residual uncertainty. */
+    sqlite3_stmt *audit=NULL;
+    CHECK(sqlite3_prepare_v2(s.db,"SELECT event FROM audit ORDER BY id DESC LIMIT 1",-1,&audit,NULL)==SQLITE_OK);
+    CHECK(audit && sqlite3_step(audit)==SQLITE_ROW && !strcmp((const char*)sqlite3_column_text(audit,0),"superseded"));
+    sqlite3_finalize(audit);
+    uint32_t original=a;
+    CHECK(sms_store_queue(&s,"+12345678901","uncertain",&a));CHECK(a!=original);
+    CHECK(!sms_store_queue(&s,"+12345678901","uncertain",&b));
+    state(&s,original,"unknown");
+    CHECK(sms_store_next(&s,&job) && job.id==a); /* fresh message now flows */
+
+    /* Multi-round regression: TWO unknown messages share peer+text, one with a
+     * CONSUMED authorization and one with an UNCONSUMED authorization. A fresh
+     * send must link only to the unconsumed one and never be blocked by the
+     * historical consumed row. (Reproduces the real Round02 SendSms refusal.)
+     * Uses a distinct peer so this scenario is isolated from the messages
+     * already created above. */
+    uint32_t r1=0,r2=0,r3=0;
+    CHECK(sms_store_queue(&s,"+15550001001","multi",&r1));         /* round1 */
+    CHECK(sms_store_sending(&s,r1,1));sms_store_close(&s);CHECK(sms_store_open(&s,path));
+    state(&s,r1,"unknown");CHECK(sms_store_blocked(&s));
+    CHECK(sms_store_resolve(&s,r1,"superseded"));                  /* authorizes round2 */
+    state(&s,r1,"unknown");CHECK(!sms_store_blocked(&s));
+    CHECK(sms_store_queue(&s,"+15550001001","multi",&r2));         /* round2 links to r1 */
+    CHECK(r2!=r1 && r2!=0);state(&s,r1,"unknown");
+    CHECK(retry_link(&s,r1,r2));                                    /* r1 now consumed */
+    CHECK(sms_store_sending(&s,r2,1));sms_store_close(&s);CHECK(sms_store_open(&s,path));
+    state(&s,r2,"unknown");CHECK(sms_store_blocked(&s));
+    CHECK(sms_store_resolve(&s,r2,"superseded"));                  /* authorizes round3 */
+    state(&s,r2,"unknown");CHECK(!sms_store_blocked(&s));
+    CHECK(sms_store_queue(&s,"+15550001001","multi",&r3));         /* must link to r2 only */
+    CHECK(r3!=0 && r3!=r1 && r3!=r2);
+    CHECK(retry_link(&s,r2,r3));                                   /* r2 now consumed by r3 */
+    CHECK(!retry_link(&s,r1,r3));                                  /* r1 stays consumed by r2 */
+    state(&s,r1,"unknown");state(&s,r2,"unknown");                  /* both preserved unknown */
+    state(&s,r3,"queued");                                        /* fresh message is queued to flow */
+
     sms_store_close(&s);CHECK(chmod(path,0644)==0);CHECK(!sms_store_open(&s,path));unlink(path);
     printf("SMS durable store: %s (%u failures)\n",failures ? "FAIL" : "PASS",failures);
     return failures ? 1 : 0;

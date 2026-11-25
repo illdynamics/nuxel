@@ -202,3 +202,8 @@ SAMFW.COM_SM-G975F_TNL_G975FXXS9DTK9_fac/**
 /tools/s10plus/s5000ap-05/nuxel-statusbar
 /tools/s10plus/s5000ap-05/*-protocol.c
 /tools/s10plus/s5000ap-05/*-protocol.h
+
+# Private host-local instruction notes may contain subscriber numbers and
+# message bodies; never commit them.
+/sms.md
+/sms-*.md

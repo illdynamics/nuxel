@@ -2795,7 +2795,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
             "GetLocation": {"success": False, "error": "Location not available in VM (GeoClue2 absent)", "data_source": "mock", "backend_layer": "GeoClue2", "backend_audit": audit, "vm_mode": True},
             "LocationAcquire": {"success": False, "error": "Location not available in VM (GeoClue2 absent)", "data_source": "mock", "backend_layer": "GeoClue2", "backend_audit": audit, "vm_mode": True},
             "SmsGetMessages": {"success": True, "messages": [], **mock_base},
-            "SmsSend": {"success": True, "mock": True, "message_id": "mock-sms-1", "number": args[1] if len(args) > 1 else "", "portal_auto_grant": True, **mock_base},
+            "SmsSend": {"success": False, "error": "SMS transport unavailable; use native Messages", "error_code": "SMS_UNAVAILABLE", **mock_base},
             "GetAppCapabilities": {"app_id": app_id, "capabilities": {}, **mock_base},
             "CheckPermission": {"app_id": app_id, "capability": cap, "granted": True, "portal_auto_grant": True, **mock_base},
             "RequestCapability": {"success": True, "state": "granted", "capability": cap, "portal_auto_grant": True, **mock_base},

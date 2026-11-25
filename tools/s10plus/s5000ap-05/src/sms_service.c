@@ -5,18 +5,45 @@
 static void notify(struct sms_service *s,uint32_t id,bool incoming)
 { if (s->notify && id) s->notify(id,incoming,s->user); }
 
+/* Emit redacted submission-result metadata. Never includes recipient,
+ * message body, or PDU bytes. */
+static void result_diag(struct sms_service *s,const struct nuxel_sipc_fmt *f,
+                        const struct fmt_sms_submit_result *r,bool correlated,
+                        const char *state)
+{
+    struct sms_record record;
+    if (!state && s->active && sms_store_get(&s->store,s->job.id,&record)) state=record.state;
+    if (!state) state="no-active-message";
+    const char *reason=correlated ? "ack-sequence" : f->cmd_type==3 ? "unsequenced-modem-reference" : "no-matching-sequence";
+    struct sms_submit_result_diag d = {
+        .message_id = s->active ? s->job.id : 0,
+        .cmd_type    = f->cmd_type,
+        .payload_len = f->payload_len,
+        .ack_seq     = f->ack_seq,
+        .result_code = r ? r->result : 0,
+        .modem_ref   = r ? r->reference : 0,
+        .correlated  = correlated,
+        .state       = state,
+        .reason      = reason,
+    };
+    if (!sms_store_result(&s->store,d.message_id,d.cmd_type,d.payload_len,d.ack_seq,
+                          d.result_code,d.modem_ref,correlated,state,reason)) {
+        s->store_errors++;s->blocked=true;
+    }
+    if (s->result_diag) s->result_diag(&d,s->user);
+}
+
 bool sms_service_open(struct sms_service *s,const char *path,sms_write_fn write,sms_notify_fn callback,void *user)
 {
     if (!s || !write) return false;
     memset(s,0,sizeof *s);s->write=write;s->notify=callback;s->user=user;
     if (!sms_store_open(&s->store,path)) return false;
-    sqlite3_stmt *q=NULL;
-    if (sqlite3_prepare_v2(s->store.db,"SELECT 1 FROM parts WHERE state='unknown' LIMIT 1",-1,&q,NULL)!=SQLITE_OK) {
-        sms_store_close(&s->store);return false;
-    }
-    s->blocked=sqlite3_step(q)==SQLITE_ROW;sqlite3_finalize(q);
+    s->blocked=sms_store_blocked(&s->store);
     return true;
 }
+
+void sms_service_set_result_diag(struct sms_service *s,sms_result_fn fn)
+{ if (s) s->result_diag=fn; }
 
 static void uncertain(struct sms_service *s)
 {
@@ -51,7 +78,7 @@ void sms_service_tick(struct sms_service *s,uint64_t now,bool online,bool sim_re
         if (fmt_sms_get_smsc(&f)) (void)s->write(&f,&sequence,s->user);
         return;
     }
-    if (s->active || s->blocked || s->ready_rejected || !s->smsc_len || !registered || !sms_store_next(&s->store,&s->job)) return;
+    if (s->active || s->blocked || !s->ready_ack || s->ready_rejected || !s->smsc_len || !registered || !sms_store_next(&s->store,&s->job)) return;
     uint8_t pdu[SMS_MAX_PDU];size_t n=s->smsc_len+s->job.pdu.len;
     if (n>sizeof pdu) {
         (void)sms_store_fail(&s->store,s->job.id,s->job.part,-3,false);notify(s,s->job.id,false);return;
@@ -70,6 +97,7 @@ void sms_service_receive(struct sms_service *s,const struct nuxel_sipc_fmt *f)
 {
     if (!s || !s->store.db || !f) return;
     const uint8_t *p=f->payload;size_t n=f->payload_len;
+    if (n && !p) { s->decode_errors++;return; }
     if (f->main_cmd==128 && f->cmd_type==2 && n==5 && p[0]==4) {
         unsigned result=p[3]|((unsigned)p[4]<<8);
         if (p[1]==7 && p[2]==3 && s->ready_sent && f->ack_seq==s->ready_sequence) {
@@ -84,16 +112,21 @@ void sms_service_receive(struct sms_service *s,const struct nuxel_sipc_fmt *f)
     if (f->sub_cmd==10 && f->cmd_type==2) {
         if (!fmt_sms_smsc(p,n,s->smsc,&s->smsc_len)) s->decode_errors++;
     } else if (f->sub_cmd==1 && (f->cmd_type==2 || f->cmd_type==3)) {
-        /* Live EFUJ2 emits the SEND result as a NOTIFICATION (type 3) with
-         * ack_seq 0, not the DTK9-derived RESPONSE (type 2). Accept both.
-         * A type-2 response correlates on the echoed AP sequence; a type-3
-         * notification has no echo, so it is matched to the single segment
-         * currently in flight (the service never runs two sends at once). */
+        /* Vendor 0x3463c0: GSM, LE result, reference, bounded optional PDU.
+         * EFUJ2 also emits this payload as type 3 with ack 0. Type 2 keeps
+         * explicit sequence correlation. Physical Round02 returned MR157 for
+         * requested TP-MR1: this field is NOT an echo. No validated token
+         * exists for type3/ack0. Even an equal MR can be coincidental or stale.
+         * Retain the result, leave the message pending, then timeout unknown. */
         struct fmt_sms_submit_result result;
         if (!fmt_sms_submit_result(p,n,&result)) { s->decode_errors++;return; }
-        if (!s->active) { s->unmatched++;return; }
-        if (f->cmd_type==2 && f->ack_seq!=s->sequence) { s->unmatched++;return; }
-        if (!sms_store_submit(&s->store,s->job.id,s->job.part,result.reference,result.result)) { s->store_errors++;uncertain(s);return; }
+        if (!s->active) { s->unmatched++;result_diag(s,f,&result,false,NULL);return; }
+        bool match = f->cmd_type==2 && f->ack_seq==s->sequence;
+        if (!match) { s->unmatched++;result_diag(s,f,&result,false,NULL);return; }
+        if (!sms_store_submit(&s->store,s->job.id,s->job.part,result.reference,result.result)) { s->store_errors++;uncertain(s);result_diag(s,f,&result,false,"storage-error");return; }
+        struct sms_record record;
+        const char *state=sms_store_get(&s->store,s->job.id,&record) ? record.state : "storage-error";
+        result_diag(s,f,&result,true,state);
         s->active=false;notify(s,s->job.id,false);
     } else if (f->sub_cmd==2 && f->cmd_type==3) {
         struct fmt_sms_incoming incoming;struct sms_decoded decoded;
@@ -101,7 +134,7 @@ void sms_service_receive(struct sms_service *s,const struct nuxel_sipc_fmt *f)
         uint16_t result=0;uint32_t id=0;bool changed=false;
         if (sms_decode(incoming.pdu,incoming.len,&decoded)!=SMS_CODEC_OK) { s->decode_errors++;result=0x806f; }
         else if (!sms_store_receive(&s->store,incoming.pdu,incoming.len,&decoded,&id,&changed)) { s->store_errors++;result=0x8016; }
-        else if (changed) { s->received++;notify(s,id,decoded.kind==SMS_DELIVER); }
+        else if (changed) { s->received++;s->blocked=sms_store_blocked(&s->store);notify(s,id,decoded.kind==SMS_DELIVER); }
         struct fmt_tx_frame reply;uint8_t sequence;
         if (!fmt_sms_ack(&reply,incoming.reference,result) || !s->write(&reply,&sequence,s->user)) s->ack_errors++;
     }
@@ -111,13 +144,7 @@ bool sms_service_resolve(struct sms_service *s,uint32_t id,const char *outcome)
 {
     if (!s || !s->store.db) return false;
     if (!sms_store_resolve(&s->store,id,outcome)) return false;
-    /* Re-derive blocked from the store rather than trusting the in-memory
-     * flag, so resolving the last unknown message clears the block. */
-    sqlite3_stmt *q=NULL;
-    if (sqlite3_prepare_v2(s->store.db,
-        "SELECT 1 FROM parts WHERE state='unknown' LIMIT 1",-1,&q,NULL)!=SQLITE_OK)
-        return false;
-    s->blocked = sqlite3_step(q)==SQLITE_ROW;
-    sqlite3_finalize(q);
+    s->blocked=sms_store_blocked(&s->store);
+    notify(s,id,false);
     return true;
 }

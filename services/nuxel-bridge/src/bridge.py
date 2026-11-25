@@ -385,12 +385,8 @@ class ModemManagerConnector:
     
     def send_sms(self, number, text):
         if not self.connected:
-            # VM mock mode: no ModemManager present. Record the SMS so the
-            # smoke test can confirm the Send call reached the mock, and report
-            # success so the PWA -> API -> bridge -> portal -> mock chain works.
-            self.mock_sms_received.append({'number': number, 'text': text})
-            logger.info("Mock ModemManager received SMS Send to %s: %s", number, text)
-            return {'success': True, 'mock': True, 'message_id': 'mock-sms-1'}
+            return {'success': False, 'error': 'SMS transport unavailable; use native Messages',
+                    'error_code': 'SMS_UNAVAILABLE'}
         try:
             sms_path = self.modem.CreateSms({
                 'number': dbus.String(number),

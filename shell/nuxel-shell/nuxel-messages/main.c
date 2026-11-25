@@ -1,6 +1,6 @@
 /**
  * Nuxel Messages - Native SMS/MMS Client for Nuxel OS
- * GTK4/libadwaita application with ModemManager D-Bus integration
+ * GTK4/libadwaita application with native Radio1 D-Bus integration
  */
 
 #include <adwaita.h>
@@ -233,27 +233,32 @@ static void native_status(GVariant *reply,const GError *error,gpointer user)
     NuxelMessages *app=user;
     if(!reply || error) {
         app->refreshing=FALSE;app->modem_ready=FALSE;
-        gtk_label_set_text(GTK_LABEL(app->capability_label),"Native SMS unavailable");return;
+        gtk_label_set_text(GTK_LABEL(app->capability_label),"Native SMS unavailable");
+        gtk_widget_set_sensitive(app->send_button,FALSE);return;
     }
     GVariant *dict=g_variant_get_child_value(reply,0);
     const char *storage="unknown",*ready="unknown",*domain="unknown",*smsc="unknown";
-    const char *pending="unknown",*blocked="unknown";
+    const char *pending="unknown",*blocked="unknown",*native_ready="false",*registration="unavailable";
     g_variant_lookup(dict,"storage","&s",&storage);g_variant_lookup(dict,"device_ready","&s",&ready);
     g_variant_lookup(dict,"domain","&s",&domain);g_variant_lookup(dict,"smsc","&s",&smsc);
     g_variant_lookup(dict,"pending","&s",&pending);g_variant_lookup(dict,"blocked","&s",&blocked);
-    /* Send readiness needs the whole transport, not just device-ready. */
+    g_variant_lookup(dict,"ready","&s",&native_ready);
+    g_variant_lookup(dict,"registration","&s",&registration);
+    /* The daemon owns transport and registration readiness. */
     const gchar *reason="ready to send";
     gboolean storage_ok=!strcmp(storage,"available");
     gboolean ready_ok=!strcmp(ready,"accepted");
     gboolean smsc_ok=!strcmp(smsc,"received");
     gboolean pending_busy=!strcmp(pending,"true");
     gboolean blocked_unresolved=!strcmp(blocked,"true");
-    app->modem_ready=storage_ok && ready_ok && smsc_ok && !pending_busy && !blocked_unresolved;
+    app->modem_ready=!strcmp(native_ready,"true") && storage_ok && ready_ok && smsc_ok && !pending_busy && !blocked_unresolved;
     if(!storage_ok) reason="storage unavailable";
     else if(!ready_ok) reason="device not ready";
     else if(!smsc_ok) reason="service center unavailable";
     else if(pending_busy) reason="a submission is in progress";
     else if(blocked_unresolved) reason="an unresolved submission must be reviewed first";
+    else if(strcmp(registration,"registered")) reason="carrier registration unavailable";
+    else if(!app->modem_ready) reason="native transport unavailable";
     gchar *label=g_strdup_printf("Native SMS · %s · storage %s · transport %s · SMSC %s · %s. Submission is not delivery.",
                                  domain,storage,ready,smsc,reason);
     gtk_label_set_text(GTK_LABEL(app->capability_label),label);g_free(label);g_variant_unref(dict);
@@ -337,7 +342,7 @@ send_message(NuxelMessages *app)
     
     if (!number || strlen(number) == 0) return;
     
-    if(app->sending || !nuxel_radio_available(&app->radio))return;
+    if(app->sending || !app->modem_ready || !nuxel_radio_available(&app->radio))return;
     app->sending=TRUE;gtk_widget_set_sensitive(app->send_button,FALSE);
     nuxel_radio_call(&app->radio,"SendSms",g_variant_new("(ss)",number,text),
                      "sms:send",native_sent,app);

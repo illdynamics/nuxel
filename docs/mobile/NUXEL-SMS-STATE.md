@@ -1,5 +1,31 @@
 # Nuxel SMS implementation and evidence
 
+## Round02 physical submission — 2026-11-25
+
+The corrected native daemon was rebuilt, tested, deployed and verified, then a
+single owner-authorized physical SMS was submitted through the native Radio1
+`SendSms` API (new native message id 3). The full transaction was captured and
+durably retained instead of being lost.
+
+- Correlation fix: PASS. A type-3 unsequenced submission result is decoded and
+  persisted but is **not** correlated by modem reference; EFUJ2 returns an MR
+  that is not the requested TP-MR, so reference equality is not a correlation
+  token.
+- Actual modem result: raw result code **2** (non-zero = rejected), returned MR
+  158 with requested TP-MR 2, `correlated=false`, correlation reason
+  "unsequenced-modem-reference".
+- Final durable state: id 3 `queued` → `sending` → `unknown` (error -2). No
+  false delivered/submitted transition was recorded.
+- Reconciliation: ids 1 and 2 remain `unknown` (historical uncertainty
+  preserved). Owner-authorized `superseded` audit rows authorized exactly one
+  fresh submission each without resending or falsely resolving the originals.
+- The previously reported recipient non-reception is explained by the modem
+  rejecting the submission before carrier delivery. Submission is not delivery;
+  result 0 is never assumed to mean the recipient received it.
+
+See `NUXEL-SMS-PRODUCTION-ACCEPTANCE.md` for the gate-by-gate result.
+
+
 ## LTE finalizer update — 2026-11-25
 
 The two previously authorized messages remain unsent; no separate evidence of submission was found or produced. No physical SMS test was performed.

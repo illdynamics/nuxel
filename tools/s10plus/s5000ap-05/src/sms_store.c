@@ -63,6 +63,14 @@ bool sms_store_open(struct sms_store *s,const char *path)
         "PRIMARY KEY(message,part));"
         "CREATE TABLE IF NOT EXISTS seen(pdu BLOB PRIMARY KEY,message INTEGER,"
         "created INTEGER NOT NULL DEFAULT(unixepoch()));"
+        "CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "message INTEGER,stamp TEXT NOT NULL DEFAULT '',event TEXT NOT NULL,"
+        "detail TEXT NOT NULL DEFAULT '');"
+        "CREATE TABLE IF NOT EXISTS retry_authorizations(original INTEGER PRIMARY KEY REFERENCES messages(id),"
+        "replacement INTEGER UNIQUE REFERENCES messages(id));"
+        "CREATE TABLE IF NOT EXISTS submission_results(id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "stamp INTEGER NOT NULL DEFAULT(unixepoch()),candidate INTEGER,type INTEGER,plen INTEGER,"
+        "ack INTEGER,result INTEGER,mr INTEGER,correlated INTEGER,state TEXT,reason TEXT);"
         "PRAGMA user_version=1;"
         /* A crash after write but before response is ambiguous, not permission
          * to resend the same SMS. Hold the entire message for explicit review. */
@@ -92,15 +100,47 @@ bool sms_store_queue(struct sms_store *s,const char *to,const char *body,uint32_
 {
     struct sms_encoded encoded;
     if (!id || sms_encode(to,body,0,0,&encoded)!=SMS_CODEC_OK || !sql(s,"BEGIN IMMEDIATE")) return false;
-    bool used[256]={0};sqlite3_stmt *p=prepare(s,
-        "SELECT mr FROM parts JOIN messages ON messages.id=parts.message "
-        /* Retain recently used references even after completion: a delayed
-         * report must not mark a different message to the same peer delivered. */
-        "WHERE direction='out' AND (parts.state IN('queued','sending','submitted','unknown') "
-        "OR messages.created>unixepoch()-86400)");
+    sqlite3_stmt *duplicate=prepare(s,"SELECT 1 FROM messages WHERE direction='out' "
+        "AND peer=? AND text=? AND state IN('queued','sending') LIMIT 1");
+    text(duplicate,1,to);text(duplicate,2,body);
+    if (!duplicate) return rollback(s);
+    int dr=sqlite3_step(duplicate);sqlite3_finalize(duplicate);
+    if (dr!=SQLITE_DONE) return rollback(s);
+    /* A retry is a new intent, authorized exactly once for this exact unknown
+     * message. For every unknown message sharing (peer,text): an authorization
+     * with replacement still NULL is the single live retry token; an
+     * authorization whose replacement is already set is historical evidence,
+     * never a re-authorization; and a message with NO authorization is an
+     * unresolved blocker that must fail closed. */
+    sqlite3_stmt *p=prepare(s,
+        "SELECT m.id,a.original,a.replacement FROM messages m LEFT JOIN retry_authorizations a "
+        "ON a.original=m.id WHERE m.direction='out' AND m.peer=? AND m.text=? AND m.state='unknown'");
+    text(p,1,to);text(p,2,body);
+    if (!p) return rollback(s);
+    uint32_t original=0;unsigned live=0;int check;
+    while ((check=sqlite3_step(p))==SQLITE_ROW) {
+        uint32_t candidate=(uint32_t)sqlite3_column_int64(p,0);
+        if (sqlite3_column_type(p,1)==SQLITE_NULL) { /* no authorization row at all */
+            sqlite3_finalize(p);return rollback(s); /* unresolved blocker, fail closed */
+        }
+        if (sqlite3_column_type(p,2)==SQLITE_NULL) { /* authorized, not yet consumed */
+            if (live++) { sqlite3_finalize(p);return rollback(s); } /* ambiguous tokens */
+            original=candidate;
+        }
+        /* a.replacement set: consumed historical authorization, ignore. */
+    }
+    sqlite3_finalize(p);if(check!=SQLITE_DONE)return rollback(s);
+    /* Reserve original and returned references for pending delivery reports.
+     * Unsequenced submission results are not correlated using these values. */
+    bool used[256]={0};p=prepare(s,
+        "SELECT mr,pdu FROM parts JOIN messages ON messages.id=parts.message WHERE direction='out' "
+        "AND (parts.state IN('queued','sending','submitted','unknown') OR messages.created>unixepoch()-86400)");
     if (!p) return rollback(s);
     int rc;
-    while ((rc=sqlite3_step(p))==SQLITE_ROW) used[(unsigned)sqlite3_column_int(p,0)&255]=true;
+    while ((rc=sqlite3_step(p))==SQLITE_ROW) {
+        used[(unsigned)sqlite3_column_int(p,0)&255]=true;
+        if (sqlite3_column_bytes(p,1)>=2) used[((const uint8_t *)sqlite3_column_blob(p,1))[1]]=true;
+    }
     sqlite3_finalize(p);if (rc!=SQLITE_DONE) return rollback(s);
     unsigned first;
     for (first=0;first<256;first++) {
@@ -118,6 +158,11 @@ bool sms_store_queue(struct sms_store *s,const char *to,const char *body,uint32_
         p=prepare(s,"INSERT INTO parts(message,part,pdu,mr,state) VALUES(?,?,?,?,'queued')");
         integer(p,1,row);integer(p,2,(sqlite3_int64)i+1);blob(p,3,encoded.parts[i].data,encoded.parts[i].len);integer(p,4,encoded.parts[i].reference);
         if (!done(p)) return rollback(s);
+    }
+    if (original) {
+        p=prepare(s,"UPDATE retry_authorizations SET replacement=? WHERE original=? AND replacement IS NULL");
+        integer(p,1,row);integer(p,2,original);
+        if (!done(p) || sqlite3_changes(s->db)!=1) return rollback(s);
     }
     if (!sql(s,"COMMIT")) return rollback(s);
     *id=(uint32_t)row;return true;
@@ -295,17 +340,44 @@ bool sms_store_any_delivered(struct sms_store *s)
 bool sms_store_resolve(struct sms_store *s,uint32_t id,const char *outcome)
 {
     if (!s || !s->db || !outcome) return false;
-    if (strcmp(outcome,"failed") && strcmp(outcome,"delivered")) return false;
+    if (strcmp(outcome,"failed") && strcmp(outcome,"delivered") && strcmp(outcome,"superseded")) return false;
     if (!sql(s,"BEGIN IMMEDIATE")) return false;
-    sqlite3_stmt *p=prepare(s,
-        "UPDATE parts SET state=?1,result=CASE ?1 WHEN 'failed' THEN -1 ELSE 0 END "
-        "WHERE message=?2 AND state='unknown'");
-    text(p,1,outcome);integer(p,2,id);
-    /* Require at least one unknown part to have been resolved: resolving a
-     * message that is not (or no longer) unknown must fail cleanly. */
+    sqlite3_stmt *p;
+    if (!strcmp(outcome,"superseded")) {
+        p=prepare(s,"INSERT INTO retry_authorizations(original) SELECT id FROM messages "
+            "WHERE id=? AND direction='out' AND state='unknown'");
+        integer(p,1,id);
+    } else {
+        p=prepare(s,"UPDATE parts SET state=?1,result=CASE ?1 WHEN 'failed' THEN -1 ELSE 0 END "
+            "WHERE message=?2 AND state='unknown'");
+        text(p,1,outcome);integer(p,2,id);
+    }
     if (!done(p) || sqlite3_changes(s->db)==0) return rollback(s);
-    /* Recompute the aggregate and clear the blocked flag only if no unknown
-     * parts remain anywhere. A later open() re-derives blocked from the DB. */
-    if (!recalc(s,id)) return rollback(s);
+    p=prepare(s,"INSERT INTO audit(message,stamp,event,detail) VALUES(?,unixepoch(),?,?)");
+    integer(p,1,id);text(p,2,outcome);
+    text(p,3,!strcmp(outcome,"superseded")
+        ? "owner reports non-reception; original submission unknown; one new submission authorized"
+        : !strcmp(outcome,"delivered") ? "owner-confirmed receipt" : "owner-confirmed failure");
+    if (!done(p) || !recalc(s,id)) return rollback(s);
     return sql(s,"COMMIT") || rollback(s);
+}
+
+bool sms_store_blocked(struct sms_store *s)
+{
+    sqlite3_stmt *p=prepare(s,"SELECT 1 FROM parts p WHERE p.state='unknown' AND NOT EXISTS "
+        "(SELECT 1 FROM retry_authorizations a WHERE a.original=p.message) LIMIT 1");
+    if (!p) return true;
+    int rc=sqlite3_step(p);sqlite3_finalize(p);
+    return rc!=SQLITE_DONE;
+}
+
+bool sms_store_result(struct sms_store *s,uint32_t candidate,unsigned type,unsigned len,
+                      unsigned ack,unsigned result,unsigned mr,bool correlated,
+                      const char *state,const char *reason)
+{
+    sqlite3_stmt *p=prepare(s,"INSERT INTO submission_results"
+        "(candidate,type,plen,ack,result,mr,correlated,state,reason) VALUES(?,?,?,?,?,?,?,?,?)");
+    integer(p,1,candidate);integer(p,2,type);integer(p,3,len);integer(p,4,ack);
+    integer(p,5,result);integer(p,6,mr);integer(p,7,correlated);
+    text(p,8,state);text(p,9,reason);return done(p);
 }

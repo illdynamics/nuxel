@@ -439,6 +439,30 @@ static bool sms_write(const struct fmt_tx_frame *f,uint8_t *sequence,void *user)
     return g.cp_online && radiod_write_fmt(f);
 }
 
+static int sms_desktop_done(sd_bus_message *m,void *user,sd_bus_error *error)
+{
+    (void)user;(void)error;
+    diag("sms_desktop_notification",sd_bus_message_is_method_error(m,NULL) ? "failed" : "accepted");
+    return 0;
+}
+
+static void sms_desktop_notify(void)
+{
+    sd_bus_message *m=NULL;
+    int r=sd_bus_message_new_method_call(g.bus,&m,"org.freedesktop.Notifications",
+        "/org/freedesktop/Notifications","org.freedesktop.Notifications","Notify");
+    if(r>=0)r=sd_bus_message_append(m,"susss","org.nuxel.Messages",0u,"mail-message-new",
+        "New SMS","Open Messages to read it.");
+    if(r>=0)r=sd_bus_message_open_container(m,'a',"s");
+    if(r>=0)r=sd_bus_message_close_container(m);
+    if(r>=0)r=sd_bus_message_open_container(m,'a',"{sv}");
+    if(r>=0)r=sd_bus_message_close_container(m);
+    if(r>=0)r=sd_bus_message_append(m,"i",-1);
+    if(r>=0)r=sd_bus_call_async(g.bus,NULL,m,sms_desktop_done,NULL,3000000);
+    if(r<0)diag("sms_desktop_notification","unavailable");
+    sd_bus_message_unref(m);
+}
+
 static void sms_notify(uint32_t id,bool incoming,void *user)
 {
     (void)user;
@@ -447,8 +471,23 @@ static void sms_notify(uint32_t id,bool incoming,void *user)
     diagf("sms_state","\"id\":%u,\"state\":\"%s\",\"error\":%d",id,record.state,record.error);
     if (g.bus) {
         sd_bus_emit_signal(g.bus,OBJ_PATH,IFACE_NAME,"SmsStateChanged","us",id,record.state);
-        if (incoming) sd_bus_emit_signal(g.bus,OBJ_PATH,IFACE_NAME,"SmsReceived","u",id);
+        if (incoming) {
+            sd_bus_emit_signal(g.bus,OBJ_PATH,IFACE_NAME,"SmsReceived","u",id);
+            sms_desktop_notify();
+        }
     }
+}
+
+/* Redacted submission-result metadata. Frame type, payload length,
+ * ack_seq, decoded result, modem reference, correlation and resulting state
+ * only -- never recipient, body, or PDU bytes. */
+static void sms_result_diag(const struct sms_submit_result_diag *d,void *user)
+{
+    (void)user;
+    diagf("sms_submit_result",
+        "\"id\":%u,\"type\":%u,\"plen\":%u,\"ack\":%u,\"result\":%u,\"mr\":%u,\"correlated\":%s,\"state\":\"%s\",\"correlation\":\"%s\"",
+        d->message_id, d->cmd_type, d->payload_len, d->ack_seq, d->result_code, d->modem_ref,
+        d->correlated ? "true" : "false", d->state ? d->state : "", d->reason);
 }
 
 static void call_notify(uint8_t id,const char *state,bool incoming,void *user)
@@ -2219,9 +2258,9 @@ static int method_resolve_sms(sd_bus_message *m,void *u,sd_bus_error *e)
     (void)u;int r=require_control(m,e);if(r<0)return r;
     uint32_t id;const char *outcome;
     if (sd_bus_message_read(m,"us",&id,&outcome)<0)
-        return sd_bus_error_set(e,SD_BUS_ERROR_INVALID_ARGS,"Message ID and outcome ('failed' or 'delivered') required");
-    if (strcmp(outcome,"failed") && strcmp(outcome,"delivered"))
-        return sd_bus_error_set(e,SD_BUS_ERROR_INVALID_ARGS,"Outcome must be 'failed' or 'delivered'");
+        return sd_bus_error_set(e,SD_BUS_ERROR_INVALID_ARGS,"Message ID and outcome ('failed', 'delivered' or 'superseded') required");
+    if (strcmp(outcome,"failed") && strcmp(outcome,"delivered") && strcmp(outcome,"superseded"))
+        return sd_bus_error_set(e,SD_BUS_ERROR_INVALID_ARGS,"Outcome must be 'failed', 'delivered' or 'superseded'");
     if (!sms_service_resolve(&g.sms,id,outcome))
         return sd_bus_error_set(e,SD_BUS_ERROR_FAILED,"Message is not in an unresolved state or storage is unavailable");
     return sd_bus_reply_method_return(m,"b",1);
@@ -2262,13 +2301,19 @@ static int method_get_sms_status(sd_bus_message *m,void *u,sd_bus_error *e)
 {
     (void)u;(void)e;sd_bus_message *reply=NULL;int r=sd_bus_message_new_method_return(m,&reply);
     if(r>=0)r=sd_bus_message_open_container(reply,'a',"{ss}");
-    const char *keys[]={"storage","device_ready","smsc","pending","blocked","domain","delivery_verified"};
+    const char *keys[]={"storage","device_ready","smsc","pending","blocked","domain","delivery_verified","ready","registration"};
     const char *vals[]={g.sms.store.db ? "available" : "unavailable",
         g.sms.ready_rejected ? "rejected" : g.sms.ready_ack ? "accepted" : g.sms.ready_sent ? "sent" : "unknown",
         g.sms.smsc_len ? "received" : "unknown",g.sms.active ? "true" : "false",
         g.sms.blocked ? "true" : "false","CS",
-        sms_store_any_delivered(&g.sms.store) ? "true" : "false"};
-    for(size_t i=0;i<7 && r>=0;i++)r=sd_bus_message_append(reply,"{ss}",keys[i],vals[i]);
+        sms_store_any_delivered(&g.sms.store) ? "true" : "false",
+        g.write_enabled && g.cp_online && g.sim_ready_seen && g.sms.store.db && g.sms.ready_ack &&
+        g.sms.smsc_len && !g.sms.active && !g.sms.blocked &&
+        ((g.dsc.net_regist_valid && fmt_rx_registered(g.dsc.last_ps_reg_state)) ||
+         (g.cs_registration_valid && fmt_rx_registered(g.cs_registration.state))) ? "true" : "false",
+        ((g.dsc.net_regist_valid && fmt_rx_registered(g.dsc.last_ps_reg_state)) ||
+         (g.cs_registration_valid && fmt_rx_registered(g.cs_registration.state))) ? "registered" : "unavailable"};
+    for(size_t i=0;i<9 && r>=0;i++)r=sd_bus_message_append(reply,"{ss}",keys[i],vals[i]);
     if(r>=0)r=sd_bus_message_close_container(reply);
     if(r>=0)r=sd_bus_send(NULL,reply,NULL);
     sd_bus_message_unref(reply);return r;
@@ -2547,6 +2592,7 @@ int main(int argc, char **argv)
     const char *sms_path=getenv("NUXEL_SMS_DATABASE");
     if (!sms_path || !*sms_path) sms_path="/var/lib/nuxel-radio/sms.sqlite3";
     if (!sms_service_open(&g.sms,sms_path,sms_write,sms_notify,NULL)) diag("sms_storage_unavailable",NULL);
+    else sms_service_set_result_diag(&g.sms,sms_result_diag);
     call_service_init(&g.calls,sms_write,call_notify,NULL);
 
     if (setup_event() < 0) { diag("event_setup_failed", NULL); return 1; }
