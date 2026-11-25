@@ -363,6 +363,7 @@ class QuickSettings {
             const l = tile.querySelector('.qs-label'); if (l) l.innerHTML = 'Tether<br>checking';
             try {
                 const r = await bridge.call('usb-tether', 'status', {});
+                document.dispatchEvent(new CustomEvent('nuxel:sharing-state', { detail: { kind: 'usb', state: r && r.success !== false ? r : null } }));
                 if (!r || r.success === false) {
                     tile.dataset.enabled = 'unsupported';
                     if (l) l.innerHTML = 'Tether<br>unknown';
@@ -371,12 +372,13 @@ class QuickSettings {
                 }
                 enabled = !!r.enabled;
                 tile.dataset.enabled = enabled ? 'true' : 'false';
-                if (l) l.innerHTML = 'Tether<br>' + (enabled ? 'on' : 'off');
+                if (l) l.innerHTML = 'Tether<br>' + (enabled ? (r.upstream_available === false ? 'waiting' : 'on') : 'off');
                 tile.title = enabled
                     ? 'Sharing ' + (r.upstream || '?') + ' over USB. Host Internet verified: ' +
                       (r.internet_verified ? 'yes' : 'no') + '. Tap = stop.'
-                    : 'USB Internet tethering off. Tap = share the first usable upstream.';
+                    : 'USB Internet tethering off. Tap to share mobile Internet over the existing USB link.';
             } catch (e) {
+                document.dispatchEvent(new CustomEvent('nuxel:sharing-state', { detail: { kind: 'usb', state: null } }));
                 tile.dataset.enabled = 'unknown';
                 if (l) l.innerHTML = 'Tether<br>unavail';
             }
@@ -386,12 +388,10 @@ class QuickSettings {
             tile.dataset.enabled = 'busy';
             const l = tile.querySelector('.qs-label'); if (l) l.innerHTML = 'Tether<br>busy';
             try {
-                // Explicit tap.  When the local USB link is off, this is the one
-                // owner action that enables the USB network composition AND the
-                // Internet share; when sharing is on it only stops the share.
+                // Share over the existing USB link; the gadget has its own owner.
                 const r = enabled
                     ? await bridge.call('usb-tether', 'stop', {})
-                    : await bridge.call('usb-net', 'enable-for-host', {});
+                    : await bridge.call('usb-tether', 'start', {});
                 if (!r || r.success === false) {
                     this._osdNotice('USB tether failed: ' +
                         ((r && (r.error || r.detail)) || 'provider did not confirm'));
@@ -405,6 +405,7 @@ class QuickSettings {
             await _sync();
         });
         _sync();
+        setInterval(() => { if (tile.dataset.enabled !== 'busy') _sync(); }, 5000);
     }
 
     _buildHotspotTile() {
@@ -416,6 +417,7 @@ class QuickSettings {
             const l = tile.querySelector('.qs-label'); if (l) l.innerHTML = 'Hotspot<br>checking';
             try {
                 const r = await bridge.call('network', 'hotspot-status', {});
+                document.dispatchEvent(new CustomEvent('nuxel:sharing-state', { detail: { kind: 'hotspot', state: r && r.success !== false ? r : null } }));
                 supported = !!(r && r.supported);
                 if (r && r.success === false) {
                     tile.dataset.enabled = 'unknown';
@@ -431,9 +433,12 @@ class QuickSettings {
                 }
                 enabled = !!r.enabled;
                 tile.dataset.enabled = enabled ? 'true' : 'false';
-                if (l) l.innerHTML = 'Hotspot<br>' + (enabled ? 'on' : 'off');
-                tile.title = enabled ? 'Hotspot active' : 'Tap to start the Wi-Fi hotspot';
+                if (l) l.innerHTML = 'Hotspot<br>' + (enabled ? (r.upstream_available === false ? 'waiting' : 'on') : 'off');
+                tile.title = enabled ? 'Hotspot: ' + (r.state || 'on') +
+                    (r.connected_clients == null ? '' : ' · ' + r.connected_clients + ' clients') :
+                    'Tap to start the Wi-Fi hotspot';
             } catch (e) {
+                document.dispatchEvent(new CustomEvent('nuxel:sharing-state', { detail: { kind: 'hotspot', state: null } }));
                 tile.dataset.enabled = 'unknown';
                 if (l) l.innerHTML = 'Hotspot<br>unavail';
             }
@@ -457,6 +462,7 @@ class QuickSettings {
             await _sync();
         });
         _sync();
+        setInterval(() => { if (tile.dataset.enabled !== 'busy') _sync(); }, 5000);
     }
 
     // A long press that cannot double-fire, cannot fire on a scroll and cannot

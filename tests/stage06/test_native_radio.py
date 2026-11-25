@@ -68,6 +68,8 @@ def test_dbus_profile_is_unsigned(monkeypatch):
     class UInt32(int):
         pass
     class Bus:
+        def set_exit_on_disconnect(self, enabled):
+            assert enabled is False
         def get_object(self, *args, **kwargs):
             return object()
         def close(self):
@@ -80,6 +82,7 @@ def test_dbus_profile_is_unsigned(monkeypatch):
     monkeypatch.setitem(sys.modules, 'dbus', SimpleNamespace(
         UInt32=UInt32, SystemBus=lambda **kwargs: Bus(),
         Interface=lambda *args: Interface()))
+    monkeypatch.setitem(sys.modules, 'dbus.mainloop', SimpleNamespace(NULL_MAIN_LOOP=object()))
     assert module.NativeRadio._invoke('StartDataSession', 'internet', 1)
     assert calls == [('internet', 1), 'closed']
 

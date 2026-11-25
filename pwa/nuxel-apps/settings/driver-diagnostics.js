@@ -43,14 +43,22 @@
         toggle.checked = m.mobile_data_enabled === true;
         toggle.disabled = typeof m.mobile_data_enabled !== 'boolean' || ['connecting', 'disconnecting'].indexOf(m.connection_state) >= 0;
       }
+      var stats = m.statistics || {};
+      function value(v, unit) { return v == null ? 'unavailable' : Math.round(v) + unit; }
       show('mobile-state', [
         'SIM: ' + (m.sim_state || 'unknown'), 'Operator: ' + (m.operator || 'unknown'),
+        'Home operator: ' + (m.home_operator || 'unknown'),
+        'Roaming: ' + (m.roaming == null ? 'unknown' : m.roaming ? 'yes' : 'no'),
         'Registration: ' + m.registration + ' (raw ' + m.registration_raw + ')', 'Technology: ' + (m.technology || 'unknown'),
         'Signal: ' + (m.signal_valid ? m.signal_quality + '%' : 'unknown'),
         'Data: ' + m.connection_state, 'APN: ' + (m.apn || 'unknown'),
         'Session: ' + m.phase, 'Failure: ' + m.failure_phase + ' / ' + m.failure_result,
         'IPv4: ' + (m.ipv4 || 'none'), 'IPv6: ' + (m.ipv6 || 'none'),
         'Interface: ' + (m.interface || 'unknown'), 'Network result: ' + m.link_result,
+        'DNS: ' + ((stats.dns || []).join(', ') || 'unavailable'),
+        'Connected: ' + value(stats.duration_seconds, ' seconds'),
+        'Received: ' + value(stats.rx_bytes, ' bytes') + ' / ' + value(stats.rx_bytes_per_second, ' B/s'),
+        'Sent: ' + value(stats.tx_bytes, ' bytes') + ' / ' + value(stats.tx_bytes_per_second, ' B/s'),
         'Disconnect result: ' + m.disconnect_result, 'Error: ' + (m.error || 'none')
       ].join('\n'));
     }).catch(function (err) {

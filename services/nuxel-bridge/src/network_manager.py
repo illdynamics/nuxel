@@ -655,6 +655,10 @@ def handle(verb: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]
         return zerotier_set_enabled(bool(params.get("enabled")))
     if verb == "hotspot-status":
         return hotspot_status()
+    if verb == "hotspot-credentials":
+        # Explicit authenticated owner action, never part of status polling.
+        saved = _hotspot_config()
+        return {'success': True, 'ssid': saved['ssid'], 'password': saved['password']}
     if verb == "hotspot-start":
         return hotspot_start(str(params.get("ssid") or ""),
                              str(params.get("password") or ""), str(params.get("band") or ""))

@@ -123,6 +123,16 @@
     gap: 1px;
 }
 
+/* A registered RAT with unknown signal is text, not invented signal bars. */
+.status-right #status-signal[data-cellular-state="registered"][data-signal-known="false"] {
+    width: auto;
+    min-width: 24px;
+    align-items: center;
+    white-space: nowrap;
+    font-size: 9px;
+    line-height: 16px;
+}
+
 .signal-icon::before,
 .signal-icon::after {
     content: none;

@@ -70,6 +70,7 @@ class StatusBar {
             time: document.getElementById('status-time'),
             signal: document.getElementById('status-signal'),
             wifi: document.getElementById('status-wifi'),
+            hotspot: document.getElementById('status-hotspot'),
             bluetooth: document.getElementById('status-bluetooth'),
             location: document.getElementById('status-location'),
             sound: document.getElementById('status-sound'),
@@ -142,6 +143,8 @@ class StatusBar {
             notifications: counts.unread || 0,
             active_notifications: counts.active || 0,
             usb: String(st.usbLabel || ''),
+            hotspot: !!(st.hotspot && st.hotspot.enabled),
+            usb_tether: !!(st.usbTether && st.usbTether.enabled),
         };
         const text = JSON.stringify(model);
         if (!force && text === this._modelKey) return;
@@ -231,6 +234,26 @@ class StatusBar {
         this._renderSignal();
         this._renderWifi();
         this._renderBluetooth();
+        document.addEventListener('nuxel:sharing-state', (event) => {
+            const update = event.detail || {};
+            if (update.kind === 'usb') {
+                this.state.usbTether = update.state;
+                this._renderUsb();
+            } else if (update.kind === 'hotspot') {
+                this.state.hotspot = update.state;
+                const el = this.elements.hotspot;
+                if (el) {
+                    const st = update.state || {};
+                    this._setProviderVisible(el, st.enabled === true);
+                    el.dataset.state = st.state || 'unknown';
+                    el.title = st.enabled ? 'Hotspot: ' + (st.upstream_available ? 'cellular upstream available' : 'waiting for mobile data') +
+                        (st.connected_clients == null ? '' : ' · ' + st.connected_clients + ' clients') : 'Hotspot off';
+                    el.setAttribute('aria-label', el.title);
+                }
+            }
+            this._applySafeZones();
+            this._publishCanonicalModel(true);
+        });
         this._buildNotificationsUI();
         // A34 TOUCHDOWN: the Quick Settings panel has always listened for
         // `gesture:qs`, but nothing in the launcher ever dispatched it (measured
@@ -491,7 +514,7 @@ class StatusBar {
     // physical panel renders; a PASS means no two indicators share pixels.
     _assertNoOverlap() {
         const ids = ['status-signal', 'status-wifi', 'status-location', 'status-bluetooth',
-                     'status-nfc', 'status-sound', 'status-usb', 'status-battery', 'status-battery-pct'];
+                     'status-nfc', 'status-sound', 'status-usb', 'status-hotspot', 'status-battery', 'status-battery-pct'];
         const boxes = [];
         ids.forEach((id) => {
             const el = document.getElementById(id);
@@ -820,6 +843,9 @@ class StatusBar {
             else if (transports.usb && transports.usb.active === true) { label = 'term'; state = 'term'; visible = true; }
             else if (usb.pc_connected === true) { state = 'connected'; visible = true; }
         }
+        if (this.state.usbTether && this.state.usbTether.enabled) {
+            label = 'share'; state = 'sharing'; visible = true;
+        }
         this.state.usbLabel = label;
         const providerVisible = this._providerVisible['status-usb'] !== false;
         const renderKey = (visible ? '1' : '0') + '|' + (state || 'unknown') + '|' +
@@ -837,7 +863,8 @@ class StatusBar {
             el.setAttribute('aria-label', 'USB not connected');
             el.title = 'USB: no wired data link reported';
         } else {
-            const detail = state === 'file' ? 'File transfer endpoint active'
+            const detail = state === 'sharing' ? (this.state.usbTether.upstream_available ? 'Tethering active; cellular upstream available' : 'Tethering waiting for mobile data')
+                : state === 'file' ? 'File transfer endpoint active'
                 : state === 'term' ? 'USB console active'
                 : 'USB data link to host';
             el.setAttribute('aria-label', 'USB: ' + detail);

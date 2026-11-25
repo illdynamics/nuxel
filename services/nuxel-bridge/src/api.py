@@ -5795,7 +5795,7 @@ class BridgeAPIHandler(BaseHTTPRequestHandler):
                              "vpn-status", "vpn-import", "vpn-up", "vpn-down",
                              "vpn-delete", "zerotier-status", "zerotier-join",
                              "zerotier-leave", "zerotier-enabled",
-                             "hotspot-status", "hotspot-start", "hotspot-stop"}
+                             "hotspot-status", "hotspot-start", "hotspot-stop", "hotspot-credentials"}
 
     def _network_manager_rpc(self, app_id, verb, params):
         if network_manager is None:
@@ -7220,4 +7220,3 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print("\nShutting down API server...")
         server.shutdown()
-

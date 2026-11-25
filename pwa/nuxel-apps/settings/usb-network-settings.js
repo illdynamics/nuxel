@@ -118,7 +118,9 @@
       return;
     }
     setText('hotspot-state', 'Wi-Fi hotspot: ' + String(r.state || 'off').toUpperCase() +
-      (r.ssid ? '  SSID: ' + r.ssid : ''));
+      (r.ssid ? '  SSID: ' + r.ssid : '') + '\nMobile upstream: ' + (r.upstream_available ? 'available' : 'unavailable') + '\nConnected devices: ' + (r.connected_clients == null ? 'unavailable' : r.connected_clients));
+    var name = $('hotspot-ssid'); if (name && !name.value) name.value = r.ssid || '';
+    var band = $('hotspot-band'); if (band && document.activeElement !== band) band.value = r.band || '2.4';
     var start = $('hotspot-start'); if (start) start.disabled = !!r.enabled;
     var stop = $('hotspot-stop'); if (stop) stop.disabled = !r.enabled;
   }
@@ -169,7 +171,7 @@
   function hotspot(action) {
     busy(true);
     var ssid = $('hotspot-ssid'), pass = $('hotspot-password');
-    var params = action === 'start' ? { ssid: (ssid && ssid.value) || '', password: (pass && pass.value) || '' } : {};
+    var params = action === 'start' ? { ssid: (ssid && ssid.value) || '', password: (pass && pass.value) || '', band: $('hotspot-band').value } : {};
     setText('hotspot-state', 'Applying ' + action + '…');
     rpc('network', action === 'start' ? 'hotspot-start' : 'hotspot-stop', params).then(function (r) {
       if (!r || r.success === false) {
@@ -190,8 +192,30 @@
     var tx = $('usbtether-stop'); if (tx) tx.addEventListener('click', function () { tether('stop'); });
     var tv = $('usbtether-verify'); if (tv) tv.addEventListener('click', function () { tether('verify'); });
     var hs = $('hotspot-start'); if (hs) hs.addEventListener('click', function () { hotspot('start'); });
+    var show = $('hotspot-show-password');
+    if (show) show.addEventListener('click', function () {
+      var pass = $('hotspot-password');
+      if (pass.type === 'text') {
+        pass.type = 'password'; pass.value = ''; show.textContent = 'Show saved password'; return;
+      }
+      rpc('network', 'hotspot-credentials', {}).then(function (r) {
+        if (!r || r.success === false) { setText('hotspot-state', 'Cannot read saved password'); return; }
+        pass.type = 'text'; pass.value = r.password; show.textContent = 'Hide password';
+      });
+    });
     var hx = $('hotspot-stop'); if (hx) hx.addEventListener('click', function () { hotspot('stop'); });
     refresh();
+    var sharingLink = $('mobile-sharing-link');
+    if (sharingLink) sharingLink.addEventListener('click', function (event) {
+      event.preventDefault();
+      var tab = document.querySelector('.tab[data-tab="usbnet"]');
+      if (tab) tab.click();
+      refresh();
+    });
+    setInterval(function () {
+      var panel = $('tab-usbnet');
+      if (panel && panel.classList.contains('active')) refresh();
+    }, 5000);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);

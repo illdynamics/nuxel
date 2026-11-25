@@ -33,7 +33,8 @@ ProtectHome=no
 # real live console read as inactive through the HTTP path.  The service is still
 # root-only, loopback-only and ProtectSystem=strict.
 PrivateDevices=no
-RestrictAddressFamilies=AF_INET AF_UNIX
+# Native route/interface and nl80211 status queries use netlink.
+RestrictAddressFamilies=AF_INET AF_UNIX AF_NETLINK
 ReadOnlyPaths=/
 ReadWritePaths=/run/nuxel /run/nuxel-orientation /var/lib/nuxel /var/log/nuxel /var/cache/nuxel /home/nuxel /sys/kernel/config/usb_gadget /sys/class/leds /etc/nuxel/remote-desktop /etc/nuxel/app-registry /etc/nuxel/notifications /etc/nuxel/privacy /etc/nuxel/security /etc/nuxel/orientation
 # The session runtime dir itself must be writable: the keyring daemon writes

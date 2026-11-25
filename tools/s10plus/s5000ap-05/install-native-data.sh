@@ -56,8 +56,8 @@ cat > /etc/systemd/system/nuxel-radiod.service.d/30-native-data.conf <<'CONF'
 Requires=systemd-resolved.service
 After=systemd-resolved.service
 [Service]
-# The initial attach profile must use selector 1. Selector 3 is always-on,
-# and left the freshly booted CP unregistered in the physical regression.
+# Recovered historical tuple. Attach selector and preferred mode changed
+# together during recovery; their individual causal effects are not isolated.
 Environment=NUXEL_ATTACH_FLAG=1
 Environment=NUXEL_PROTO=ipv4
 Environment=NUXEL_NETWORK_MODE=lte

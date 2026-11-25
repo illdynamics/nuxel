@@ -843,6 +843,8 @@
       <div class="row"><label><input type="checkbox" id="mobile-enabled" disabled> Mobile data</label>
       <button id="mobile-refresh" class="primary">Refresh</button></div>
       <pre id="mobile-state" class="state" role="status" aria-live="polite">Checking mobile transport…</pre>
+      <p class="hint">Mobile data reconnects automatically when enabled. Signal measurements and network preferences that the modem does not expose remain unavailable.</p>
+      <p><a id="mobile-sharing-link" href="#tab-usbnet">Hotspot and USB internet sharing</a></p>
     </div>
   </section>
 
@@ -865,9 +867,7 @@
     </div>
     <div class="card">
       <h3>USB Internet tethering</h3>
-      <p class="hint">Grants the attached computer Internet access through one selected
-        upstream, using narrowly scoped forwarding + NAT. Off by default. Refused while a VPN
-        kill switch is armed unless the VPN interface itself is selected.</p>
+      <p class="hint">Shares mobile internet over the existing USB link. Off after reboot. A VPN kill switch can prevent sharing.</p>
       <div class="row wrap">
         <label>Upstream <select id="usbtether-upstream"><option value="">(first usable)</option></select></label>
         <button id="usbtether-enable" class="primary">Share Internet with attached computer</button>
@@ -875,10 +875,7 @@
         <button id="usbtether-verify">Verify Internet</button>
         <button id="usbtether-stop">Stop sharing</button>
       </div>
-      <p class="hint">“Share Internet with attached computer” enables the USB network
-        composition <em>and</em> starts the scoped forwarding/NAT in one explicit owner
-        action. The host must be configured 10.100.10.2/24 (gateway 10.100.10.1) and prove
-        Internet itself; the phone shows “verified” only after that evidence arrives.</p>
+      <p class="hint">The attached computer can use DHCP. Existing USB management stays available. Internet availability depends on the mobile connection.</p>
       <pre id="usbtether-state" class="state" role="status" aria-live="polite">Reading tethering state…</pre>
     </div>
     <div class="card">
@@ -889,6 +886,8 @@
         <label>SSID <input id="hotspot-ssid" type="text" maxlength="32" autocomplete="off"></label>
         <label>Password <input id="hotspot-password" type="password" maxlength="63"
           autocomplete="new-password"></label>
+        <button id="hotspot-show-password">Show saved password</button>
+        <label>Band <select id="hotspot-band"><option value="2.4">2.4 GHz</option><option value="5">5 GHz</option></select></label>
         <button id="hotspot-start">Start hotspot</button>
         <button id="hotspot-stop">Stop hotspot</button>
       </div>
@@ -1114,11 +1113,11 @@
 <script src="hardware-settings.js?v=p52000"></script>
 <script src="physical-input-settings.js?v=p103000"></script>
 <script src="pwange45000-settings.js?v=p50002"></script>
-<script src="driver-diagnostics.js?v=stage06-native"></script>
+<script src="driver-diagnostics.js?v=lte-final-20261125"></script>
 <script src="graphics-diagnostics.js?v=p52000"></script>
 <script src="services-settings.js?v=p88000"></script>
 <script src="firewall-settings.js?v=2"></script>
-<script src="usb-network-settings.js?v=usbnet2601"></script>
+<script src="usb-network-settings.js?v=lte-final-20261125"></script>
 <script type="module" src="penguru-settings.js"></script>
 </body>
 </html>
