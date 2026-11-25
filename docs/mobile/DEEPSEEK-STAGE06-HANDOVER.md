@@ -1,5 +1,29 @@
 # DeepSeek Stage 06 handover — read first
 
+## SMS Round03 result-0x0002 (DeepSeek) — 2026-11-25
+
+Result 0x0002 was decoded and root-caused against the EFUJ2 vendor RIL. It is
+a low-level CP CS-domain submission rejection with no TP-FCS cause, not a
+3GPP cause or Android RIL error. The CS-domain path is submitted while CS
+registration is DENIED (LTE-only, `service_domain_wire=1`); the vendor
+`DoSendSms` would refuse with "CS No Service, SMS send fail" and never submit.
+
+The daemon was rebuilt, deployed and verified with a minimal truthfulness
+correction: SMS now gates on CS registration specifically and `GetSmsStatus`
+reports `registration="cs-denied"`. The new authorized physical test was NOT
+transmitted — no evidence-supported bearer exists for a genuine submission
+(CS denied, IMS SMS out of scope), and an identical send would reproduce
+result 2. LTE remains ACTIVE (native IPv6, HTTPS 200).
+
+See `NUXEL-SMS-RESULT-0x0002-REPORT.md` (primary),
+`NUXEL-SMS-STATE.md`, and `NUXEL-SMS-PRODUCTION-ACCEPTANCE.md`. Implemented
+checkpoint `a9575306` + `radiod.c` truthfulness change; commit pending.
+
+Remaining blocker for genuine outgoing SMS: an actual CS/SGs or IMS SMS
+bearer on this LTE-only, CS-denied subscription. Telephony/IMS remains a
+separate mission. No merge or push was performed.
+
+
 ## Native mobile internet handover — 2026-11-25
 
 **LTE is restored and survives normal reboot; the complete internet-sharing acceptance contract has NOT passed.** Latest implementation checkpoint `39892d45`. Read [current state](NUXEL-LTE-STATE.md), [physical acceptance](NUXEL-LTE-PRODUCTION-ACCEPTANCE.md), [sharing architecture](NUXEL-INTERNET-SHARING.md), and [benchmark status](NUXEL-LTE-SPEEDTEST.md). Older blocked/NM-ownership descriptions below are historical, not the installed runtime.

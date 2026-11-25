@@ -1,5 +1,25 @@
 # Nuxel SMS production acceptance — 2026-11-25
 
+## Physical gate update (Round03 result 0x0002) — 2026-11-25
+
+Result 0x0002 root cause established (see `NUXEL-SMS-RESULT-0x0002-REPORT.md`).
+The daemon was rebuilt, deployed, and verified; the truthfulness fix makes
+`GetSmsStatus` report `registration="cs-denied"` instead of the former PS-or-CS
+`"registered"`. LTE remains ACTIVE with native IPv6 (HTTPS 200 through rmnet0).
+
+| Gate | Actual result |
+|---|---|
+| Result 0x0002 decoded | PASS: CS-domain submission rejection, no TP-FCS cause |
+| Root cause | PASS: CS registration DENIED, no CS SMS bearer on LTE-only service |
+| Native correction deployed | PASS: CS-only SMS gate + truthful `cs-denied` status |
+| New authorized SMS transmitted | NOT PERFORMED: no evidence-supported bearer for a genuine submission |
+| LTE preserved | PASS: phase ACTIVE, ip_configured true, IPv6 HTTPS 200 |
+| Installed/running daemon | PASS: `e439005f...ddf169` |
+
+**SMS production acceptance remains NOT complete.** Genuine outgoing SMS still
+requires an actual CS/SGs or IMS bearer; IMS SMS is out of scope this round.
+
+
 ## Physical execution acceptance (Round02 correlated) — 2026-11-25
 
 Corrected native daemon deployed and physically verified through the Radio1

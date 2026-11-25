@@ -1,5 +1,27 @@
 # Nuxel SMS implementation and evidence
 
+## Round03 result-0x0002 root cause — 2026-11-25
+
+Result 0x0002 is decoded: it is a low-level CP CS-domain submission rejection
+with no TP-FCS cause (`SendSMS Result: 0x2, Tp cause: 0xFF`), not a 3GPP cause
+and not an Android RIL error. EFUJ2 `GetSmsResult` (0x344a30) leaves raw 2
+unmapped (default branch -> 0xff). Root cause is CS-domain submission while CS
+registration is DENIED: the vendor `DoSendSms` (0x2197b0) would report
+"CS No Service, SMS send fail" and never submit; the native path OR-ed PS
+(LTE) registration into the gate and submitted a doomed CS `SEND_MSG`.
+
+The smallest evidence-supported fix gates SMS on CS registration specifically
+and reports `registration="cs-denied"` truthfully. The new authorized physical
+test was NOT transmitted: there is no evidence-supported path to a genuine
+carrier submission (CS denied, IMS SMS unimplemented/out of scope), and
+sending against a known-denied domain would reproduce result 2. See
+`NUXEL-SMS-RESULT-0x0002-REPORT.md`.
+
+The `ready`/`registration` truthfulness change affects the aggregate
+`GetSmsStatus` report only; the CS-domain serialization (`fmt_sms_send`
+domain_wire 0) is unchanged and still correct for the CS bearer.
+
+
 ## Round02 physical submission — 2026-11-25
 
 The corrected native daemon was rebuilt, tested, deployed and verified, then a

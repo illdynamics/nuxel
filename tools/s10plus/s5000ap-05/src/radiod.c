@@ -1695,6 +1695,19 @@ static void maybe_open_endpoints(void)
     if (g.rfs_src && g.rfs.present) sd_event_source_set_enabled(g.rfs_src, SD_EVENT_ON);
 }
 
+/* SMS is submitted on the CS wire domain (fmt_sms_send domain_wire 0 ==
+ * ConvertDomainToIPC(2), i.e. internal DomainSelector::GetDomain=2 CS_ONLY).
+ * EFUJ2 vendor DoSendSms (0x2197b0) requires NetRegState::IsRegistered() for
+ * the CS path and otherwise reports "CS No Service, SMS send fail" without
+ * touching the CP. A PS/LTE-only registration is NOT a CS SMS bearer: the CP
+ * rejects a CS-domain submission with raw result 2 (Tp cause 0xFF) and no
+ * network submission occurs. Reflect CS registration truthfully instead of
+ * OR-ing in PS registration and spawning a doomed submission. */
+static bool sms_cs_registered(void)
+{
+    return g.cs_registration_valid && fmt_rx_registered(g.cs_registration.state);
+}
+
 /* tick: CP state polling + pending timeouts + reopen */
 static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
 {
@@ -1725,8 +1738,7 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
     /* Stage-06 data-session driver (opt-in, bounded). */
     data_session_tick(now_ms());
     sms_service_tick(&g.sms,now_ms(),g.cp_online,g.sim_ready_seen,
-        (g.dsc.net_regist_valid && fmt_rx_registered(g.dsc.last_ps_reg_state)) ||
-        (g.cs_registration_valid && fmt_rx_registered(g.cs_registration.state)),
+        sms_cs_registered(),
         g.write_enabled && g.fmt.present);
     call_service_tick(&g.calls,now_ms(),g.cp_online,g.write_enabled && g.fmt.present && g.sim_ready_seen);
 
@@ -2309,10 +2321,8 @@ static int method_get_sms_status(sd_bus_message *m,void *u,sd_bus_error *e)
         sms_store_any_delivered(&g.sms.store) ? "true" : "false",
         g.write_enabled && g.cp_online && g.sim_ready_seen && g.sms.store.db && g.sms.ready_ack &&
         g.sms.smsc_len && !g.sms.active && !g.sms.blocked &&
-        ((g.dsc.net_regist_valid && fmt_rx_registered(g.dsc.last_ps_reg_state)) ||
-         (g.cs_registration_valid && fmt_rx_registered(g.cs_registration.state))) ? "true" : "false",
-        ((g.dsc.net_regist_valid && fmt_rx_registered(g.dsc.last_ps_reg_state)) ||
-         (g.cs_registration_valid && fmt_rx_registered(g.cs_registration.state))) ? "registered" : "unavailable"};
+        sms_cs_registered() ? "true" : "false",
+        sms_cs_registered() ? "registered" : "cs-denied"};
     for(size_t i=0;i<9 && r>=0;i++)r=sd_bus_message_append(reply,"{ss}",keys[i],vals[i]);
     if(r>=0)r=sd_bus_message_close_container(reply);
     if(r>=0)r=sd_bus_send(NULL,reply,NULL);
