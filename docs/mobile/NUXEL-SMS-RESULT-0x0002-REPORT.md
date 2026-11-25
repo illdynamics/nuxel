@@ -84,3 +84,23 @@ Remaining dependencies for genuine outgoing SMS on this device/carrier:
 2. Implement IMS registration + SMSoIP (explicitly out of scope this round).
 
 Telephony (voice/IMS) remains a separate mission.
+
+---
+
+## Round04 physical confirmation (2026-11-25)
+
+The previously-deferred fallback experiment ("owner decision pending") was
+executed under explicit authorization. Network mode was switched to
+`LTE/WCDMA/GSM auto` (`0x0b`, read back `mask=11`) with service domain `CS+PS`
+(`wire=1`), and observed >5 minutes:
+
+- PS: `REGISTERED_HOME` (LTE) — unchanged.
+- CS: still `DENIED` (`raw 4`, `rat=LTE`, `reject_cause=0`), now reported as a
+  domain=2 CS registration result instead of absent.
+
+This proves the CS denial is not caused by LTE-only network selection or
+service-domain configuration: it is the carrier (KPN, PLMN `20408`) with no
+legacy 2G/3G CS fallback and no combined-attach (SGs) CS registration. The
+result-0x0002 root cause (CS-domain submission with no CS bearer) therefore
+cannot be resolved by reversible network-mode or service-domain changes. A
+genuine outgoing SMS still requires SMS over SGs or IMS SMSoIP.

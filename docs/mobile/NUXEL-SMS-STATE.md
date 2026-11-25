@@ -299,3 +299,41 @@ bearer while CS is denied on an LTE-only subscription. A genuine submission need
 a real CS/SGs or IMS SMS bearer (owner decision pending), not a domain-byte or
 network-mode change. Messages 1-3 stay `unknown` (audit-trailed `superseded`);
 message 4 remains `queued` and untransmitted. LTE baseline preserved.
+
+## Round04 network-mode fallback experiment — 2026-11-25 (authorized; physical)
+
+Owner explicitly authorized switching LTE-only -> LTE/WCDMA/GSM automatic. This
+was executed, read back, and observed physically.
+
+Applied and verified:
+
+- `NUXEL_NETWORK_MODE` changed `lte` -> `auto` (drop-in `30-native-data.conf`),
+  rollback copy preserved alongside.
+- `nu-xel-radiod` restarted; running binary identity unchanged
+  (`3b645fca97f4b29539000d530a984a75`, same as `nuxel-radiod.new`), i.e. the
+  SMS-enabled build was already active; the only blocker was the env var.
+- Network-mode readback: `mask=11` (`0x0b` = LTE/WCDMA/GSM auto) — verified
+  repeatedly stable across the status poll cycle (was `mask=8` LTE-only).
+- Service-domain readback: `wire=1` (CS+PS), `packet_service_enabled=true`.
+- PS registration: `REGISTERED_HOME` (raw 2, rat LTE).
+- CS registration: still `DENIED` (raw 4, rat LTE, `reject_cause=0`), now
+  visible as a domain=2 (CS) result rather than absent.
+
+Conclusion of the authorized fallback experiment: enabling WCDMA/GSM auto mode
+does NOT establish CS registration. Carrier is KPN (home PLMN `20408`), whose
+2G/3G legacy CS networks are retired; the modem performs a PS-only EPS attach
+(no combined EPS/IMSI attach over SGs), so no CS SMS bearer can be acquired.
+This is a physical carrier limitation, not a device-configuration defect.
+
+Result: the owner-authorized message 4 remains `queued` and untransmitted; the
+CS-registration gate truthfully refuses a doomed submission. LTE baseline fully
+preserved (HTTPS 200 over cellular IPv6 `rmnet0`), USB management
+(`usb0`, gadget `configured`) and ZeroTier (`10.11.12.99`) independently
+available. No new message was created, no historical record altered, no
+auto-retransmit.
+
+Remaining genuine SMS bearer requires SMS over SGs (combined attach; no native
+userspace trigger recovered in vendor evidence, handled inside CP firmware
+against network SGs capability) or IMS SMSoIP (modem exposes `IMS`/`QMIIMS`/
+`SEC_IMS_AUTH` interfaces, but native IMS PDN + SIP + SMSoIP + entitlement is
+unimplemented). No EFS/NV/protected-partition change was attempted.
