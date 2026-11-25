@@ -1,5 +1,25 @@
 # Nuxel LTE speed test — 2026-11-25
 
+## Current physical result — 2026-11-25
+
+**LTE works; benchmarks are BLOCKED on owner confirmation of sufficient mobile data for all three tests.** The earlier registration-blocked statements below describe previous attempts only.
+
+| Measurement | Download Mbps | Upload Mbps | Ping ms | Server | Result |
+|---|---:|---:|---:|---|---|
+| Native speedtest-cli | — | — | — | — | BLOCKED; not executed |
+| Nuxel Browser | — | — | — | — | BLOCKED; not executed |
+| Firefox | — | — | — | — | BLOCKED; not executed |
+
+Carrier: KPN/home PLMN20408, genuine home registration. Technology: LTE. Interface: `rmnet0`; native IPv6 and IPv4 through `nuxclat`/carrier NAT64. Signal measurements are unavailable. Speedtest server, process exit status, throughput and latency are not measured; there is no fabricated CLI JSON or result screenshot.
+
+The actual native Nuxel Browser and actual handset Firefox both loaded and rendered `https://example.com` with Wi-Fi disabled. [Nuxel screenshot](evidence/internet-final-20261125/nuxel-browser-example.png) and [Firefox screenshot](evidence/internet-final-20261125/firefox-example.png) prove ordinary graphical HTTPS, **not Speedtest JavaScript or upload/download measurement compatibility**. No desktop/headless browser was substituted.
+
+[Cellular preflight](evidence/lte-speedtest/cellular-preflight-20261125.json) records genuine registration, routes, carrier DNS, independent IPv4/IPv6 HTTPS, timestamps and counters. Functional final-check traffic increased cellular RX by 74,236 bytes and TX by 7,541 bytes. These interface deltas may include background activity. Benchmark consumption is zero because none ran; total execution consumption is not measured. [Machine-readable status](evidence/lte-speedtest/status-20261125.json).
+
+After explicit allowance confirmation, re-run cellular-only preflight, retain USB management, execute exactly one `speedtest-cli --json` and one real Speedtest measurement in each handset browser sequentially, choosing the same server if supported. Record counters, exit status and visible results; redact addresses/identifiers before committing. Do not infer browser performance differences from an uncontrolled radio/server comparison.
+
+---
+
 ## Finisher measurement status — 2026-11-25
 
 **Not run: download, upload and latency are unmeasured.** The corrected normal

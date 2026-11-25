@@ -1,0 +1,5 @@
+ 01:32:08 up 0 min,  0 user,  load average: 8.79, 2.54, 0.87
+active
+inactive
+inactive
+{"available": true, "source": "native:Radio1", "registered": false, "connected": false, "sim_state": "locked-or-unavailable", "sim_present": null, "registration": "UNKNOWN", "registration_raw": "7", "error": null, "state": "searching", "technology": "LTE", "operator": null, "signal_quality": null, "signal_valid": false, "mobile_data_enabled": false, "connection_state": "disabled", "apn": "internet", "phase": "IDLE", "failure_phase": "IDLE", "failure_result": "unavailable", "disconnect_result": "0", "interface": "rmnet0", "cid": 1, "ipv4": null, "link_result": "0", "home_operator": "20408", "roaming": null, "statistics": {"rx_bytes": 0, "tx_bytes": 0, "rx_bytes_per_second": null, "tx_bytes_per_second": null, "duration_seconds": null, "dns": []}}

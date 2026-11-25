@@ -1,0 +1,35 @@
+{
+  "timestamp": "2026-11-25T00:29:12Z",
+  "client": "physical development laptop",
+  "interface": "en12",
+  "route": {
+    "exit": 0,
+    "stdout": "route to: [public-address-redacted]\ndestination: [public-address-redacted]\n    gateway: 10.100.10.1\n  interface: en12\n      flags: <UP,GATEWAY,HOST,DONE,STATIC,IFSCOPE>\n recvpipe  sendpipe  ssthresh  rtt,msec    rttvar  hopcount      mtu     expire\n       0         0         0         0         0         0      1500         0",
+    "stderr": ""
+  },
+  "before": {
+    "exit": 0,
+    "stdout": "282111577\n81897246\nChain NUXEL_USB_TETHER (1 references)\n pkts bytes target     prot opt in     out     source               destination         \n    0     0 MASQUERADE  all  --  *      nuxclat  10.100.10.0/24       0.0.0.0/0",
+    "stderr": ""
+  },
+  "dns": {
+    "exit": 0,
+    "stdout": "; <<>> DiG 9.10.6 <<>> -b 10.100.10.2 @10.100.10.1 one.one.one.one A +time=3 +tries=1\n; (1 server found)\n;; global options: +cmd\n;; Got answer:\n;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 25365\n;; flags: qr rd ra; QUERY: 1, ANSWER: 2, AUTHORITY: 0, ADDITIONAL: 1\n\n;; OPT PSEUDOSECTION:\n; EDNS: version: 0, flags:; udp: 1232\n;; QUESTION SECTION:\n;one.one.one.one.\t\tIN\tA\n\n;; ANSWER SECTION:\none.one.one.one.\t37111\tIN\tA\t[public-address-redacted]\none.one.one.one.\t37111\tIN\tA\t[public-address-redacted]\n\n;; Query time: 41 msec\n;; SERVER: 10.100.10.1#53(10.100.10.1)\n;; WHEN: Wed Nov 25 01:29:12 CET 2026\n;; MSG SIZE  rcvd: 76",
+    "stderr": ""
+  },
+  "https": {
+    "exit": 0,
+    "stdout": "http=200 tls=0 bytes=56614",
+    "stderr": ""
+  },
+  "after": {
+    "exit": 0,
+    "stdout": "282176889\n81900366\nChain NUXEL_USB_TETHER (1 references)\n pkts bytes target     prot opt in     out     source               destination         \n    1    64 MASQUERADE  all  --  *      nuxclat  10.100.10.0/24       0.0.0.0/0",
+    "stderr": ""
+  },
+  "management": {
+    "exit": 0,
+    "stdout": "usb-ssh-preserved",
+    "stderr": ""
+  }
+}

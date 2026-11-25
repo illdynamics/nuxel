@@ -1,0 +1,1 @@
+{"mobile_data_enabled": false, "connected": false, "connection_state": "disabled", "disconnect_result": "0"}

@@ -1,0 +1,42 @@
+{
+  "services/nuxel-bridge/src/native_radio.py": {
+    "sha256": "7b70c6ec615d55996cc2bba2462d5717905f544da1ef6f2216e65a4fc0204254",
+    "installed_sha256": "7b70c6ec615d55996cc2bba2462d5717905f544da1ef6f2216e65a4fc0204254"
+  },
+  "services/nuxel-bridge/src/mobile_upstream.py": {
+    "sha256": "aa5f2fc131bf9e695bbfb9e35eb373a513e56238837f033504995aa9cb4f8e56",
+    "installed_sha256": "aa5f2fc131bf9e695bbfb9e35eb373a513e56238837f033504995aa9cb4f8e56"
+  },
+  "services/nuxel-bridge/src/sharing_link.py": {
+    "sha256": "4d2b63849f71ac84e3864abe521e71ac06eee78bef7839728602c87f7e0d1e99",
+    "installed_sha256": "4d2b63849f71ac84e3864abe521e71ac06eee78bef7839728602c87f7e0d1e99"
+  },
+  "services/nuxel-bridge/src/usb_tether.py": {
+    "sha256": "25a020e47100942d677611f84bc375ada235abc4702b00882c6f19139449a2c0",
+    "installed_sha256": "25a020e47100942d677611f84bc375ada235abc4702b00882c6f19139449a2c0"
+  },
+  "services/nuxel-bridge/src/network_manager.py": {
+    "sha256": "1912b577ba175b313d82ca5911b7265e325fa4d90248b7acb760a93a0a932103",
+    "installed_sha256": "1912b577ba175b313d82ca5911b7265e325fa4d90248b7acb760a93a0a932103"
+  },
+  "services/nuxel-bridge/src/api.py": {
+    "sha256": "295259478ca679aa6e40e94008fae74688875e4f4310720d013beedc9d3eb216",
+    "installed_sha256": "295259478ca679aa6e40e94008fae74688875e4f4310720d013beedc9d3eb216"
+  },
+  "services/nuxel-network/nuxel-hotspot.py": {
+    "sha256": "39739c044055885fc1538e4dff41fa5f506f69a4001b0a930be79630773aaadf",
+    "installed_sha256": "39739c044055885fc1538e4dff41fa5f506f69a4001b0a930be79630773aaadf"
+  },
+  "pwa/nuxel-apps/settings/index.html": {
+    "sha256": "ba671760f1f65f14cd4e4350e995feacda8f93b98f4b24f84f9ea45c8f8b4edb",
+    "installed_sha256": "ba671760f1f65f14cd4e4350e995feacda8f93b98f4b24f84f9ea45c8f8b4edb"
+  },
+  "pwa/nuxel-apps/settings/usb-network-settings.js": {
+    "sha256": "ed6303c2d32b34b95a31bb67b1a5a526eaabff7630c01809214725193048f648",
+    "installed_sha256": "ed6303c2d32b34b95a31bb67b1a5a526eaabff7630c01809214725193048f648"
+  },
+  "pwa/nuxel-home/css/status-bar.css": {
+    "sha256": "5d3bbd7ece75fd91f9282150ebc4ace992db1bc1d3824eeb4b836b9a1e68e3ae",
+    "installed_sha256": "5d3bbd7ece75fd91f9282150ebc4ace992db1bc1d3824eeb4b836b9a1e68e3ae"
+  }
+}

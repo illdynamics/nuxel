@@ -1,0 +1,29 @@
+{
+ "schema_version": 1,
+ "supported": true,
+ "enabled": true,
+ "hostapd_pid": 46192,
+ "dnsmasq_pid": 46375,
+ "ssid": "Nuxel",
+ "interface": "wlan1",
+ "address": "10.42.0.1",
+ "subnet": "10.42.0.0/24",
+ "dhcp": "dnsmasq",
+ "nat": "iptables NUXEL_HOTSPOT_NAT",
+ "uplink": "nuxclat",
+ "upstream_available": true,
+ "internet_verified": false,
+ "connected_clients": 0,
+ "bands": [
+  "2.4",
+  "5"
+ ],
+ "band": "2.4",
+ "state": "on-unverified",
+ "ip_forward": true
+}
+disabled
+active
+active
+active
+NRestarts=0

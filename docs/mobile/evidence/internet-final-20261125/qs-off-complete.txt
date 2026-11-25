@@ -1,0 +1,6 @@
+disabled
+Link 4 (rmnet0)
+    Current Scopes: none
+         Protocols: -DefaultRoute -LLMNR -mDNS -DNSOverTLS DNSSEC=no/unsupported
+     Default Route: no
+NRestarts=0

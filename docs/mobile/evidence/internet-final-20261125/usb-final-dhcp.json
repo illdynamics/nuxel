@@ -1,0 +1,10 @@
+{
+  "type": "DHCPACK",
+  "address": "10.100.10.52",
+  "server": "10.100.10.1",
+  "mask": "255.255.255.0",
+  "router": "10.100.10.1",
+  "dns": "10.100.10.1",
+  "interface": "en12",
+  "system_configuration_changed": false
+}

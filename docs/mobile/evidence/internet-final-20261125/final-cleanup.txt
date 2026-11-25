@@ -1,0 +1,18 @@
+2026-11-25T00:54:44Z
+USB SSH: reachable
+inactive
+inactive
+Sharing policy rules:
+0:	from all lookup local
+32766:	from all lookup main
+32767:	from all lookup default
+Table 107:
+Table 108:
+Sharing DNS processes:
+Sharing NAT:
+Forwarding baseline:
+1
+Bridge restarts:
+NRestarts=0
+Preferences:
+enabled

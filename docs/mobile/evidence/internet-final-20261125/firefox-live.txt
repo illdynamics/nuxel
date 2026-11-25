@@ -1,0 +1,4 @@
+SHOT_OK /var/lib/nuxel/internet-20261125/firefox-example.ppm 720x1520 stride=2880 fmt=0x34324258
+disabled
+1502599
+672394

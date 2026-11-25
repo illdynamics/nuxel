@@ -1,0 +1,3 @@
+zerotier-ssh-okdisabled
+default dev nuxclat scope link metric 2100 mtu 1480
+default dev rmnet0 proto bgp src [address-redacted] metric 2100 pref medium

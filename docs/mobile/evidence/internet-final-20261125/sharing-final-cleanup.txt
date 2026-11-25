@@ -1,0 +1,34 @@
+1
+active
+{
+ "schema_version": 1,
+ "supported": true,
+ "enabled": true,
+ "hostapd_pid": 14504,
+ "dnsmasq_pid": 14859,
+ "ssid": "Nuxel",
+ "interface": "wlan1",
+ "address": "10.42.0.1",
+ "subnet": "10.42.0.0/24",
+ "dhcp": "dnsmasq",
+ "nat": "iptables NUXEL_HOTSPOT_NAT",
+ "uplink": "nuxclat",
+ "upstream_available": true,
+ "internet_verified": false,
+ "connected_clients": 0,
+ "bands": [
+  "2.4",
+  "5"
+ ],
+ "band": "2.4",
+ "state": "on-unverified",
+ "ip_forward": true
+}
+1
+2
+2
+disabled
+baseline-restored0:	from all lookup local
+32766:	from all lookup main
+32767:	from all lookup default
+ssh-preserved

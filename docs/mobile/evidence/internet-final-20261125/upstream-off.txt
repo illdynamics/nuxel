@@ -1,0 +1,31 @@
+unreachable default metric 32760
+unreachable default metric 32760
+Link 4 (rmnet0)
+    Current Scopes: none
+         Protocols: -DefaultRoute -LLMNR -mDNS -DNSOverTLS DNSSEC=no/unsupported
+     Default Route: no
+{
+ "schema_version": 1,
+ "supported": true,
+ "enabled": true,
+ "hostapd_pid": 47750,
+ "dnsmasq_pid": 47995,
+ "ssid": "Nuxel",
+ "interface": "wlan1",
+ "address": "10.42.0.1",
+ "subnet": "10.42.0.0/24",
+ "dhcp": "dnsmasq",
+ "nat": "iptables NUXEL_HOTSPOT_NAT",
+ "uplink": "nuxclat",
+ "upstream_available": false,
+ "internet_verified": false,
+ "connected_clients": 0,
+ "bands": [
+  "2.4",
+  "5"
+ ],
+ "band": "2.4",
+ "state": "waiting-upstream",
+ "ip_forward": true
+}
+{"success": true, "enabled": true, "state": "waiting-upstream", "upstream": "nuxclat", "upstream_available": false, "usb_interface": "usb0", "usb_link_active": true, "subnet": "10.100.10.0/24", "source_address": "10.100.10.1", "host_address": "10.100.10.2/24", "gateway": "10.100.10.1", "dhcp": "dnsmasq", "ipv6": "not-shared", "rules_present": true, "table": "inet nuxel_usb_tether", "ip_forward": true, "internet_verified": false, "host_evidence": {"verified": false, "source": null, "age_seconds": null, "checked_at": null}, "vpn_armed": false, "vpn_conflict": null, "upstreams": [], "last_error": null, "started_at": "921.99"}

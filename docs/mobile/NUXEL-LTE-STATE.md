@@ -1,5 +1,35 @@
 # Nuxel LTE implementation and physical state
 
+## Physical execution update — 2026-11-25
+
+**LTE internet works and returns after normal reboot. Full mobile-internet acceptance remains incomplete.** This section supersedes the blocked-registration and NetworkManager ownership claims below; older receipts are retained as history.
+
+Final implementation checkpoint: `39892d45`, following `ecd1dea4` (live UI bridge), `0e0ba871` (sharing), `803c7d1b` (read-only guard check), and `f5ba8428` (reboot/IPv4 compatibility). Entry HEAD was already `c6f0c4bc`, newer than the requested `c52726d3` baseline. Do not attribute entry-checkpoint registration recovery to this execution.
+
+The final physical [receipt](evidence/internet-final-20261125/final-acceptance.json) records REGISTERED_HOME/raw2, packet service attached, LTE, CID1 ACTIVE, APN `internet`, home PLMN 20408 (KPN), and carrier IPv6 on `rmnet0`. Wi-Fi is disabled; there is no USB or VPN default route. Native IPv6 and translated IPv4 HTTPS both return HTTP200, TLS verification0, process exit0. Cellular RX increases 1,589,923 → 1,664,159 bytes and TX 792,551 → 800,092. These are functional checks, not a speed measurement.
+
+### Reproducible runtime
+
+The recovered userspace tuple is `NUXEL_ATTACH_FLAG=1`, `NUXEL_PROTO=ipv4`, `NUXEL_NETWORK_MODE=lte`, `NUXEL_REATTACH_IA=0` in the production radiod drop-in. The selector and preferred mode changed together during the earlier recovery; their individual causal contributions were not isolated. Despite that protocol selector, the carrier supplies **IPv6 only**. Preserve truthful decoder semantics. Running radiod SHA256 is `8900c788415bd467a8607da404c7e09210209f0e972c262d22130b22dd6b8027`.
+
+Production startup retains the corrected read-only EFS readiness and production CP guard. The native data installer deploys the existing Radio1 lifecycle, scoped resolver compatibility and TAYGA CLAT. Both DNS64 discovery answers are validated against the carrier DNS; the observed NAT64 prefix is `64:ff9b::/96`. CLAT's local IPv4 address is a translation endpoint, **not a carrier-assigned IPv4 address**. TUN MTU1500 and IPv4 route MTU1480 fix the demonstrated translated TLS packet drop. `nuxel-cellular-lock.service` creates the shared xtables lock before sandboxed workers start; no kernel or firmware changes are required.
+
+One controlled enabled normal reboot returned cellular-only IPv6 and translated IPv4 HTTPS automatically at 93 seconds uptime. A separate disabled reboot retained OFF/IDLE with no cellular IP and sharing inactive; mobile data was subsequently restored ON. A later additional reboot was observed without a reboot command from this execution; its cause is not established. It also returned LTE automatically.
+
+### Ownership and current limits
+
+Radio1 owns modem commands, durable preference, bearer lifecycle and bounded reconnect. The installed NM exposes `rmnet0` as ARPHRD_PPP/`NMDevicePpp`; the generic connection attempt cannot activate it. The journaled native L3 helper therefore remains the actual cellular address/route owner, using systemd-resolved for link DNS. NM retains Wi-Fi ownership. **Full native cellular NetworkManager connection representation is not complete.** No fake modem/bearer objects are introduced.
+
+The bridge now uses a private D-Bus connection without the shared GLib main loop and disables process exit on disconnect. This corrects the physically reproduced bridge exit/segfault; repeated status reads survive and final HTTP bridge NRestarts=0. AF_NETLINK was added to its existing address-family allowlist so route/USB/Wi-Fi status is accurate. Other sandbox and authorization controls remain enabled.
+
+Actual Settings and Quick Settings OFF/ON actions released and restored the real bearer, with shared state synchronization. Statistics use interface counters and real link data; signal/RSRP/RSRQ/RSSI/SINR and serving-operator name remain unavailable. The visible top bar shows LTE with unknown signal, not fabricated bars. APN is displayed; unsupported preferences are not presented as working controls.
+
+USB external-client DHCP, DNS and HTTPS through LTE passed, including upstream-loss refusal and restoration. WPA2 AP startup and concurrent station/AP operation passed, but **no external hotspot client connected**. See [sharing](NUXEL-INTERNET-SHARING.md). Both actual handset browsers rendered HTTPS pages. All three speed benchmarks remain blocked on explicit data-allowance confirmation.
+
+Final state: mobile data ON; LTE working; sharing OFF; USB and ZeroTier SSH working; Wi-Fi disabled for the cellular acceptance; laptop test route removed. Full acceptance, SMS and telephony are not declared complete.
+
+---
+
 ## Finisher implementation update — 2026-11-25
 
 **LTE internet is still blocked. Stage 06 is not complete.** This section

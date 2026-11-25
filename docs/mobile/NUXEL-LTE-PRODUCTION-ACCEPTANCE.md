@@ -1,5 +1,44 @@
 # Nuxel LTE production acceptance — 2026-11-25
 
+## Physical execution acceptance — 2026-11-25
+
+Implementation `39892d45`; [final receipt](evidence/internet-final-20261125/final-acceptance.json), [installed hashes](evidence/internet-final-20261125/deployed-identities.json). This result supersedes older raw7/blocked results below.
+
+| Gate | Actual result |
+|---|---|
+| LTE registration / bearer | PASS: REGISTERED_HOME/raw2, PS attached, LTE, CID1 ACTIVE |
+| Native IPv6 | PASS: carrier DNS, cellular-only HTTPS200, TLS verification0, counters increase |
+| IPv4 internet | PASS through carrier-backed CLAT/NAT64; native carrier IPv4 NOT PROVIDED |
+| Enabled normal reboot | PASS: automatic IPv6 and IPv4 HTTPS at 93s uptime; [receipt](evidence/internet-final-20261125/enabled-reboot.json) |
+| Disabled preference reboot | PASS: disabled/IDLE, no cellular IP, sharing inactive; [receipt](evidence/internet-final-20261125/disabled-reboot.txt) |
+| Reconnect | PASS for OFF/ON and sharing recovery after upstream return; uncontrolled RF outage/coverage recovery NOT VERIFIED |
+| NetworkManager | INCOMPLETE: native L3 fallback works; native cellular NM profile activation fails for the actual PPP-type interface |
+| Settings / QS mobile data | PASS: real rendered controls OFF/ON, bearer cleanup/reconnection and synchronization; [OFF receipt](evidence/internet-final-20261125/qs-off-complete.txt), [ON HTTPS](evidence/internet-final-20261125/after-ui-on.json) |
+| Top bar | PASS visible registered LTE/unknown signal; [screenshot](evidence/internet-final-20261125/qs-topbar-fixed.png); fullscreen-native sharing indicators incomplete |
+| Mobile statistics | PASS real bytes/rates/duration/link DNS; unavailable radio measurements remain unknown; [Settings](evidence/internet-final-20261125/settings-connected.png) |
+| Wi-Fi coexistence | PASS station+LTE and station+AP observed; exhaustive automatic handover cases NOT VERIFIED |
+| Wi-Fi hotspot | PASS WPA2/CCMP AP startup, DHCP process and cleanup; Settings and QS start/stop exercised. External authentication/DHCP/DNS/HTTPS BLOCKED: no consenting external Wi-Fi client available |
+| Hotspot clients | Actual zero reported. Nonzero client-count changes NOT VERIFIED |
+| USB tethering | PASS actual laptop DHCP ACK, DNS and TLS-verified HTTPS through LTE; [DHCP](evidence/internet-final-20261125/usb-final-dhcp.json), [Settings-started HTTPS](evidence/internet-final-20261125/usb-settings-start.json) |
+| USB reconnect | PASS one observed disconnect/reconnect with subsequent DNS/HTTPS; [receipt](evidence/internet-final-20261125/usb-reconnected.json) |
+| Sharing upstream loss | PASS blocks client forwarding despite available handset Wi-Fi; terminal route retained; automatic route restoration after LTE ON; [receipt](evidence/internet-final-20261125/usb-upstream-restored-complete.json) |
+| Simultaneous sharing | AP and USB service coexist; USB external HTTPS passed. Two external clients simultaneously NOT VERIFIED |
+| Management | Final USB and ZeroTier SSH PASS. A transient USB SSH stall occurred during concurrent-sharing UI testing; ZeroTier remained available, stopping sharing restored USB. Cause not isolated; uninterrupted USB management under every combination is NOT accepted |
+| Native Nuxel Browser | PASS actual on-device HTTPS rendering over cellular; [screenshot](evidence/internet-final-20261125/nuxel-browser-example.png) |
+| Firefox | PASS actual on-device HTTPS rendering over cellular; [screenshot](evidence/internet-final-20261125/firefox-example.png) |
+| Three speed benchmarks | BLOCKED: sufficient-data confirmation absent; no benchmark executed |
+| Final state | PASS LTE ON, sharing OFF, Wi-Fi OFF, USB/ZeroTier preserved, sharing routes/NAT/DNS cleaned, laptop scoped test route removed |
+
+Controls were exercised through the existing root-only probe clicking real WebKit widgets. This is physical application testing, not a host mock; it does not establish manual finger ergonomics. The final saved-password display control was deployed but not accepted: a stale iframe and subsequent lock prevented a successful display check. A screenshot shows the former clipped LTE label; the committed final top-bar screenshot shows the corrected layout. Public addresses are masked in committed images.
+
+Focused validation: the prior 25-test radio/resolver/CLAT/sharing/guard/network set passed; after the final hotspot status change its focused sharing suite passed 10 tests. JavaScript syntax, Python compilation, installer shell syntax and diff whitespace checks passed. No broad fuzz/sanitizer campaign was repeated.
+
+Safety note: the pre-existing recovery guard ignored `--check`, causing one unintended CP startup action during preflight. It was disclosed and fixed in `803c7d1b`; argument tests prove check/unknown arguments cannot invoke boot. The installed device-specific pin was preserved, and physical `--check` is now read-only. No protected data writes, flashing, kernel changes, SMS, calls, or IMS work were performed. This was not an uncontrolled reset loop.
+
+**Full mobile internet acceptance is incomplete.** Open gates: full NM representation, external hotspot client, simultaneous external clients, three allowed speed tests, supported transition matrix and unresolved intermittent USB stall. No success marker is justified.
+
+---
+
 ## Finisher acceptance — 2026-11-25
 
 **BLOCKED at genuine PS registration; not LTE production accepted.**

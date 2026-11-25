@@ -1,5 +1,25 @@
 # DeepSeek Stage 06 handover — read first
 
+## Native mobile internet handover — 2026-11-25
+
+**LTE is restored and survives normal reboot; the complete internet-sharing acceptance contract has NOT passed.** Latest implementation checkpoint `39892d45`. Read [current state](NUXEL-LTE-STATE.md), [physical acceptance](NUXEL-LTE-PRODUCTION-ACCEPTANCE.md), [sharing architecture](NUXEL-INTERNET-SHARING.md), and [benchmark status](NUXEL-LTE-SPEEDTEST.md). Older blocked/NM-ownership descriptions below are historical, not the installed runtime.
+
+Milestones: entry `c6f0c4bc` already contains registration recovery; `f5ba8428` adds reproducible startup and native IPv4 compatibility; `803c7d1b` fixes guard check semantics; `0e0ba871` implements isolated LTE sharing; `ecd1dea4` fixes live bridge/UI integration; `39892d45` fixes hotspot transition status. The later acceptance documentation commit changes no runtime code. Use `git log -1` for that final documentation checkpoint.
+
+Known-good production tuple: attach1/proto ipv4/mode lte/reattach IA0, APN internet. Carrier delivery remains IPv6-only. Native L3 + resolved + carrier-discovered TAYGA CLAT provide actual IPv6 and IPv4 internet. Preserve the validated MTU1500/IPv4-route1480 and the scoped resolver compatibility shim. Do not reinstate the nonactivating generic NM profile: actual rmnet0 is NMDevicePpp. Finish NM integration against real hardware without manufacturing MM objects or introducing a second modem owner.
+
+`NativeRadio` uses private D-Bus with NULL_MAIN_LOOP and no exit-on-disconnect. This fixes the physically reproduced HTTP-bridge exit/segfault. Its sandbox now permits AF_NETLINK for actual route/interface reads. Settings, QS and Home consume the same Radio1/sharing services; stats use real counters. Unavailable signal measurements and serving-operator name stay unknown. APN editing, modem network preferences and fullscreen sharing indicators are not complete.
+
+Sharing workers use the existing USB gadget and dedicated wlan1, per-interface policy tables, carrier-scoped DNS and private firewall/NAT rules. They never start automatically on reboot. Preserve existing VPN kill-switch refusal and management restrictions. Latest reversible sharing deployment backup: `/var/lib/nuxel/sharing-install.p2p3JM/rollback.sh`. Installed hashes match source in the evidence receipt. Do not copy the repository recovery-guard file wholesale onto this device: its existing device-specific executable pin differs; only the check-argument fix was applied to it.
+
+Next physical gates: consenting external Wi-Fi hotspot client; resolve the transient concurrent-sharing USB SSH stall while retaining ZeroTier; two external clients simultaneously; remaining Wi-Fi/VPN/coverage transitions; final saved-password UI action; three speed measurements after explicit allowance confirmation. Both real handset browsers already rendered normal HTTPS on cellular. No benchmark result exists.
+
+Final state at acceptance: mobile ON/ACTIVE, native IPv6 and translated IPv4 HTTPS200, Wi-Fi disabled, hotspot/tether OFF, USB and ZeroTier SSH usable, no owned sharing routes/NAT/DHCP left. The deliberate USB-forwarding deny remains when sharing is off. Preserve unrelated owner RFS edits and untracked notes/evidence.
+
+**DeepSeek owns all remaining SMS, ordinary voice, ABOX call audio, IMS, VoLTE and other telephony work.** None was implemented or exercised here. Existing research below is retained. No merge or push was performed; separate authorization is still required.
+
+---
+
 ## Finisher handover — 2026-11-25 (supersedes prior deployment notes)
 
 **Not LTE accepted; not full Stage 06 complete.** Implementation commit `c52726d3`. Read the new

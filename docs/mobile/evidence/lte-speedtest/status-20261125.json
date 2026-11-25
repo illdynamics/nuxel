@@ -1,0 +1,24 @@
+{
+  "date": "2026-11-25",
+  "status": "BLOCKED",
+  "reason": "Owner confirmation of sufficient mobile data for all three benchmarks has not been received.",
+  "measurements": {
+    "speedtest-cli --json": {
+      "executed": false,
+      "result": null,
+      "exit_status": null
+    },
+    "Nuxel Browser Speedtest": {
+      "executed": false,
+      "result": null,
+      "exit_status": null
+    },
+    "Firefox Speedtest": {
+      "executed": false,
+      "result": null,
+      "exit_status": null
+    }
+  },
+  "benchmark_bytes_transferred": 0,
+  "note": "Browser example-page screenshots are functional HTTPS evidence, not speed results. The adjacent preflight records its own cellular counter deltas; total session data consumption is not measured."
+}
