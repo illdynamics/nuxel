@@ -280,3 +280,32 @@ size_t sms_store_list(struct sms_store *s,uint32_t *ids,size_t cap)
     size_t n=0;while (n<cap && sqlite3_step(p)==SQLITE_ROW) ids[n++]=(uint32_t)sqlite3_column_int64(p,0);
     sqlite3_finalize(p);return n;
 }
+
+bool sms_store_any_delivered(struct sms_store *s)
+{
+    if (!s || !s->db) return false;
+    sqlite3_stmt *p=prepare(s,
+        "SELECT 1 FROM messages WHERE direction='out' AND state='delivered' LIMIT 1");
+    if (!p) return false;
+    bool any=sqlite3_step(p)==SQLITE_ROW;
+    sqlite3_finalize(p);
+    return any;
+}
+
+bool sms_store_resolve(struct sms_store *s,uint32_t id,const char *outcome)
+{
+    if (!s || !s->db || !outcome) return false;
+    if (strcmp(outcome,"failed") && strcmp(outcome,"delivered")) return false;
+    if (!sql(s,"BEGIN IMMEDIATE")) return false;
+    sqlite3_stmt *p=prepare(s,
+        "UPDATE parts SET state=?1,result=CASE ?1 WHEN 'failed' THEN -1 ELSE 0 END "
+        "WHERE message=?2 AND state='unknown'");
+    text(p,1,outcome);integer(p,2,id);
+    /* Require at least one unknown part to have been resolved: resolving a
+     * message that is not (or no longer) unknown must fail cleanly. */
+    if (!done(p) || sqlite3_changes(s->db)==0) return rollback(s);
+    /* Recompute the aggregate and clear the blocked flag only if no unknown
+     * parts remain anywhere. A later open() re-derives blocked from the DB. */
+    if (!recalc(s,id)) return rollback(s);
+    return sql(s,"COMMIT") || rollback(s);
+}

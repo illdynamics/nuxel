@@ -190,10 +190,14 @@ static void native_message(GVariant *reply,const GError *error,gpointer user)
             msg=message_new(peer,body,!strcmp(direction,"in"));msg->native_id=id;
             g_ptr_array_add(conv->messages,msg);
         }
-        g_free(msg->text);msg->text=g_strdup(body);
-        g_free(msg->state);msg->state=g_strdup(state);
+        g_free(msg->text);
+        msg->text = g_strdup(body);
+
+        g_free(msg->state);
+        msg->state = g_strdup(state);
+
         g_free(msg->timestamp);
-        g_free(msg->state);msg->timestamp=g_strdup(stamp);
+        msg->timestamp = g_strdup(stamp);
         conv->last_message=msg;
         g_variant_unref(dict);
     } else if(error) gtk_label_set_text(GTK_LABEL(app->capability_label),error->message);
@@ -232,11 +236,26 @@ static void native_status(GVariant *reply,const GError *error,gpointer user)
         gtk_label_set_text(GTK_LABEL(app->capability_label),"Native SMS unavailable");return;
     }
     GVariant *dict=g_variant_get_child_value(reply,0);
-    const char *storage="unknown",*ready="unknown",*domain="unknown";
+    const char *storage="unknown",*ready="unknown",*domain="unknown",*smsc="unknown";
+    const char *pending="unknown",*blocked="unknown";
     g_variant_lookup(dict,"storage","&s",&storage);g_variant_lookup(dict,"device_ready","&s",&ready);
-    g_variant_lookup(dict,"domain","&s",&domain);
-    app->modem_ready=!strcmp(storage,"available") && !strcmp(ready,"accepted");
-    gchar *label=g_strdup_printf("Native SMS · %s · storage %s · transport %s. Submission is not delivery.",domain,storage,ready);
+    g_variant_lookup(dict,"domain","&s",&domain);g_variant_lookup(dict,"smsc","&s",&smsc);
+    g_variant_lookup(dict,"pending","&s",&pending);g_variant_lookup(dict,"blocked","&s",&blocked);
+    /* Send readiness needs the whole transport, not just device-ready. */
+    const gchar *reason="ready to send";
+    gboolean storage_ok=!strcmp(storage,"available");
+    gboolean ready_ok=!strcmp(ready,"accepted");
+    gboolean smsc_ok=!strcmp(smsc,"received");
+    gboolean pending_busy=!strcmp(pending,"true");
+    gboolean blocked_unresolved=!strcmp(blocked,"true");
+    app->modem_ready=storage_ok && ready_ok && smsc_ok && !pending_busy && !blocked_unresolved;
+    if(!storage_ok) reason="storage unavailable";
+    else if(!ready_ok) reason="device not ready";
+    else if(!smsc_ok) reason="service center unavailable";
+    else if(pending_busy) reason="a submission is in progress";
+    else if(blocked_unresolved) reason="an unresolved submission must be reviewed first";
+    gchar *label=g_strdup_printf("Native SMS · %s · storage %s · transport %s · SMSC %s · %s. Submission is not delivery.",
+                                 domain,storage,ready,smsc,reason);
     gtk_label_set_text(GTK_LABEL(app->capability_label),label);g_free(label);g_variant_unref(dict);
     gtk_widget_set_sensitive(app->send_button,app->modem_ready && !app->sending);
     nuxel_radio_call(&app->radio,"ListSms",NULL,"sms:receive",native_list,app);

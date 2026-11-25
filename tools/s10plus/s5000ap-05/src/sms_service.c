@@ -83,10 +83,16 @@ void sms_service_receive(struct sms_service *s,const struct nuxel_sipc_fmt *f)
     if (f->main_cmd!=4) return;
     if (f->sub_cmd==10 && f->cmd_type==2) {
         if (!fmt_sms_smsc(p,n,s->smsc,&s->smsc_len)) s->decode_errors++;
-    } else if (f->sub_cmd==1 && f->cmd_type==2) {
+    } else if (f->sub_cmd==1 && (f->cmd_type==2 || f->cmd_type==3)) {
+        /* Live EFUJ2 emits the SEND result as a NOTIFICATION (type 3) with
+         * ack_seq 0, not the DTK9-derived RESPONSE (type 2). Accept both.
+         * A type-2 response correlates on the echoed AP sequence; a type-3
+         * notification has no echo, so it is matched to the single segment
+         * currently in flight (the service never runs two sends at once). */
         struct fmt_sms_submit_result result;
         if (!fmt_sms_submit_result(p,n,&result)) { s->decode_errors++;return; }
-        if (!s->active || f->ack_seq!=s->sequence) { s->unmatched++;return; }
+        if (!s->active) { s->unmatched++;return; }
+        if (f->cmd_type==2 && f->ack_seq!=s->sequence) { s->unmatched++;return; }
         if (!sms_store_submit(&s->store,s->job.id,s->job.part,result.reference,result.result)) { s->store_errors++;uncertain(s);return; }
         s->active=false;notify(s,s->job.id,false);
     } else if (f->sub_cmd==2 && f->cmd_type==3) {
@@ -99,4 +105,19 @@ void sms_service_receive(struct sms_service *s,const struct nuxel_sipc_fmt *f)
         struct fmt_tx_frame reply;uint8_t sequence;
         if (!fmt_sms_ack(&reply,incoming.reference,result) || !s->write(&reply,&sequence,s->user)) s->ack_errors++;
     }
+}
+
+bool sms_service_resolve(struct sms_service *s,uint32_t id,const char *outcome)
+{
+    if (!s || !s->store.db) return false;
+    if (!sms_store_resolve(&s->store,id,outcome)) return false;
+    /* Re-derive blocked from the store rather than trusting the in-memory
+     * flag, so resolving the last unknown message clears the block. */
+    sqlite3_stmt *q=NULL;
+    if (sqlite3_prepare_v2(s->store.db,
+        "SELECT 1 FROM parts WHERE state='unknown' LIMIT 1",-1,&q,NULL)!=SQLITE_OK)
+        return false;
+    s->blocked = sqlite3_step(q)==SQLITE_ROW;
+    sqlite3_finalize(q);
+    return true;
 }

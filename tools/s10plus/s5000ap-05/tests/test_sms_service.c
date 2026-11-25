@@ -38,6 +38,14 @@ int main(void)
     receive(&s,4,1,2,(uint8_t)(s.sequence+1),submit,sizeof submit);CHECK(s.active && s.unmatched==1);
     receive(&s,4,1,2,s.sequence,submit,sizeof submit);CHECK(!s.active);
     struct sms_record record;CHECK(sms_store_get(&s.store,id,&record) && !strcmp(record.state,"submitted"));
+    /* Live EFUJ2 delivers the send result as a type-3 notification with
+     * ack_seq 0 rather than a type-2 response. It must correlate to the
+     * single segment in flight and mark it submitted without resending. */
+    CHECK(sms_store_queue(&s.store,"+12345678901","notify",&id));
+    sms_service_tick(&s,1210,true,true,true,true);CHECK(s.active);
+    uint8_t notify_submit[]={2,0,0,0,0};notify_submit[3]=s.job.pdu.reference;
+    receive(&s,4,1,3,0,notify_submit,sizeof notify_submit);CHECK(!s.active);
+    CHECK(sms_store_get(&s.store,id,&record) && !strcmp(record.state,"submitted"));
     CHECK(sms_store_queue(&s.store,"+12345678901","timeout",&id));
     sms_service_tick(&s,1300,true,true,true,true);CHECK(s.active);
     unsigned writes=m.writes;
@@ -45,6 +53,11 @@ int main(void)
     CHECK(sms_store_get(&s.store,id,&record) && !strcmp(record.state,"unknown"));
     CHECK(sms_store_queue(&s.store,"+12345678901","held",&id));
     sms_service_tick(&s,121400,true,true,true,true);CHECK(m.writes==writes);
+    /* Resolving the unknown timeout message clears the block and lets the
+     * next queued message transmit; it does not resend the resolved one. */
+    CHECK(sms_service_resolve(&s,s.job.id,"failed"));CHECK(!s.blocked);
+    struct sms_record resolved;CHECK(sms_store_get(&s.store,s.job.id,&resolved) && !strcmp(resolved.state,"failed"));
+    sms_service_tick(&s,121500,true,true,true,true);CHECK(m.writes==writes+1);
     const uint8_t pdu[]={0,0,11,0x91,0x21,0x43,0x65,0x87,0x09,0xf1,0,0,0x62,0x11,0x42,0x12,0x43,0x65,0x40,5,0xe8,0x32,0x9b,0xfd,6};
     uint8_t incoming[6+sizeof pdu]={2,1,0,0,42,sizeof pdu};memcpy(incoming+6,pdu,sizeof pdu);
     receive(&s,4,2,3,0,incoming,sizeof incoming);CHECK(m.last.sub_cmd==6 && m.last.buf[8]==0 && m.last.buf[9]==0);

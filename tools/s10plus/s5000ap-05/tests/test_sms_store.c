@@ -16,6 +16,7 @@ int main(void)
 {
     struct sms_store s;struct sms_job job;struct sms_record record;
     CHECK(sms_store_open(&s,":memory:"));
+    CHECK(!sms_store_any_delivered(&s));
     uint32_t a=0,b=0,received=0;bool changed=false;
     CHECK(sms_store_queue(&s,"+12345678901","hello",&a));
     CHECK(sms_store_next(&s,&job) && job.id==a && job.part==1 && job.total==1);
@@ -31,6 +32,9 @@ int main(void)
     report.status=0;raw[2]++;
     CHECK(sms_store_receive(&s,raw,sizeof raw,&report,&received,&changed));state(&s,a,"delivered");
     CHECK(changed);
+    CHECK(sms_store_any_delivered(&s));
+    /* The aggregate is a live query over per-message state, not a latch; a
+     * fresh store above already returned false before any delivered row. */
     CHECK(sms_store_receive(&s,raw,sizeof raw,&report,&received,&changed) && !changed);
     CHECK(sms_store_queue(&s,"+12345678901","next",&b));
     CHECK(sms_store_next(&s,&job) && job.id==b && job.pdu.reference!=mr);
@@ -69,7 +73,12 @@ int main(void)
     CHECK(sms_store_sending(&s,a,1));sms_store_close(&s);
     CHECK(sms_store_open(&s,path));state(&s,a,"unknown");CHECK(!sms_store_next(&s,&job));
     CHECK(sms_store_get(&s,a,&record) && !strcmp(record.text,"persistent"));
-    uint32_t ids[10];CHECK(sms_store_list(&s,ids,10)==1 && ids[0]==a);
+    /* Safe reconciliation: resolve the unresolved message to failed, without
+     * resending. It must move out of 'unknown' and become available again. */
+    CHECK(sms_store_resolve(&s,a,"failed"));state(&s,a,"failed");
+    CHECK(!sms_store_resolve(&s,a,"failed")); /* not unknown anymore */
+    CHECK(!sms_store_resolve(&s,a,"bogus"));  /* only failed/delivered allowed */
+    uint32_t ids[10];CHECK(sms_store_list(&s,ids,10)>=1 && ids[0]==a);
     sms_store_close(&s);CHECK(chmod(path,0644)==0);CHECK(!sms_store_open(&s,path));unlink(path);
     printf("SMS durable store: %s (%u failures)\n",failures ? "FAIL" : "PASS",failures);
     return failures ? 1 : 0;

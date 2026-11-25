@@ -24,3 +24,6 @@ void sms_service_close(struct sms_service *s);
 void sms_service_tick(struct sms_service *s,uint64_t now,bool online,bool sim_ready,bool registered,bool writable);
 void sms_service_receive(struct sms_service *s,const struct nuxel_sipc_fmt *frame);
 #endif
+/* Resolve one unresolved outbound message without resending it. Re-derives the
+ * blocked flag from the remaining store contents. */
+bool sms_service_resolve(struct sms_service *s,uint32_t id,const char *outcome);

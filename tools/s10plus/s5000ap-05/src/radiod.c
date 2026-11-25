@@ -2214,6 +2214,19 @@ static int method_send_sms(sd_bus_message *m,void *u,sd_bus_error *e)
     return sd_bus_reply_method_return(m,"u",id);
 }
 
+static int method_resolve_sms(sd_bus_message *m,void *u,sd_bus_error *e)
+{
+    (void)u;int r=require_control(m,e);if(r<0)return r;
+    uint32_t id;const char *outcome;
+    if (sd_bus_message_read(m,"us",&id,&outcome)<0)
+        return sd_bus_error_set(e,SD_BUS_ERROR_INVALID_ARGS,"Message ID and outcome ('failed' or 'delivered') required");
+    if (strcmp(outcome,"failed") && strcmp(outcome,"delivered"))
+        return sd_bus_error_set(e,SD_BUS_ERROR_INVALID_ARGS,"Outcome must be 'failed' or 'delivered'");
+    if (!sms_service_resolve(&g.sms,id,outcome))
+        return sd_bus_error_set(e,SD_BUS_ERROR_FAILED,"Message is not in an unresolved state or storage is unavailable");
+    return sd_bus_reply_method_return(m,"b",1);
+}
+
 static int method_list_sms(sd_bus_message *m,void *u,sd_bus_error *e)
 {
     (void)u;int r=require_control(m,e);if(r<0)return r;
@@ -2253,7 +2266,8 @@ static int method_get_sms_status(sd_bus_message *m,void *u,sd_bus_error *e)
     const char *vals[]={g.sms.store.db ? "available" : "unavailable",
         g.sms.ready_rejected ? "rejected" : g.sms.ready_ack ? "accepted" : g.sms.ready_sent ? "sent" : "unknown",
         g.sms.smsc_len ? "received" : "unknown",g.sms.active ? "true" : "false",
-        g.sms.blocked ? "true" : "false","CS","false"};
+        g.sms.blocked ? "true" : "false","CS",
+        sms_store_any_delivered(&g.sms.store) ? "true" : "false"};
     for(size_t i=0;i<7 && r>=0;i++)r=sd_bus_message_append(reply,"{ss}",keys[i],vals[i]);
     if(r>=0)r=sd_bus_message_close_container(reply);
     if(r>=0)r=sd_bus_send(NULL,reply,NULL);
@@ -2392,6 +2406,7 @@ static const sd_bus_vtable radiod_vtable[] = {
     SD_BUS_METHOD("GetIpInfo", "", "a{ss}", method_get_ip_info, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("GetPdpProfiles", "", "a(yysyy)", method_get_pdp_profiles, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("SendSms", "ss", "u", method_send_sms, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_METHOD("ResolveSms", "us", "b", method_resolve_sms, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("ListSms", "", "au", method_list_sms, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("GetSms", "u", "a{ss}", method_get_sms, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("GetSmsStatus", "", "a{ss}", method_get_sms_status, SD_BUS_VTABLE_UNPRIVILEGED),

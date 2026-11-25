@@ -28,4 +28,13 @@ bool sms_store_receive(struct sms_store *s,const uint8_t *pdu,size_t len,
                        const struct sms_decoded *v,uint32_t *id,bool *changed);
 bool sms_store_get(struct sms_store *s,uint32_t id,struct sms_record *out);
 size_t sms_store_list(struct sms_store *s,uint32_t *ids,size_t cap);
+/* Truthful aggregate: true only when at least one outbound message has reached
+ * the delivered state through a matching TP-ST=0 status report. It is derived
+ * from per-message evidence, never latched after a single success. */
+bool sms_store_any_delivered(struct sms_store *s);
 #endif
+/* Safe user-facing reconciliation for an unresolved (unknown) outbound
+ * submission. outcome must be "failed" (definitively not delivered) or
+ * "delivered" (owner confirmed receipt). This only changes the specific
+ * message's parts; it never queues a resend and never posts a delivery report. */
+bool sms_store_resolve(struct sms_store *s,uint32_t id,const char *outcome);
