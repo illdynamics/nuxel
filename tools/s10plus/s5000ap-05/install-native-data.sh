@@ -3,11 +3,14 @@
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 [[ $(id -u) -eq 0 ]] || { echo 'requires root' >&2; exit 1; }
-rpm -q systemd-resolved >/dev/null
+rpm -q systemd-resolved tayga >/dev/null
 [[ -x /usr/libexec/nuxel/nuxel-radiod && -d /sys/class/net/rmnet0 ]]
 backup=$(mktemp -d /var/lib/nuxel/native-data-install.XXXXXX)
 gcc -O2 -Wall -Wextra -Werror -shared -fPIC "$here/src/socket_compat.c" -o "$backup/socket-compat.so"
 paths=(/usr/libexec/nuxel/nuxel-cellular-link /usr/libexec/nuxel/cellular_link.py
+       /usr/libexec/nuxel/cellular_clat.py /etc/systemd/system/nuxel-cellular-clat.service
+       /etc/systemd/system/nuxel-cellular-compat.service
+       /etc/systemd/system/nuxel-cellular-lock.service
        /usr/lib/nuxel/libnuxel-resolved-socket.so
        /etc/systemd/system/systemd-resolved.service.d/60-nuxel-socket.conf
        /etc/systemd/system/nuxel-radiod.service.d/30-native-data.conf
@@ -36,6 +39,10 @@ chmod 0700 "$backup/rollback.sh"
 trap '"$backup/rollback.sh"' ERR
 install -m 0755 "$here/scripts/cellular_link.py" /usr/libexec/nuxel/nuxel-cellular-link
 install -m 0644 "$here/scripts/cellular_link.py" /usr/libexec/nuxel/cellular_link.py
+install -m 0644 "$here/scripts/cellular_clat.py" /usr/libexec/nuxel/cellular_clat.py
+install -m 0644 "$here/nuxel-cellular-compat.service" /etc/systemd/system/nuxel-cellular-compat.service
+install -m 0644 "$here/nuxel-cellular-clat.service" /etc/systemd/system/nuxel-cellular-clat.service
+install -m 0644 "$here/nuxel-cellular-lock.service" /etc/systemd/system/nuxel-cellular-lock.service
 install -m 0755 "$backup/socket-compat.so" /usr/lib/nuxel/libnuxel-resolved-socket.so
 mkdir -p /etc/systemd/system/systemd-resolved.service.d
 cat > /etc/systemd/system/systemd-resolved.service.d/60-nuxel-socket.conf <<'CONF'

@@ -1,0 +1,9 @@
+[Unit]
+Description=Prepare the shared xtables lock before sandboxed cellular services
+Before=nuxel-cellular-compat.service nuxel-hotspot.service
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/touch /run/xtables.lock
+NoNewPrivileges=yes
+ProtectHome=yes

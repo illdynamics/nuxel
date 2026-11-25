@@ -1,0 +1,18 @@
+[Unit]
+Description=Nuxel cellular IPv4 compatibility lifecycle
+PartOf=nuxel-radiod.service
+Wants=nuxel-firewall.service
+Requires=nuxel-cellular-lock.service
+After=nuxel-firewall.service nuxel-cellular-lock.service
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/python3 /usr/libexec/nuxel/cellular_clat.py apply
+ExecStopPost=/usr/bin/python3 /usr/libexec/nuxel/cellular_clat.py down
+TimeoutStartSec=15
+TimeoutStopSec=10
+Restart=no
+NoNewPrivileges=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/run/nuxel-radio /run/xtables.lock

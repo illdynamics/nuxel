@@ -1,0 +1,74 @@
+{
+  "timestamp": "2026-11-25T00:14:56Z",
+  "boot_id": "16743069-a8b0-4ef8-a35c-20aeca76a0b3",
+  "uptime": "93.09",
+  "radio": {
+    "exit": 0,
+    "stdout": "a{ss} 21 \"phase\" \"ACTIVE\" \"apn\" \"internet\" \"rat\" \"LTE\" \"home_plmn\" \"20408\" \"baseband\" \"G975FXXSEFUJ2\" \"registration\" \"REGISTERED_HOME\" \"ps_attached\" \"true\" \"ip_configured\" \"true\" \"mobile_data_enabled\" \"true\" \"connection_state\" \"connected\" \"disconnect_result\" \"0\" \"link_result\" \"0\" \"registration_raw\" \"2\" \"ipv6\" \"[public-address-redacted]\" \"ps_reject_cause\" \"0\" \"cs_registration\" \"DENIED\" \"cs_reject_cause\" \"0\" \"failure_phase\" \"IDLE\" \"failure_result\" \"unavailable\" \"service_domain_wire\" \"1\" \"ps_control_state\" \"unknown\"",
+    "stderr": ""
+  },
+  "wifi": {
+    "exit": 0,
+    "stdout": "disabled",
+    "stderr": ""
+  },
+  "routes4": {
+    "exit": 0,
+    "stdout": "default dev nuxclat scope link metric 2100 mtu 1480 \n10.11.12.0/24 dev ztly5zthnf proto kernel scope link src 10.11.12.99 \n10.100.10.0/24 dev usb0 proto kernel scope link src 10.100.10.1",
+    "stderr": ""
+  },
+  "routes6": {
+    "exit": 0,
+    "stdout": "default dev rmnet0 proto bgp src [public-address-redacted] metric 2100 pref medium",
+    "stderr": ""
+  },
+  "rules4": {
+    "exit": 0,
+    "stdout": "0:\tfrom all lookup local\n32766:\tfrom all lookup main\n32767:\tfrom all lookup default",
+    "stderr": ""
+  },
+  "rules6": {
+    "exit": 0,
+    "stdout": "0:\tfrom all lookup local\n30600:\tfrom [public-address-redacted] lookup 106\n30601:\tfrom all oif rmnet0 lookup 106\n30602:\tfrom fd4e:5558:454c::2 lookup 106\n32766:\tfrom all lookup main",
+    "stderr": ""
+  },
+  "dns": {
+    "exit": 0,
+    "stdout": "Link 4 (rmnet0)\n    Current Scopes: DNS\n         Protocols: +DefaultRoute -LLMNR -mDNS -DNSOverTLS DNSSEC=no/unsupported\nCurrent DNS Server: [public-address-redacted]\n       DNS Servers: [public-address-redacted] [public-address-redacted]\n     Default Route: yes",
+    "stderr": ""
+  },
+  "before": {
+    "rx_bytes": 13179,
+    "tx_bytes": 19139,
+    "rx_errors": 0,
+    "tx_errors": 0
+  },
+  "https6": {
+    "exit": 0,
+    "stdout": "http=200 tls=0 bytes=577",
+    "stderr": ""
+  },
+  "https4": {
+    "exit": 0,
+    "stdout": "http=200 tls=0 bytes=56614",
+    "stderr": ""
+  },
+  "after": {
+    "rx_bytes": 87234,
+    "tx_bytes": 26763,
+    "rx_errors": 0,
+    "tx_errors": 0
+  },
+  "services": {
+    "exit": 0,
+    "stdout": "active\nactive\nactive\nactive",
+    "stderr": ""
+  },
+  "restarts": {
+    "exit": 0,
+    "stdout": "NRestarts=0",
+    "stderr": ""
+  },
+  "preference": "enabled",
+  "radiod_sha256": "8900c788415bd467a8607da404c7e09210209f0e972c262d22130b22dd6b8027"
+}

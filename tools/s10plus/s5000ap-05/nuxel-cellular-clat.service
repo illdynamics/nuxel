@@ -1,0 +1,13 @@
+[Unit]
+Description=Nuxel native cellular IPv4 translator
+PartOf=nuxel-radiod.service
+After=nuxel-firewall.service
+ConditionPathExists=/run/nuxel-radio/clat.conf
+[Service]
+Type=simple
+ExecStart=/usr/bin/tayga --nodetach --config /run/nuxel-radio/clat.conf
+Restart=no
+TimeoutStopSec=5
+NoNewPrivileges=yes
+ProtectHome=yes
+ProtectSystem=strict

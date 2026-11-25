@@ -521,6 +521,12 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
         if(!g.sim_ready_seen && g.dsc.phase==DS_ACTIVE) {
             g.data_path_armed=false;g.dsc.ip_configured=false;g.ip_received=false;
             g.dsc.net_regist_valid=false;g.link_down_requested=true;
+            g.dsc.phase=DS_IDLE;
+            /* A startup notification can arrive after the first bearer.
+             * Confirm SIM and registration promptly through the existing
+             * read-only query sequence, rather than waiting its idle minute.
+             * Do not reinterpret the notification as unlocked/registered. */
+            g.status_query=0;g.status_next_ms=now_ms()+1000;
             g.reconnect_at=now_ms()+30000;
         }
         diagf("sim_lock_state", "\"type\":%u,\"key\":%u,\"unlocked\":%s",

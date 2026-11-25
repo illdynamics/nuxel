@@ -137,6 +137,9 @@ class Link:
         run(forward)
 
     def down(self):
+        # The privileged service owns forwarding sysctls. Keep radiod's
+        # ProtectKernelTunables sandbox intact.
+        run(['systemctl', 'stop', 'nuxel-cellular-compat.service'])
         if self.journal is None and not self.read():
             return
         self.journal['configured'] = False
@@ -283,7 +286,13 @@ def main():
             from cellular_nm import NetworkManagerLink
             link = NetworkManagerLink()
         if len(sys.argv) > 1 and sys.argv[1] == 'apply':
-            link.apply(configuration(sys.argv[2:]))
+            config = configuration(sys.argv[2:])
+            link.apply(config)
+            # IPv4 compatibility must not take down a working IPv6 bearer.
+            if '4' not in config['sources']:
+                result = run(['systemctl', 'start', 'nuxel-cellular-compat.service'], check=False)
+                if result.returncode:
+                    print('nuxel-cellular-clat: ' + result.stderr.strip(), file=sys.stderr)
         elif sys.argv[1:] == ['down']:
             link.down()
         elif sys.argv[1:] == ['check']:
