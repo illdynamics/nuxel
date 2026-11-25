@@ -170,7 +170,9 @@ rfs_verdict rfs_policy_validate(const char *path, int op, bool want_write,
     if (rn + 1 + strlen(path) + 1 > sizeof(rel)) {
         a.deny_reason = RFS_DENY_ROOT_ESCAPE; goto deny;
     }
-    snprintf(rel, sizeof(rel), "%s/%s", g_root, path);
+    memcpy(rel, g_root, rn);
+    rel[rn] = '/';
+    memcpy(rel + rn + 1, path, strlen(path) + 1);
     if (realpath(rel, resolved) == NULL) {
         a.deny_reason = RFS_DENY_STAT_FAILED; goto deny;
     }
@@ -213,8 +215,12 @@ rfs_verdict rfs_policy_validate(const char *path, int op, bool want_write,
         }
     }
 
-    strncpy(a.path, resolved, RFS_MAX_PATH - 1);
-    a.path[RFS_MAX_PATH - 1] = '\0';
+    /* Never authorize a truncated pathname different from the checked one. */
+    size_t resolved_len = strlen(resolved);
+    if (resolved_len >= sizeof(a.path)) {
+        a.deny_reason = RFS_DENY_NAMING; goto deny;
+    }
+    memcpy(a.path, resolved, resolved_len + 1);
     a.deny_reason = RFS_OK;
     if (out) *out = a;
     return (want_write) ? RFS_ALLOW_WRITE : RFS_ALLOW_READ;

@@ -5,6 +5,7 @@
  */
 #include "rfs_policy.h"
 #include <stdio.h>
+#include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -25,7 +26,7 @@ static void wr(const char *p, const char *s) {
     int fd = open(p, O_CREAT|O_WRONLY|O_TRUNC, 0644);
     if (fd >= 0) { write(fd, s, strlen(s)); close(fd); }
 }
-static void jn(char *dst, size_t n, const char *a, const char *b) {
+static void join_path(char *dst, size_t n, const char *a, const char *b) {
     size_t an = strlen(a), bn = strlen(b);
     if (an >= n || bn >= n - an - 1) {
         fputs("test path exceeds buffer\n", stderr);
@@ -42,13 +43,13 @@ int main(void)
     char *t = mkdtemp(tmpl);
     if (!t) { printf("mkdtemp failed\n"); return 2; }
     strcpy(ROOT, t);
-    jn(SUB, sizeof SUB, ROOT, "sub");
+    join_path(SUB, sizeof SUB, ROOT, "sub");
 
     char p[600];
     mk(SUB);
-    jn(p, sizeof p, ROOT, "safe.bin");   wr(p, "ok");
-    jn(p, sizeof p, ROOT, "secret.bin"); wr(p, "secret");
-    jn(p, sizeof p, SUB, "inner.bin");   wr(p, "inner");
+    join_path(p, sizeof p, ROOT, "safe.bin");   wr(p, "ok");
+    join_path(p, sizeof p, ROOT, "secret.bin"); wr(p, "secret");
+    join_path(p, sizeof p, SUB, "inner.bin");   wr(p, "inner");
 
     struct rfs_access acc;
 
@@ -63,12 +64,12 @@ int main(void)
 
         /* create hardlink + efs fixtures AFTER positive allow tests */
     { char a[600], b[600];
-      jn(a,sizeof a,ROOT,"safe.bin"); jn(b,sizeof b,ROOT,"hard.bin"); link(a,b);
-      jn(a,sizeof a,ROOT,"efs"); mk(a);
-      jn(a,sizeof a,ROOT,"efs/nv.bin"); wr(a,"x"); }
+      join_path(a,sizeof a,ROOT,"safe.bin"); join_path(b,sizeof b,ROOT,"hard.bin"); link(a,b);
+      join_path(a,sizeof a,ROOT,"efs"); mk(a);
+      join_path(a,sizeof a,ROOT,"efs/nv.bin"); wr(a,"x"); }
         /* symlinks created here too */
-    jn(p, sizeof p, ROOT, "link_esc"); symlink("/etc", p);
-    jn(p, sizeof p, ROOT, "link_bin"); symlink("/bin", p);
+    join_path(p, sizeof p, ROOT, "link_esc"); symlink("/etc", p);
+    join_path(p, sizeof p, ROOT, "link_bin"); symlink("/bin", p);
     CHECK(rfs_policy_validate("secret.bin", 0, false, &acc) == RFS_DENY,
           "DENY non-allowlisted file");
     CHECK(acc.deny_reason == RFS_DENY_NOT_ALLOWLISTED, "reason NOT_ALLOWLISTED");
@@ -113,18 +114,32 @@ int main(void)
     CHECK(rfs_policy_validate("sub/inner.bin", 1, true, &acc) == RFS_ALLOW_WRITE,
           "ALLOW write to write-allowlisted subtree");
 
+    /* A short relative name under a long valid root must not be authorized
+     * with a truncated absolute output path. */
+    char long_dirs[3][1024];
+    char component[201];memset(component,'x',200);component[200]=0;
+    join_path(long_dirs[0],sizeof long_dirs[0],ROOT,component);assert(mkdir(long_dirs[0],0700)==0);
+    join_path(long_dirs[1],sizeof long_dirs[1],long_dirs[0],component);assert(mkdir(long_dirs[1],0700)==0);
+    join_path(long_dirs[2],sizeof long_dirs[2],long_dirs[1],component);assert(mkdir(long_dirs[2],0700)==0);
+    char long_file[1200];join_path(long_file,sizeof long_file,long_dirs[2],"safe.bin");
+    FILE *long_stream=fopen(long_file,"w");assert(long_stream);fclose(long_stream);
+    rfs_policy_set_root(long_dirs[2]);rfs_policy_clear_allowlist();rfs_policy_allow("safe.bin",false);
+    CHECK(rfs_policy_validate("safe.bin",0,false,&acc)==RFS_DENY,"DENY truncated absolute result");
+    CHECK(acc.deny_reason==RFS_DENY_NAMING,"long result reports naming error");
+    unlink(long_file);for(int i=2;i>=0;i--)rmdir(long_dirs[i]);
+
     printf("\n%s: %d failures\n", failures ? "RESULT=FAIL" : "RESULT=PASS",
            failures);
 
     /* cleanup */
-    jn(p,sizeof p,ROOT,"hard.bin"); unlink(p);
-    jn(p,sizeof p,ROOT,"link_esc"); unlink(p);
-    jn(p,sizeof p,ROOT,"link_bin"); unlink(p);
-    jn(p,sizeof p,ROOT,"safe.bin"); unlink(p);
-    jn(p,sizeof p,ROOT,"secret.bin"); unlink(p);
-    jn(p,sizeof p,SUB,"inner.bin"); unlink(p);
-    jn(p,sizeof p,ROOT,"efs/nv.bin"); unlink(p);
-    jn(p,sizeof p,ROOT,"efs"); rmdir(p);
+    join_path(p,sizeof p,ROOT,"hard.bin"); unlink(p);
+    join_path(p,sizeof p,ROOT,"link_esc"); unlink(p);
+    join_path(p,sizeof p,ROOT,"link_bin"); unlink(p);
+    join_path(p,sizeof p,ROOT,"safe.bin"); unlink(p);
+    join_path(p,sizeof p,ROOT,"secret.bin"); unlink(p);
+    join_path(p,sizeof p,SUB,"inner.bin"); unlink(p);
+    join_path(p,sizeof p,ROOT,"efs/nv.bin"); unlink(p);
+    join_path(p,sizeof p,ROOT,"efs"); rmdir(p);
     rmdir(SUB); rmdir(ROOT);
     return failures ? 1 : 0;
 }
