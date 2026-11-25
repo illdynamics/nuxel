@@ -1,5 +1,16 @@
 # DeepSeek Stage 06 handover — read first
 
+## CodeSeeq Round03 resume — 2026-11-25 (verified, no carrier submission)
+
+Resumed from `ba15886e`. Host build + all four SMS suites PASS; installed and
+running daemon hashes match and expose `registration=cs-denied`. Live state
+stable: PS REGISTERED_HOME / CS DENIED / mask=8 LTE-only. The newly authorized
+`SendSms` returned "Could not durably queue SMS or reserve message references"
+because duplicate prevention refused a byte-identical re-queue (message 4
+already holds that exact recipient+text in `queued`). No new ID, no retransmit,
+no modem result. Blocker unchanged: no CS/SGs/IMS SMS bearer. LTE preserved.
+
+
 ## CodeSeeq Round02 continuation — 2026-11-25
 
 Confirmed the controllable root cause: LTE-only network mode (readback

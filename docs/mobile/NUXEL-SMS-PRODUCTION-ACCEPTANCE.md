@@ -77,3 +77,22 @@ failed. Audit rows record the owner-authorized `superseded` reconciliations.
 modem/carrier submission rejection (result code 2). Further work requires
 decoding that vendor-specific cause against the recovered EFUJ2 RIL before any
 additional chargeable attempt.
+
+## Round03 resume — 2026-11-25 (verified)
+
+| Gate | Actual result |
+|---|---|
+| Code fix complete | PASS: type-2 seq correlation, type-3 conservative retention, redacted result diagnostics, ResolveSms; all four SMS suites 0 failures |
+| Installed daemon verified | PASS: running == installed == rebuilt source hashes |
+| New SMS submission | FAIL: `SendSms` refused ("Could not durably queue...") — duplicate prevention; message 4 already holds the identical authorized text in `queued` |
+| Actual modem result code | none produced: no submission attempted, CS registration denied (`cs-denied`, LTE-only mask=8) |
+| Carrier submission confirmed | FAIL: no SMS bearer exists (CS DENIED, no SGs/IMS) |
+| Recipient delivery confirmed | FAIL: nothing was transmitted |
+| Incoming SMS | NOT TESTED |
+| Messages application | unchanged |
+| LTE preserved | PASS: native IPv6 rmnet0 active, NetworkManager/ZeroTier active |
+
+**SMS production acceptance is NOT complete.** The blocker is the absence of a
+cellular SMS bearer on this LTE-only, CS-denied subscription; it was not a lost
+or mis-decoded result this round. Requires an owner decision (real CS/SGs or IMS
+SMS path) before any further chargeable attempt.

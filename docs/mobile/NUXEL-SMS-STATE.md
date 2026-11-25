@@ -276,3 +276,26 @@ regression results, not carrier-delivered messages.
 The ordinary phone-data runner failed to compile on this macOS host due to its
 strict-C11 `mkdtemp` declaration issue. No live SMS app acceptance was performed.
 No telephone number has been authorized for a new chargeable experiment.
+
+## Round03 resume — 2026-11-25 (verified; no carrier submission)
+
+Resumed from `ba15886e` with host build/tests re-run: all four SMS suites PASS
+(golden vectors, codec, durable store, service durability/correlation, 0
+failures). Installed and running `nuxel-radiod` hashes match
+(`e439005f89edda327dc9cca91dc8b4ba39f80d9dae9869f8b89a94f7c4ddf169`) and expose
+the CS-registration gate: `GetSmsStatus -> registration=cs-denied, ready=false`.
+SMS init/setup is `accepted` and SMSC `received`; only the CS bearer is absent.
+
+Live registration has been stable for >30 minutes: PS `REGISTERED_HOME` (LTE,
+native IPv6), CS `DENIED` (`raw_state=4`, `rat=LTE`, `reject_cause=0`), network
+mode readback `mask=8` (LTE-only from `NUXEL_NETWORK_MODE=lte`). The owner-authorized
+`SendSms` call returned "Could not durably queue SMS or reserve message references":
+duplicate prevention correctly refused a byte-identical re-queue because message 4
+already holds that exact recipient+text in `queued`. No new native ID was created;
+no retransmit; no modem submission occurred.
+
+The demonstrated blocker is physical, not a code defect: a CS-domain SMS has no
+bearer while CS is denied on an LTE-only subscription. A genuine submission needs
+a real CS/SGs or IMS SMS bearer (owner decision pending), not a domain-byte or
+network-mode change. Messages 1-3 stay `unknown` (audit-trailed `superseded`);
+message 4 remains `queued` and untransmitted. LTE baseline preserved.
