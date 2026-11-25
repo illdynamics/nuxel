@@ -26,6 +26,14 @@ PINNED_BINARY_SHA256="86de42aa9c0657791f6fe67d443d0231c51162e01880cd85708e27220a
 log() { printf '%s\n' "$*" >&2; }
 fail() { log "STAGE04-GUARD-ABORT: $*"; exit 2; }
 
+# Validate arguments before reading configuration or touching the modem.
+# The service invokes this with no arguments; preflight must be read-only.
+CHECK_ONLY=0
+if (( $# )); then
+    [[ $# -eq 1 && "$1" == "--check" ]] || fail "usage: $0 [--check]; no CP action"
+    CHECK_ONLY=1
+fi
+
 [[ -f "$ENV_FILE" ]] || fail "missing $ENV_FILE (owner-approved manifest hash not supplied); no CP action"
 # shellcheck disable=SC1090
 . "$ENV_FILE"
@@ -43,6 +51,10 @@ FW="${STAGE04_FIRMWARE_PATH:-}"
 BINACTUAL="$(sha256sum "$BIN" 2>/dev/null | awk '{print $1}' || shasum -a 256 "$BIN" | awk '{print $1}')"
 [[ "$BINACTUAL" == "$PINNED_BINARY_SHA256" ]] || fail "binary sha mismatch (got $BINACTUAL, want $PINNED_BINARY_SHA256)"
 
+if (( CHECK_ONLY )); then
+    log "STAGE04-GUARD: preconditions met; check only, no CP action"
+    exit 0
+fi
 log "STAGE04-GUARD: preconditions met; invoking ONE-SHOT CP boot (no auto-retry)"
 exec "$BIN" \
     --really-boot \
