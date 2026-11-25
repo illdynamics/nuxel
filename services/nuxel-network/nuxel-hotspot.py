@@ -268,6 +268,16 @@ def status() -> dict:
     doc['bands'] = ['2.4', '5']
     doc['band'] = st.get('band', '2.4') if 'st' in locals() else '2.4'
     doc["state"] = ("on-unverified" if up['available'] else "waiting-upstream") if doc["enabled"] else "off"
+    service = run(['systemctl', 'show', 'nuxel-hotspot.service',
+                   '--property=ActiveState', '--value']).stdout.strip()
+    if service == 'deactivating':
+        doc['state'] = 'stopping'
+    elif service in ('activating', 'active') and not doc['enabled']:
+        if 'st' in locals() and st.get('enabled'):
+            doc['state'] = 'error'
+            doc['last_error'] = 'Access point or DHCP process is unavailable'
+        else:
+            doc['state'] = 'starting'
     doc["ip_forward"] = (run(["/usr/sbin/sysctl", "-n",
                               "net.ipv4.ip_forward"]).stdout.strip() == "1")
     try:
