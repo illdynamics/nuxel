@@ -1,17 +1,17 @@
 [Unit]
 Description=Nuxel USB Internet sharing on 10.100.10.0/24
 Requires=nuxel-usb-net-up.service
-After=nuxel-usb-net-up.service network-online.target nuxel-app-firewall.service
-Wants=network-online.target
+Requires=nuxel-cellular-lock.service
+After=nuxel-usb-net-up.service nuxel-firewall.service nuxel-cellular-lock.service
 PartOf=nuxel-usb-net-up.service
-StartLimitIntervalSec=0
+StartLimitIntervalSec=60
+StartLimitBurst=3
 
 [Service]
-Type=oneshot
-RemainAfterExit=yes
+Type=simple
 ExecStart=/usr/libexec/nuxel/nuxel-usb-tether
-ExecStop=/usr/libexec/nuxel/nuxel-usb-tether stop
-Restart=on-failure
+ExecStopPost=/usr/libexec/nuxel/nuxel-usb-tether stop
+Restart=no
 RestartSec=10
 TimeoutStartSec=45
 TimeoutStopSec=20

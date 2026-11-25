@@ -1,18 +1,18 @@
 [Unit]
-Description=Nuxel Wi-Fi hotspot (hostapd + dnsmasq, AP on a second vif)
-Documentation=file:/usr/share/doc/nuxel/hotspot.md
-After=network.target nuxel-wayland.service
-Wants=network.target
-
+Description=Nuxel LTE Wi-Fi hotspot
+Requires=nuxel-cellular-lock.service
+After=NetworkManager.service nuxel-firewall.service nuxel-cellular-lock.service
 [Service]
-Type=oneshot
-RemainAfterExit=yes
-# The owner configures the AP in Settings; the persisted values live here.
-EnvironmentFile=-/etc/nuxel/hotspot/hotspot.env
-ExecStart=/usr/libexec/nuxel/nuxel-hotspot start --ssid "${NUXEL_HOTSPOT_SSID}" --password "${NUXEL_HOTSPOT_PASSWORD}"
-ExecStop=/usr/libexec/nuxel/nuxel-hotspot stop
-TimeoutStartSec=40
+Type=simple
+ExecStart=/usr/libexec/nuxel/nuxel-hotspot run
+ExecStopPost=/usr/libexec/nuxel/nuxel-hotspot stop
 TimeoutStopSec=20
-
-[Install]
-WantedBy=multi-user.target
+Restart=no
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/run/nuxel-hotspot /run/nuxel-sharing-hotspot /run/nuxel-sharing-common /run/xtables.lock
+RuntimeDirectory=nuxel-hotspot nuxel-sharing-hotspot nuxel-sharing-common
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=yes

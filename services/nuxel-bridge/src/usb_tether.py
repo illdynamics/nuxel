@@ -1,40 +1,10 @@
 #!/usr/bin/env python3
-"""Nuxel USB Internet tethering provider (phone side, nftables).
+"""LTE sharing over the existing USB management link.
 
-USB *networking* (local USB Ethernet + SSH) and USB *tethering* (sharing the
-phone's upstream Internet with the attached computer) are separate features.
-This module owns ONLY the forwarding/NAT path.  The gadget composition is owned
-by nuxel-usb-mode.sh; the USB address is the live one the manager records.
-
-Design (full-pwnage-usbnet.md §8/§12):
-
-* Everything lives in ONE dedicated table ``inet nuxel_usb_tether``.  Nothing
-  here flushes the global ruleset, touches ``inet nuxel_console_guard``, the
-  ``inet nuxel_app_firewall`` table or the VPN kill switch.
-* The app firewall forwards at priority -100 with ``policy drop``.  This table
-  hooks forward at -50 (later, so it can accept the tether flow) and itself
-  keeps ``policy drop`` for traffic it sees; it accepts ONLY:
-    - usb -> upstream, source address = the exact phone-side tether address;
-    - upstream -> usb, ct state established/related (return path only).
-  No broad ``iifname usb* accept``.
-* NAT is scoped to that single source address and the ONE selected upstream.
-* The upstream must have a real IPv4 default route and a link gate; choosing a
-  tunnel interface is allowed (traffic then inherits the tunnel), a physical
-  upstream while the VPN kill switch is armed is refused rather than silently
-  leaking around the tunnel.
-* ``net.ipv4.ip_forward`` is saved before enabling and restored exactly on
-  stop/failure.  DHCP is not provided by the phone (no DHCP server is added to
-  this kernel image), so the provider reports ``dhcp`` = "static-host-config"
-  and the attached host uses .2/24 with the phone .1 as gateway.  IPv6 is not
-  shared; the provider never advertises RA/DNS it cannot serve.
-* Any start failure removes the table, restores the sysctl and records the
-  error.  A status poll never mutates anything.
-* The attached host must be verified (``verify()``): table present + system
-  forwarding enabled + the newest attached-host evidence, or the state is
-  reported ``on-unverified`` and ``internet_verified`` stays false.
-
-No JS-controlled strings reach a shell: interface names are validated and must
-exist in /sys/class/net; argv lists are used everywhere.
+Radio1 owns the bearer. sharing_link owns DHCP/DNS and fail-closed policy
+routing. This provider owns only its scoped firewall/NAT rules. The fixed
+systemd worker serializes operations outside the bridge mount sandbox.
+The USB gadget, address, charging and authenticated SSH remain unchanged.
 """
 from __future__ import annotations
 
@@ -174,55 +144,27 @@ def usb_link() -> Dict[str, Any]:
     """The live USB link from the single gadget owner's activation record."""
     import usb_tethering
     st = usb_tethering.current_state()
-    return {"active": st["active"], "interface": st["interface"],
+    return {"active": st["active"] and st["link_connected"], "interface": st["interface"],
             "mode": st["mode"], "phone_address": st["device_ip"],
             "host_address": HOST_ADDRESS, "netdev_present": bool(st["interface"])}
 
 
 def upstream_candidates() -> List[Dict[str, Any]]:
-    routes = _default_routes()
-    out = []
-    for name in sorted(os.listdir(_sys_net())) if os.path.isdir(_sys_net()) else []:
-        if not valid_ifname(name) or _NOT_UPSTREAM.match(name):
-            continue
-        oper = _read(os.path.join(_sys_net(), name, "operstate")) or "unknown"
-        has_addr = bool(_run(["ip", "-4", "-o", "addr", "show", "dev", name]).stdout.strip())
-        tun = bool(_TUNNEL.match(name))
-        route = routes.get(name)
-        usable = bool(has_addr and route and oper == "up")
-        kind = ("wifi" if name.startswith("wlan") else
-                "cellular" if name.startswith(("rmnet", "wwan", "usb_wan")) else
-                "tunnel" if tun else "other")
-        out.append({
-            "interface": name, "kind": kind, "link": oper,
-            "has_ipv4": has_addr, "default_route": bool(route),
-            "vpn_tunnel": tun, "usable": usable,
-            "gateway": (route or {}).get("gateway"),
-        })
-    return out
+    from mobile_upstream import status as mobile_status
+    up = mobile_status()
+    if not up['available']: return []
+    return [{'interface': up['interface'], 'kind': 'cellular', 'link': 'up',
+             'has_ipv4': True, 'default_route': True, 'vpn_tunnel': False,
+             'usable': True, 'gateway': None, 'translated': up['ipv4_translated']}]
 
 
 def choose_upstream(requested: Optional[str]) -> Dict[str, Any]:
     cands = upstream_candidates()
-    if requested:
-        for c in cands:
-            if c["interface"] == requested:
-                if not c["usable"]:
-                    raise TetherError("upstream %s has no usable IPv4 default route "
-                                      "(link=%s has_ipv4=%s)" % (requested, c["link"], c["has_ipv4"]),
-                                      "UPSTREAM_UNAVAILABLE")
-                return c
-        raise TetherError("invalid or absent upstream interface: %s" % requested,
-                          "UPSTREAM_INVALID")
-    usable = [c for c in cands if c["usable"]]
-    if not usable:
-        raise TetherError("no interface currently has a usable IPv4 default route",
-                          "NO_UPSTREAM")
-    # Prefer a tunnel when the kill switch is armed, so the share does not leak;
-    # otherwise prefer WiFi, then anything else (never a modem that merely exists).
-    usable.sort(key=lambda c: (0 if c["vpn_tunnel"] else 1,
-                               0 if c["kind"] == "wifi" else 1, c["interface"]))
-    return usable[0]
+    if not cands:
+        raise TetherError('Mobile internet or native IPv4 translation is unavailable', 'NO_UPSTREAM')
+    if requested and requested != cands[0]['interface']:
+        raise TetherError('Mobile sharing uses the active cellular upstream', 'UPSTREAM_INVALID')
+    return cands[0]
 
 
 def vpn_conflict(upstream: Dict[str, Any]) -> Optional[str]:
@@ -230,9 +172,7 @@ def vpn_conflict(upstream: Dict[str, Any]) -> Optional[str]:
         return None
     if upstream.get("vpn_tunnel"):
         return None
-    return ("VPN kill switch is armed and upstream %s is not a tunnel: tethered "
-            "traffic would bypass the VPN. Pick the tunnel interface as upstream "
-            "or disarm the kill switch." % upstream["interface"])
+    return "Cellular sharing is unavailable while the VPN kill switch is active."
 
 
 def _source_address(link: Dict[str, Any]) -> str:
@@ -272,6 +212,13 @@ def _render(link: Dict[str, Any], upstream: Dict[str, Any]) -> str:
     usb, up = link["interface"], upstream["interface"]
     return "\n".join([
         "add table inet %s" % TABLE,
+        "add chain inet %s input { type filter hook input priority -150; policy accept; }" % TABLE,
+        'add rule inet %s input iifname "%s" ct state established,related accept' % (TABLE, usb),
+        'add rule inet %s input iifname "%s" udp dport { 53, 67 } accept' % (TABLE, usb),
+        'add rule inet %s input iifname "%s" tcp dport 53 accept' % (TABLE, usb),
+        'add rule inet %s input iifname "%s" ip saddr %s tcp dport 2022 accept' % (TABLE, usb, HOST_ADDRESS.split('/')[0]),
+        'add rule inet %s input iifname "%s" ip protocol icmp accept' % (TABLE, usb),
+        'add rule inet %s input iifname "%s" drop' % (TABLE, usb),
         "add chain inet %s forward { type filter hook forward priority -50; policy accept; }" % TABLE,
         'add rule inet %s forward iifname "%s" oifname "%s" ip saddr %s counter accept' % (TABLE, usb, up, DEFAULT_SUBNET),
         'add rule inet %s forward iifname "%s" oifname "%s" ip daddr %s ct state established,related counter accept' % (TABLE, up, usb, DEFAULT_SUBNET),
@@ -279,12 +226,12 @@ def _render(link: Dict[str, Any], upstream: Dict[str, Any]) -> str:
         'add rule inet %s forward oifname "%s" counter drop' % (TABLE, usb), ""])
 
 NAT_CHAIN = "NUXEL_USB_TETHER"
-PREF_PATH = "/var/lib/nuxel/usb-tether-preferences.json"
+PREF_PATH = "/run/nuxel/usb-tether-preferences.json"
 UNIT = "nuxel-usb-tether.service"
 
 def _clear_nat():
-    while _run(["iptables", "-w", "-t", "nat", "-D", "POSTROUTING", "-j", NAT_CHAIN]).returncode == 0:
-        pass
+    for _ in range(8):
+        if _run(["iptables", "-w", "-t", "nat", "-D", "POSTROUTING", "-j", NAT_CHAIN]).returncode != 0: break
     _run(["iptables", "-w", "-t", "nat", "-F", NAT_CHAIN])
     _run(["iptables", "-w", "-t", "nat", "-X", NAT_CHAIN])
 
@@ -303,9 +250,13 @@ def _install_nat(upstream):
 
 def _service_control(enabled, upstream=None):
     _write_json(PREF_PATH, {"enabled": enabled, "upstream": upstream})
-    proc = _run(["systemctl", "enable" if enabled else "disable", UNIT])
-    if not proc.returncode:
-        proc = _run(["systemctl", "restart" if enabled else "stop", UNIT], timeout=55)
+    proc = _run(["systemctl", "restart" if enabled else "stop", UNIT], timeout=55)
+    if enabled and proc.returncode == 0:
+        import time
+        for _ in range(40):
+            state = _read_json(_state_path())
+            if state.get('enabled') or state.get('last_error'): break
+            time.sleep(.25)
     out = status()
     out["success"] = proc.returncode == 0 and out["enabled"] == enabled
     if not out["success"]:
@@ -355,7 +306,7 @@ def _ip_forward_needed_elsewhere() -> bool:
     except (OSError, ValueError):
         pass
     out = _run(["nft", "list", "tables"]).stdout or ""
-    return "nuxel_usb_tether" in out or "nuxel_tether" in out
+    return "nuxel_hotspot" in out or "nuxel_tether" in out
 
 
 def status() -> Dict[str, Any]:
@@ -365,10 +316,11 @@ def status() -> Dict[str, Any]:
     ev = _host_evidence() if present and st.get("enabled") else {"verified": False, "age_seconds": None,
                                                                "source": None, "checked_at": None}
     enabled = bool(st.get("enabled"))
+    upstream_available = any(c["interface"] == st.get("upstream") and c["usable"] for c in upstream_candidates())
     if not enabled:
         state = "off"
-    elif not link["active"]:
-        state = "degraded"
+    elif not link["active"] or not upstream_available:
+        state = "waiting-upstream"
     elif not present:
         state = "error"
     elif ev["verified"]:
@@ -380,13 +332,14 @@ def status() -> Dict[str, Any]:
         "enabled": enabled,
         "state": state,
         "upstream": st.get("upstream"),
+        "upstream_available": upstream_available,
         "usb_interface": link["interface"],
         "usb_link_active": link["active"],
         "subnet": st.get("subnet") or DEFAULT_SUBNET,
         "source_address": st.get("source_address"),
         "host_address": link.get("host_address") or HOST_ADDRESS,
         "gateway": DEFAULT_GATEWAY,
-        "dhcp": "static-host-config",
+        "dhcp": "dnsmasq",
         "ipv6": "not-shared",
         "rules_present": present,
         "table": "inet " + TABLE,
@@ -419,15 +372,6 @@ def start(upstream: Optional[str] = None, source: str = "api") -> Dict[str, Any]
     port = _port_conflict(link, up)
     if port:
         return {"success": False, "error": port, "error_code": "WORKLOAD_CONFLICT"}
-    # v0.8.5: strict reverse-path filtering silently black-holed every
-    # forwarded reply on the live phone (usb0 and wlan0 both had rp_filter=2),
-    # so the attached host could ping the phone but no Internet packet ever
-    # came back.  Loose mode (2) still validates the source route; the tether
-    # flows must not be subject to strict mode.
-    for iface in (link["interface"], up["interface"]):
-        if iface:
-            _run(["sysctl", "-qw", "net.ipv4.conf.%s.rp_filter=2" % iface])
-    prev_forward = _ip_forward()
     # Replacing only OUR table is idempotent and never touches other tables.
     _run(["nft", "delete", "table", "inet", TABLE])
     proc = _run_nft_script(_render(link, up))
@@ -444,18 +388,22 @@ def start(upstream: Optional[str] = None, source: str = "api") -> Dict[str, Any]
     if nat.returncode:
         _run(["nft", "delete", "table", "inet", TABLE])
         return {"success": False, "error": nat.stderr, "error_code": "NAT_FAILED"}
-    sysctl = _run(["sysctl", "-qw", "net.ipv4.ip_forward=1"])
-    if sysctl.returncode != 0 or _ip_forward() != "1":
+    try:
+        from mobile_upstream import status as mobile_status
+        import sharing_link
+        if link['interface'] != 'usb0' or _source_address(link) != DEFAULT_GATEWAY:
+            raise RuntimeError('unexpected USB management interface/address')
+        sharing_link.start('usb', mobile_status())
+    except Exception as exc:
+        _clear_nat()
         _run(["nft", "delete", "table", "inet", TABLE])
-        _run(["sysctl", "-qw", "net.ipv4.ip_forward=%s" % prev_forward])
-        return {"success": False, "error": "could not enable IPv4 forwarding: " +
-                (sysctl.stderr or "").strip()[:300], "error_code": "SYSCTL_FAILED"}
+        return {"success": False, "error": str(exc), "error_code": "SHARING_LINK_FAILED"}
     doc = {
         "enabled": True, "upstream": up["interface"], "upstream_kind": up["kind"],
         "usb_interface": link["interface"], "subnet": DEFAULT_SUBNET,
         "source_address": _source_address(link), "host_address": HOST_ADDRESS,
-        "prev_ip_forward": prev_forward, "vpn_armed": _vpn_armed(),
-        "vpn_conflict": None, "upstream_reachable": True, "dhcp": "static-host-config",
+        "vpn_armed": _vpn_armed(),
+        "vpn_conflict": None, "upstream_reachable": True, "dhcp": "dnsmasq",
         "ipv6": "not-shared", "last_error": None, "source": source,
         "started_at": _uptime(),
     }
@@ -472,17 +420,12 @@ def stop(source: str = "api") -> Dict[str, Any]:
     if os.environ.get("NUXEL_USB_TETHER_WORKER") != "1":
         return _service_control(False)
     _clear_nat()
+    import sharing_link
+    sharing_link.stop('usb')
     st = _read_json(_state_path())
     _run(["nft", "delete", "table", "inet", TABLE])
     # Local-only networking must not keep forwarding after sharing is stopped.
     _run_nft_script("add table inet %s\nadd chain inet %s forward { type filter hook forward priority -50; policy accept; }\nadd rule inet %s forward iifname \"usb0\" drop\n" % (TABLE, TABLE, TABLE))
-    # v0.8.5: DO NOT restore a stale "previous" ip_forward here.  Forwarding is
-    # shared with the Wi-Fi hotspot; stopping tethering used to write back the
-    # value captured at tether start (0 if the hotspot was not yet running),
-    # which silently switched OFF an already-running AP.  Only turn it off when
-    # nothing else needs it.
-    if _ip_forward() == "1" and not _ip_forward_needed_elsewhere():
-        _run(["sysctl", "-qw", "net.ipv4.ip_forward=0"])
     _write_json(_state_path(), {"enabled": False, "upstream": None, "internet_verified": False,
                         "last_error": None, "stopped_by": source,
                         "last_stopped_at": _uptime()})
@@ -522,7 +465,7 @@ def host_report(payload: Dict[str, Any]) -> Dict[str, Any]:
         return {"success": False, "error": "evidence was checked against %s, not the phone %s"
                 % (dst_ip, want), "error_code": "EVIDENCE_TARGET_MISMATCH"}
     ev = {
-        "verified": bool(payload.get("internet_ok")),
+        "verified": bool(payload.get("internet_ok")) and bool(payload.get("dns_ok")),
         "source": "host-helper",
         "host_address": src_ip,
         "checked_phone": dst_ip,

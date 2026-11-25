@@ -533,16 +533,8 @@ def zerotier_set_enabled(enabled: bool) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
-# Wi-Fi hotspot (AP mode) - hostapd + dnsmasq, owned by nuxel-hotspot.
-#
-# WHY NOT nmcli: this image has no udev daemon, so NetworkManager never
-# enumerates the Broadcom phy as a managed Wi-Fi device and
-# `nmcli device wifi hotspot` always fails.  The vendor driver *does* advertise
-# AP mode (nl80211: "#{ AP } <= 2 ... #channels <= 2"), and the live S10+
-# already runs a working AP on the secondary vif (wlan1) via hostapd+dnsmasq.
-# This provider is therefore a thin, honest wrapper around that one owner
-# (/usr/libexec/nuxel/nuxel-hotspot); the JSON it returns is passed through.
-# ---------------------------------------------------------------------------
+# Native hotspot: the service owns wlan1; NM retains wlan0. Sharing uses
+# explicit cellular policy routing and the same upstream state as USB.
 HOTSPOT_TOOL = "/usr/libexec/nuxel/nuxel-hotspot"
 HOTSPOT_STATE = "/run/nuxel-hotspot/state.json"
 
@@ -571,69 +563,65 @@ def _wifi_ap_capability() -> Dict[str, Any]:
     return {"supported": True, "reason": None}
 
 
-def _hotspot_call(verb: str, ssid: str = "", password: str = "") -> Dict[str, Any]:
-    tool = _hotspot_tool()
-    if not tool:
-        return {"success": False, "error": "nuxel-hotspot helper is not installed",
-                "error_code": "HOTSPOT_TOOL_MISSING"}
-    argv = [tool, verb]
-    if verb == "start":
-        argv += ["--ssid", ssid, "--password", password]
-    proc = _run(argv, timeout=45)
+HOTSPOT_CONFIG = Path('/var/lib/nuxel/hotspot/config.json')
+
+
+def _hotspot_config(ssid='', password='', band=''):
+    import secrets
     try:
-        doc = json.loads(proc.stdout or "{}")
-    except ValueError:
-        doc = {}
-    if not isinstance(doc, dict):
-        doc = {}
-    if proc.returncode != 0 and "success" not in doc:
-        doc.update({"success": False, "error": "nuxel-hotspot %s failed" % verb,
-                    "error_code": "HOTSPOT_FAILED",
-                    "detail": (proc.stderr or proc.stdout or "").strip()[:400]})
-    doc.setdefault("success", proc.returncode == 0)
-    return doc
+        saved = json.loads(HOTSPOT_CONFIG.read_text())
+    except FileNotFoundError:
+        saved = {'ssid': 'Nuxel', 'password': secrets.token_urlsafe(18), 'band': '2.4'}
+    if ssid: saved['ssid'] = ssid
+    if password: saved['password'] = password
+    if band: saved['band'] = band
+    if not re.fullmatch(r'[ -~]{1,32}', saved['ssid']) or not re.fullmatch(r'[ -~]{8,63}', saved['password']):
+        raise NetworkManagerError('SSID or WPA2 password has invalid length or characters')
+    if saved['band'] not in ('2.4', '5'):
+        raise NetworkManagerError('Unsupported hotspot band')
+    HOTSPOT_CONFIG.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    import tempfile
+    fd, tmp = tempfile.mkstemp(prefix='.config-', dir=HOTSPOT_CONFIG.parent)
+    with os.fdopen(fd, 'w') as f:
+        json.dump(saved, f); f.flush(); os.fsync(f.fileno())
+    os.replace(tmp, HOTSPOT_CONFIG)
+    return saved
 
 
 def hotspot_status() -> Dict[str, Any]:
-    cap = _wifi_ap_capability()
-    if not cap.get("supported"):
-        return {"success": True, "supported": False, "enabled": False,
-                "state": "unsupported", "reason": cap.get("reason")}
-    st = _hotspot_call("status")
-    st.setdefault("supported", True)
-    st.setdefault("enabled", st.get("state") == "on")
+    tool = _hotspot_tool()
+    if not tool: return {'success': True, 'supported': False, 'enabled': False, 'state': 'unavailable'}
+    proc = _run([tool, 'status'], timeout=10)
+    try: st = json.loads(proc.stdout)
+    except ValueError: return {'success': False, 'error': 'Hotspot status unavailable'}
+    st['success'] = proc.returncode == 0
+    try:
+        config = json.loads(HOTSPOT_CONFIG.read_text())
+        st['ssid'] = config['ssid']; st['band'] = config['band']
+    except (OSError, ValueError): pass
     return st
 
 
-def hotspot_start(ssid: str, password: str) -> Dict[str, Any]:
-    ssid = (ssid or "").strip()
-    password = password or ""
-    if not 1 <= len(ssid) <= 32:
-        return {"success": False, "error": "SSID must be 1-32 characters",
-                "error_code": "INVALID_SSID"}
-    if not 8 <= len(password) <= 63:
-        return {"success": False, "error": "passphrase must be 8-63 characters",
-                "error_code": "INVALID_PASSWORD"}
-    cap = _wifi_ap_capability()
-    if not cap.get("supported"):
-        return {"success": False, "error": "hotspot unsupported",
-                "error_code": "UNSUPPORTED", "detail": cap.get("reason")}
-    res = _hotspot_call("start", ssid, password)
-    if res.get("success"):
-        # The owner's choice is persisted for the next boot.
-        try:
-            os.makedirs("/etc/nuxel/hotspot", exist_ok=True)
-            with open("/etc/nuxel/hotspot/hotspot.env", "w") as fh:
-                fh.write("NUXEL_HOTSPOT_SSID=%s\nNUXEL_HOTSPOT_PASSWORD=%s\n"
-                         % (ssid, password))
-            os.chmod("/etc/nuxel/hotspot/hotspot.env", 0o600)
-        except OSError:
-            pass
-    return res
+def hotspot_start(ssid: str = '', password: str = '', band: str = '') -> Dict[str, Any]:
+    try:
+        _hotspot_config(ssid, password, band)
+        proc = _run(['systemctl', 'restart', 'nuxel-hotspot.service'], timeout=45)
+        if proc.returncode: return {'success': False, 'error': proc.stderr.strip() or 'Hotspot service refused'}
+        import time
+        for _ in range(30):
+            st = hotspot_status()
+            if st.get('enabled'): return st
+            if _run(['systemctl','is-active','--quiet','nuxel-hotspot.service']).returncode: break
+            time.sleep(.3)
+        return {'success': False, 'error': st.get('last_error') or 'Access point did not start; inspect hotspot service error'}
+    except (OSError, ValueError, NetworkManagerError) as exc:
+        return {'success': False, 'error': str(exc)}
 
 
 def hotspot_stop() -> Dict[str, Any]:
-    return _hotspot_call("stop")
+    proc = _run(['systemctl', 'stop', 'nuxel-hotspot.service'], timeout=25)
+    st = hotspot_status(); st['success'] = proc.returncode == 0 and not st.get('enabled')
+    return st
 
 
 def handle(verb: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -669,7 +657,7 @@ def handle(verb: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]
         return hotspot_status()
     if verb == "hotspot-start":
         return hotspot_start(str(params.get("ssid") or ""),
-                             str(params.get("password") or ""))
+                             str(params.get("password") or ""), str(params.get("band") or ""))
     if verb == "hotspot-stop":
         return hotspot_stop()
     raise NetworkManagerError("unknown network-manager verb: " + verb, "UNKNOWN_VERB")

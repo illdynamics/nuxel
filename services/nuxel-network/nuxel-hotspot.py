@@ -1,35 +1,8 @@
 #!/usr/bin/python3
-"""Nuxel Wi-Fi hotspot (hostapd + dnsmasq + scoped nftables NAT).
+"""Native LTE hotspot on wlan1, using hostapd and the shared sharing_link.
 
-Why this exists
----------------
-The NetworkManager/nmcli hotpot path cannot work on this image: there is no
-udev daemon, so NetworkManager never enumerates the Broadcom phy as a managed
-Wi-Fi device, and `nmcli device wifi hotspot` therefore always fails.  The
-vendor driver *does* advertise AP mode (it permits up to two AP interfaces on
-two channels), so the phone can host an AP directly.
-
-Design
-------
-* A SECOND vif of the same phy (`wlan1`) is dedicated to the AP.  The uplink
-  stays on `wlan0`, so the AP does not disturb the owner's Wi-Fi connection.
-* hostapd owns the 802.11 side.  dnsmasq serves DHCP + DNS on the AP interface
-  only (bind-interfaces, interface=<ap>).  Neither daemon is left running when
-  the hotspot is off.
-* NAT is a DEDICATED nftables table `inet nuxel_hotspot`, forward hook at
-  priority -50 (after the app firewall's -100 drop), masquerade scoped to the
-  AP subnet and the chosen uplink.  It never flushes the global ruleset and
-  never touches `nuxel_app_firewall`, `nuxel_console_guard`, `nuxel_tether` or
-  the VPN kill switch.
-* Everything is idempotent; `stop` always removes hostapd, dnsmasq, the table
-  and the AP address, even if a previous start was interrupted.
-* IPv6 is not shared and no RA is advertised.
-
-Control surface (root only):
-    nuxel-hotspot start --ssid NAME --password PASS [--interface wlan1]
-    nuxel-hotspot status
-    nuxel-hotspot stop
-The same logic is callable from the bridge through network_manager.hotspot_*.
+Radio1 owns cellular service. NetworkManager keeps the station interface;
+this helper temporarily owns only wlan1. No automatic activation at boot.
 """
 from __future__ import annotations
 
@@ -41,6 +14,9 @@ import shutil
 import signal
 import subprocess
 import sys
+sys.path.insert(0, "/usr/lib/nuxel/nuxel-bridge")
+import sharing_link
+from mobile_upstream import status as upstream_status
 import time
 
 AP_SUBNET = "10.42.0.0/24"
@@ -67,61 +43,6 @@ def run(argv, timeout=25.0):
                               timeout=timeout)
     except (OSError, subprocess.SubprocessError) as exc:
         return subprocess.CompletedProcess(list(argv), 127, "", str(exc))
-
-
-def _default_uplink() -> str:
-    """The interface carrying the real IPv4 default route.
-
-    This must never be the AP vif (wlan1) nor a tether gadget: masquerading AP
-    traffic onto the AP itself is a no-op loop.  A secondary Wi-Fi vif on the
-    same phy has no default route, so the first non-gadget device wins.
-    """
-    out = run(["/usr/sbin/ip", "-4", "route", "show", "default"]).stdout
-    for line in out.splitlines():
-        parts = line.split()
-        if "dev" not in parts:
-            continue
-        dev = parts[parts.index("dev") + 1]
-        if dev in ("lo", "wlan1", "p2p0"):
-            continue
-        if dev.startswith(("usb", "ncm", "rndis")):
-            continue
-        if os.path.exists("/sys/class/net/" + dev):
-            return dev
-    # Fallback: the interface that has a real IPv4 address on the LAN and is
-    # not a gadget or the AP vif (some boots show the default route with a
-    # link-local-only device first).
-    for name in sorted(os.listdir("/sys/class/net")):
-        if name in ("lo", "wlan1", "p2p0") or name.startswith(("usb", "ncm", "rndis")):
-            continue
-        addr = run(["/usr/sbin/ip", "-4", "addr", "show", name]).stdout
-        if re.search(r"inet (?!169\.254\.)\d+\.", addr):
-            return name
-    return ""
-
-
-def _ap_capable_interface(requested: str | None) -> tuple[str, str]:
-    """Return (interface, reason).  Never guesses: the vif must exist, or a
-    second vif must be creatable from an existing station interface."""
-    if requested:
-        if not IFACE_RE.match(requested):
-            return "", "invalid interface name"
-        if not os.path.exists("/sys/class/net/" + requested):
-            added = run(["/usr/sbin/iw", "dev", "wlan0", "interface", "add", requested,
-                         "type", "__ap"]).returncode
-            if added != 0:
-                return "", "interface %s absent and could not be created" % requested
-        return requested, ""
-    iw = run(["/usr/sbin/iw", "dev"])
-    if iw.returncode != 0:
-        return "", "iw/nl80211 unavailable"
-    ifaces = re.findall(r"^\s*Interface\s+(\S+)", iw.stdout, re.M)
-    # Prefer an interface that is not the current uplink.
-    uplink = _default_uplink()
-    candidates = [i for i in ifaces if i != uplink]
-    if not candidates:
-        return "", "no secondary Wi-Fi interface for the AP"
-    return candidates[0], ""
 
 
 def _phy_supports_ap(iface: str) -> tuple[bool, str]:
@@ -155,7 +76,7 @@ def write_hostapd_conf(iface: str, ssid: str, password: str) -> str:
         "interface=%s\n"
         "ctrl_interface=%s/ctrl\n"
         "ssid=%s\n"
-        "hw_mode=g\n"
+        "hw_mode=%s\n"
         "channel=%s\n"
         "country_code=%s\n"
         "ieee80211d=1\n"
@@ -167,44 +88,27 @@ def write_hostapd_conf(iface: str, ssid: str, password: str) -> str:
         "wpa_passphrase=%s\n"
         "macaddr_acl=0\n"
         "ignore_broadcast_ssid=0\n"
-    ) % (iface, RUN, ssid, AP_CHANNEL, AP_COUNTRY, password)
+    ) % (iface, RUN, ssid, "a" if AP_CHANNEL == "36" else "g", AP_CHANNEL, AP_COUNTRY, password)
     with open(conf, "w") as f:
         f.write(body)
     os.chmod(conf, 0o600)
     return conf
 
 
-def write_dnsmasq_conf(iface: str) -> str:
-    conf = RUN + "/dnsmasq.conf"
-    body = (
-        "# Generated by nuxel-hotspot - do not edit.\n"
-        "interface=%s\n"
-        "bind-interfaces\n"
-        "except-interface=lo\n"
-        "listen-address=%s\n"
-        "dhcp-range=%s.10,%s.200,255.255.255.0,12h\n"
-        "dhcp-option=option:router,%s\n"
-        "dhcp-option=option:dns-server,%s\n"
-        "dhcp-leasefile=%s/leases\n"
-        "pid-file=%s/dnsmasq.pid\n"
-        "no-hosts\n"
-        "log-facility=%s/dnsmasq.log\n"
-    ) % (iface, AP_ADDRESS, AP_ADDRESS.rsplit(".", 1)[0], AP_ADDRESS.rsplit(".", 1)[0],
-         AP_ADDRESS, AP_ADDRESS, RUN, RUN, RUN)
-    with open(conf, "w") as f:
-        f.write(body)
-    return conf
-
-
 NAT_RULES = """table inet {table} {{
+    chain input {{
+        type filter hook input priority -150; policy accept;
+        iifname "{ap}" udp dport {{ 53, 67 }} accept
+        iifname "{ap}" tcp dport 53 accept
+        iifname "{ap}" ip protocol icmp accept
+        iifname "{ap}" drop
+    }}
     chain forward {{
         type filter hook forward priority -50; policy accept;
-        iifname "{ap}" oifname "{up}" accept
-        iifname "{up}" oifname "{ap}" ct state established,related accept
-    }}
-    chain postrouting {{
-        type nat hook postrouting priority srcnat; policy accept;
-        ip saddr {subnet} oifname "{up}" masquerade
+        iifname "{ap}" oifname "{up}" ip saddr {subnet} accept
+        iifname "{up}" oifname "{ap}" ip daddr {subnet} ct state established,related accept
+        iifname "{ap}" drop
+        oifname "{ap}" drop
     }}
 }}
 """
@@ -214,8 +118,8 @@ NAT_RULES = """table inet {table} {{
 # statement needs the nf_nat module to be resolvable at chain-create time and
 # fails with ENOENT, while iptables-legacy reaches the built-in NAT directly.
 # The hotspot therefore uses its own dedicated iptables chains - never the
-# global-flush `iptables` sharing backend and never the tether chain - and
-# falls back to them only when the nftables NAT hook cannot be created.
+# global-flush `iptables` sharing backend and never the tether chain.
+# nftables still supplies the input and forwarding isolation.
 IPT_CHAIN_FWD = "NUXEL_HOTSPOT_FWD"
 IPT_CHAIN_NAT = "NUXEL_HOTSPOT_NAT"
 
@@ -263,12 +167,8 @@ def apply_nat(ap: str, uplink: str) -> tuple[bool, str]:
     if not uplink:
         return False, "no IPv4 default-route uplink to share"
     ok, why = _apply_nat_nft(ap, uplink)
-    if ok:
-        return True, ""
-    ik, iwhy = _apply_nat_ipt(ap, uplink)
-    if ik:
-        return True, "nftables NAT unavailable (%s); used dedicated iptables chains" % why
-    return False, "nft: %s; iptables: %s" % (why, iwhy)
+    if not ok: return False, why
+    return _apply_nat_ipt(ap, uplink)
 
 
 def clear_nat() -> None:
@@ -290,12 +190,18 @@ def _read_pid(path: str) -> int:
 
 
 def _alive(pid: int) -> bool:
-    return pid > 0 and os.path.exists("/proc/%d" % pid)
+    try:
+        return pid > 0 and open('/proc/%d/stat' % pid).read().split(') ', 1)[1][0] != 'Z'
+    except OSError:
+        return False
 
 
 def _kill_pid(path: str) -> None:
     pid = _read_pid(path)
     if _alive(pid):
+        with open('/proc/%d/cmdline' % pid, 'rb') as f:
+            if (RUN + '/hostapd.conf').encode() not in f.read():
+                raise RuntimeError('Access point process identity mismatch')
         try:
             os.kill(pid, signal.SIGTERM)
         except OSError:
@@ -308,17 +214,23 @@ def _kill_pid(path: str) -> None:
 
 def stop(quiet: bool = False) -> dict:
     _kill_pid(RUN + "/hostapd.pid")
-    _kill_pid(RUN + "/dnsmasq.pid")
+    sharing_link.stop("hotspot")
     clear_nat()
     # find the AP interface from state and drop its address
     iface = ""
+    previous = {}
     try:
         with open(STATE) as f:
-            iface = (json.load(f) or {}).get("interface") or ""
+            previous = json.load(f) or {}
+            iface = previous.get("interface") or ""
     except (OSError, ValueError):
         pass
-    if iface and IFACE_RE.match(iface) and os.path.exists("/sys/class/net/" + iface):
-        run(["/usr/sbin/ip", "addr", "flush", "dev", iface])
+    if iface == "wlan1" and IFACE_RE.match(iface) and os.path.exists("/sys/class/net/" + iface):
+        run(["/usr/sbin/ip", "addr", "del", AP_CIDR, "dev", iface])
+        run(["/usr/sbin/ip", "link", "set", iface, "down"])
+        run(["/usr/bin/nmcli", "device", "set", iface, "managed", "yes"])
+    if previous.get('prior_wifi') == 'disabled':
+        run(['nmcli', 'radio', 'wifi', 'off'])
     try:
         os.replace(STATE, STATE + ".off")
     except OSError:
@@ -330,13 +242,13 @@ def stop(quiet: bool = False) -> dict:
 
 def status() -> dict:
     ap_pid = _read_pid(RUN + "/hostapd.pid")
-    dhcp_pid = _read_pid(RUN + "/dnsmasq.pid")
+    dhcp_pid = _read_pid(str(sharing_link.root("hotspot") / "dnsmasq.pid"))
     doc = {"schema_version": 1, "supported": shutil.which("hostapd") is not None,
            "enabled": bool(_alive(ap_pid) and _alive(dhcp_pid)),
            "hostapd_pid": ap_pid if _alive(ap_pid) else None,
            "dnsmasq_pid": dhcp_pid if _alive(dhcp_pid) else None,
            "ssid": "", "interface": "", "address": AP_ADDRESS, "subnet": AP_SUBNET,
-           "dhcp": "dnsmasq", "nat": "nftables nuxel_hotspot"}
+           "dhcp": "dnsmasq", "nat": "iptables NUXEL_HOTSPOT_NAT"}
     try:
         with open(STATE) as f:
             st = json.load(f) or {}
@@ -345,86 +257,107 @@ def status() -> dict:
         doc["uplink"] = st.get("uplink", "")
     except (OSError, ValueError):
         pass
-    doc["state"] = "on" if doc["enabled"] else "off"
+    up = upstream_status()
+    doc['upstream_available'] = up['available']
+    doc['internet_verified'] = False
+    doc['connected_clients'] = None
+    if doc['enabled']:
+        clients = run(['iw', 'dev', 'wlan1', 'station', 'dump'])
+        if clients.returncode == 0:
+            doc['connected_clients'] = len(re.findall(r'^Station ', clients.stdout, re.M))
+    doc['bands'] = ['2.4', '5']
+    doc['band'] = st.get('band', '2.4') if 'st' in locals() else '2.4'
+    doc["state"] = ("on-unverified" if up['available'] else "waiting-upstream") if doc["enabled"] else "off"
     doc["ip_forward"] = (run(["/usr/sbin/sysctl", "-n",
                               "net.ipv4.ip_forward"]).stdout.strip() == "1")
+    try:
+        with open(RUN + '/error.json') as f: failure = json.load(f)
+        if not doc['enabled']:
+            doc['state'] = 'error'
+            doc['last_error'] = failure['error']
+    except (OSError, ValueError, KeyError):
+        pass
     return doc
 
 
 def start(ssid: str, password: str, interface: str | None = None) -> dict:
-    ssid = (ssid or "").strip()
-    password = password or ""
-    if not SSID_RE.match(ssid):
-        return {"success": False, "error": "SSID must be 1-32 printable characters",
-                "error_code": "INVALID_SSID"}
-    if not PSK_RE.match(password):
-        return {"success": False, "error": "passphrase must be 8-63 printable characters",
-                "error_code": "INVALID_PASSWORD"}
-    if not shutil.which("hostapd"):
-        return {"success": False, "error": "hostapd is not installed",
-                "error_code": "HOSTAPD_MISSING"}
-    if not shutil.which("dnsmasq"):
-        return {"success": False, "error": "dnsmasq is not installed",
-                "error_code": "DNSMASQ_MISSING"}
-    uplink = _default_uplink()
-    if not uplink:
-        return {"success": False, "error": "no IPv4 default route to share",
-                "error_code": "NO_UPLINK"}
-    # Never take the owner's connected station interface away.
-    ap, reason = _ap_capable_interface(interface)
-    if not ap:
-        return {"success": False, "error": reason or "no AP interface",
-                "error_code": "NO_AP_INTERFACE"}
-    if ap == uplink:
-        return {"success": False, "error": "AP interface is the uplink",
-                "error_code": "AP_IS_UPLINK"}
-    ok, why = _phy_supports_ap(ap)
-    if not ok:
-        return {"success": False, "error": why, "error_code": "AP_UNSUPPORTED"}
+    if not SSID_RE.fullmatch(ssid or '') or not PSK_RE.fullmatch(password or ''):
+        return {'success': False, 'error': 'Invalid SSID or WPA2 password'}
+    if interface not in (None, 'wlan1'):
+        return {'success': False, 'error': 'Only the dedicated wlan1 AP is supported'}
+    if not shutil.which('hostapd') or not shutil.which('dnsmasq'):
+        return {'success': False, 'error': 'hostapd and dnsmasq are required'}
+    up = upstream_status()
+    if not up['available']: return {'success': False, 'error': up['error']}
+    if run(['nft', 'list', 'table', 'inet', 'nuxel_vpn_killswitch']).returncode == 0:
+        return {'success': False, 'error': 'VPN kill switch prevents cellular sharing'}
+    ok, why = _phy_supports_ap('wlan1')
+    if not ok: return {'success': False, 'error': why}
     stop(quiet=True)
-    # Without forwarding+dnsmasq there is no "sharing", only an AP island.
-    run(["/usr/sbin/sysctl", "-qw", "net.ipv4.ip_forward=1"])
-    os.makedirs(RUN, mode=0o755, exist_ok=True)
-    os.makedirs(RUN + "/ctrl", mode=0o755, exist_ok=True)
-    conf = write_hostapd_conf(ap, ssid, password)
-    dconf = write_dnsmasq_conf(ap)
-    run(["/usr/sbin/ip", "link", "set", ap, "down"])
-    run(["/usr/sbin/ip", "addr", "replace", AP_CIDR, "dev", ap])
-    proc = subprocess.run(["/usr/sbin/hostapd", "-B", "-P", RUN + "/hostapd.pid", conf],
-                          capture_output=True, text=True, timeout=25)
-    if proc.returncode != 0:
-        clear_nat()
-        return {"success": False, "error": "hostapd failed to start",
-                "error_code": "HOSTAPD_FAILED",
-                "detail": (proc.stderr or proc.stdout or "").strip()[:400]}
-    dpid = subprocess.run(["/usr/sbin/dnsmasq", "--conf-file=" + dconf],
-                          capture_output=True, text=True, timeout=15)
-    if dpid.returncode != 0:
-        _kill_pid(RUN + "/hostapd.pid")
-        clear_nat()
-        return {"success": False, "error": "dnsmasq failed to start",
-                "error_code": "DNSMASQ_FAILED",
-                "detail": (dpid.stderr or dpid.stdout or "").strip()[:400]}
-    ok, why = apply_nat(ap, uplink)
-    doc = {"schema_version": 1, "ssid": ssid, "interface": ap,
-           "uplink": uplink, "address": AP_ADDRESS, "subnet": AP_SUBNET,
-           "started_at": int(time.time()), "nat": ok, "nat_error": why}
-    with open(STATE, "w") as f:
-        json.dump(doc, f)
-    if not ok:
-        log("warning: NAT not applied: " + why)
-    log("started ssid=%s iface=%s uplink=%s nat=%s" % (ssid, ap, uplink, ok))
-    out = status()
-    out["success"] = bool(out.get("enabled"))
-    out["nat_applied"] = ok
-    if why:
-        out["nat_error"] = why
-    return out
+    os.makedirs(RUN, mode=0o700, exist_ok=True)
+    os.makedirs(RUN + '/ctrl', mode=0o700, exist_ok=True)
+    prior_wifi = run(['nmcli', 'radio', 'wifi']).stdout.strip()
+    doc = {'schema_version': 1, 'ssid': ssid, 'interface': 'wlan1',
+           'uplink': up['interface'], 'address': AP_ADDRESS, 'subnet': AP_SUBNET,
+           'started_at': int(time.time()), 'enabled': False,
+           'prior_wifi': prior_wifi,
+           'band': '5' if AP_CHANNEL == '36' else '2.4'}
+    try: os.unlink(RUN + '/error.json')
+    except FileNotFoundError: pass
+    with open(STATE, 'w') as f: json.dump(doc, f)
+    def checked(args):
+        proc = run(args)
+        if proc.returncode: raise RuntimeError(proc.stderr.strip()[:300] or 'Command failed')
+    try:
+        # Install isolation before clients can associate.
+        ok, why = apply_nat('wlan1', up['interface'])
+        if not ok: raise RuntimeError(why)
+        checked(['nmcli', 'device', 'set', 'wlan1', 'managed', 'no'])
+        # NM removes its supplicant interface asynchronously. Wait for that
+        # owner to release wlan1 before hostapd changes its interface type.
+        for _ in range(40):
+            released = run(['busctl', '--system', 'call', 'fi.w1.wpa_supplicant1',
+                            '/fi/w1/wpa_supplicant1', 'fi.w1.wpa_supplicant1',
+                            'GetInterface', 's', 'wlan1'])
+            if released.returncode: break
+            time.sleep(.2)
+        else: raise RuntimeError('NetworkManager has not released the AP interface')
+        checked(['nmcli', 'radio', 'wifi', 'on'])
+        addresses = json.loads(run(['ip','-j','-4','address','show','dev','wlan1']).stdout)
+        if any(a.get('scope') == 'global' for d in addresses for a in d.get('addr_info', [])):
+            raise RuntimeError('AP interface already has an address')
+        checked(['ip', 'link', 'set', 'wlan1', 'down'])
+        checked(['ip', 'addr', 'add', AP_CIDR, 'dev', 'wlan1'])
+        conf = write_hostapd_conf('wlan1', ssid, password)
+        # Keep hostapd in this service's cgroup, with logs captured
+        # independently of the bridge's pipes.
+        with open(RUN + '/hostapd.log', 'w') as log_file:
+            ap_process = subprocess.Popen(['hostapd', conf], stdout=log_file,
+                                          stderr=subprocess.STDOUT)
+        with open(RUN + '/hostapd.pid', 'w') as f: f.write(str(ap_process.pid))
+        for _ in range(40):
+            ap_state = run(['hostapd_cli', '-p', RUN + '/ctrl', '-i', 'wlan1', 'status'])
+            if 'state=ENABLED' in ap_state.stdout: break
+            if not _alive(_read_pid(RUN + '/hostapd.pid')):
+                raise RuntimeError('hostapd exited before AP readiness')
+            time.sleep(.2)
+        else: raise RuntimeError('Access point did not become ready: ' +
+                                 (ap_state.stderr or ap_state.stdout).strip()[:200])
+        sharing_link.start('hotspot', up)
+        doc['enabled'] = True
+        with open(STATE, 'w') as f: json.dump(doc, f)
+        result = status(); result['success'] = result['enabled']
+        return result
+    except Exception as exc:
+        stop(quiet=True)
+        result = {'success': False, 'error': str(exc)}
+        with open(RUN + '/error.json', 'w') as f: json.dump(result, f)
+        return result
 
 
 def main(argv) -> int:
     ap = argparse.ArgumentParser(prog="nuxel-hotspot")
-    ap.add_argument("verb", choices=("start", "stop", "status"))
+    ap.add_argument("verb", choices=("start", "stop", "status", "run"))
     ap.add_argument("--ssid", default="")
     ap.add_argument("--password", default="")
     ap.add_argument("--interface", default=None)
@@ -432,6 +365,28 @@ def main(argv) -> int:
     if os.geteuid() != 0:
         print(json.dumps({"success": False, "error": "root required"}))
         return 1
+    if ns.verb == "run":
+        config = json.loads(open('/var/lib/nuxel/hotspot/config.json').read())
+        global AP_CHANNEL
+        AP_CHANNEL = '36' if config.get('band') == '5' else '6'
+        res = start(config['ssid'], config['password'], 'wlan1')
+        print(json.dumps(res), flush=True)
+        if not res.get('success'): return 1
+        running = True
+        def shutdown(*_):
+            nonlocal running
+            running = False
+        signal.signal(signal.SIGTERM, shutdown)
+        signal.signal(signal.SIGINT, shutdown)
+        try:
+            while running:
+                if not _alive(_read_pid(RUN + '/hostapd.pid')):
+                    raise RuntimeError('Access point process exited')
+                sharing_link.refresh('hotspot', upstream_status())
+                time.sleep(3)
+        finally:
+            stop(quiet=True)
+        return 0
     if ns.verb == "start":
         res = start(ns.ssid, ns.password, ns.interface)
     elif ns.verb == "stop":
