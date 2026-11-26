@@ -630,3 +630,19 @@ bool fmt_tx_sdm_pcscf(struct fmt_tx_frame *f, const char *pcscf)
     return fmt_tx_raw(f, 10u /*MISC*/, 34u /*SDM_PCSCF*/, 3u,
                       (const uint8_t *)pcscf, n);
 }
+
+/* Matched RIL 60889dd7: DefinePdpContext @31f66c and SetDataProfile
+ * @3201e8 map PcscfViaPco=true to 2(IP), 3(IPV6), 1(IPV4V6).
+ * Keep ordinary internet builders unchanged. */
+bool fmt_tx_ims_profile(struct fmt_tx_frame *f, const char *apn, uint8_t proto)
+{
+    if (!fmt_tx_set_data_profile_ex(f,apn,FMT_TX_AUTH_NONE,proto,2,"ims")) return false;
+    f->buf[7+188] = proto==FMT_TX_PROTO_IP ? 2 : proto==FMT_TX_PROTO_IPV6 ? 3 : 1;
+    return true;
+}
+bool fmt_tx_ims_define(struct fmt_tx_frame *f, const char *apn, uint8_t proto)
+{
+    if (!fmt_tx_define_pdp_context(f,apn,proto,2)) return false;
+    f->buf[7+126] = proto==FMT_TX_PROTO_IP ? 2 : proto==FMT_TX_PROTO_IPV6 ? 3 : 1;
+    return true;
+}

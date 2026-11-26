@@ -144,6 +144,9 @@ bool fmt_tx_set_data_call_establish(struct fmt_tx_frame *f, bool establish);
 bool fmt_tx_set_data_profile(struct fmt_tx_frame *f, const char *apn,
                              uint8_t auth_code, uint8_t proto);
 
+bool fmt_tx_ims_profile(struct fmt_tx_frame *f, const char *apn, uint8_t proto);
+bool fmt_tx_ims_define(struct fmt_tx_frame *f, const char *apn, uint8_t proto);
+
 /* GPRS LTE attach profile (main=13 GPRS, sub=20 SET_LTE_ATTACH_PROFILE).
  * 201-byte frame; COMPLETE layout recovered from IpcTxSetLteAttachProfile
  * @0x320238 — see fmt_tx.c. This prepares the CP for LTE PS attach.

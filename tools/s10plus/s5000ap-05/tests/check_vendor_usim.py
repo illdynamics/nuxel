@@ -93,3 +93,9 @@ vtable=syms['_ZTV10SmsManager']+16
 slot=next(r for r in relocs if r['r_offset']==vtable+64)
 assert dyn[slot['r_info_sym']].name=='_ZN10SmsManager9DoSendSmsEP7Requesti9ModemType'
 print('Vendor USIM frame, unsupported CP auth relay, and SMS ModemType vtable: PASS')
+# PCO discovery selectors are verified against the matching vendor executable.
+for protocol, wire in [(2,2),(3,3),(4,1)]:
+    empty=STR+16
+    assert run('IpcTxDefinePdpContext',[empty,2,protocol,1,0,0])[-1]==wire
+    assert run('IpcTxSetDataProfile',[empty,0,0,0,protocol,2,1,1,0,0,0])[195]==wire
+print('Vendor IMS PCO IPv6/IPv4v6/IPv4 selectors: PASS')

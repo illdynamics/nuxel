@@ -575,11 +575,13 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
     /* Correlate GEN result to the IMS PDN drive (distinct CID). */
     if (f->main_cmd == IPC41_MAIN_GEN && f->cmd_type == IPC41_TYPE_RESPONSE &&
         f->payload_len == 5 && f->ack_seq == g.ims_pdn.last_write_seq &&
-        f->payload[0] == IPC41_MAIN_GPRS && f->payload[1] == 27 &&
+        f->payload[0] == IPC41_MAIN_GPRS && f->payload[1] == g.ims_pdn.pending_sub &&
         f->payload[2] == FMT_TX_TYPE_NOTIFICATION) {
         struct fmt_rx_gen gen;
-        if (fmt_rx_gen(f->payload, f->payload_len, &gen))
+        if (fmt_rx_gen(f->payload, f->payload_len, &gen)) {
+            diagf("ims_pdn_result","\"sub\":%u,\"result\":%u",gen.sub,gen.result);
             ims_pdn_gen_result(&g.ims_pdn, gen.result, f->ack_seq);
+        }
     }
     /* Correlate the modem's direct GetDeviceCapa response (MISC sub=45
      * type=2) to the capability query. This is NOT a GEN ack; the modem

@@ -27,7 +27,7 @@ bool ims_pdn_open(struct ims_pdn *p, ims_pdn_write_fn write, void *user)
     p->write = write;
     p->user = user;
     p->cid = IMS_PDN_CID;
-    p->proto = FMT_TX_PROTO_IPV6;   /* VoLTE/IMS P-CSCF discovery over IPv6 (KPN 204-08) */
+    p->proto = FMT_TX_PROTO_IPV4V6;   /* VoLTE/IMS P-CSCF discovery over IPv6 (KPN 204-08) */
     p->auth = FMT_TX_AUTH_NONE;      /* 3GPP IMS APN: no PDP-layer auth; SIP/REGISTER AKA */
     p->profile_id = IMS_PDN_PROFILE_ID;
     p->phase = IMS_PDN_IDLE;
@@ -45,8 +45,8 @@ bool ims_pdn_active(const struct ims_pdn *p)
 
 const char *ims_pdn_phase_name(enum ims_pdn_phase ph)
 {
-    static const char *const n[] = {"idle","set-profile","verify","active","failed"};
-    return (ph <= IMS_PDN_FAILED) ? n[ph] : "unknown";
+    static const char *const n[] = {"idle","set-profile","verify","active","failed","define","activate","release"};
+    return (ph <= IMS_PDN_RELEASE) ? n[ph] : "unknown";
 }
 
 enum ims_pdn_phase ims_pdn_tick(struct ims_pdn *p, uint64_t now_ms, bool online)
@@ -55,7 +55,9 @@ enum ims_pdn_phase ims_pdn_tick(struct ims_pdn *p, uint64_t now_ms, bool online)
     if (!online) {
         p->active = false;
         p->attached = p->ip_ready = p->pcscf_ready = false;
-        if (p->phase != IMS_PDN_FAILED) p->phase = IMS_PDN_IDLE;
+        p->phase = IMS_PDN_IDLE;
+        p->phase_deadline_ms=0;
+        memset(&p->ip,0,sizeof p->ip);
         return p->phase;
     }
     switch (p->phase) {
@@ -66,22 +68,26 @@ enum ims_pdn_phase ims_pdn_tick(struct ims_pdn *p, uint64_t now_ms, bool online)
         p->phase = IMS_PDN_SET_PROFILE;
         break;
     case IMS_PDN_SET_PROFILE:
-        /* Wait for an uncorrelated GEN response before retrying. */
-        if (p->phase_deadline_ms && now_ms < p->phase_deadline_ms) break;
-        if (now_ms >= p->next_action_ms && p->attempt < IMS_PDN_ATTEMPT_LIMIT) {
-            p->attempt++;
-            struct fmt_tx_frame f;
-            uint8_t seq = 0;
-            if (fmt_tx_set_data_profile_ex(&f, IMS_PDN_APN, p->auth, p->proto,
-                                           p->profile_id, "ims") &&
-                p->write(&f, &seq, p->user)) {
-                p->last_write_seq = seq;
-                p->phase_deadline_ms = now_ms + IMS_PDN_STEP_TIMEOUT_MS;
-            } else p->next_action_ms = now_ms + IMS_PDN_RETRY_MS;
-        } else if (p->attempt >= IMS_PDN_ATTEMPT_LIMIT) {
-            p->phase = IMS_PDN_FAILED;
+    case IMS_PDN_DEFINE:
+    case IMS_PDN_ACTIVATE:
+    case IMS_PDN_RELEASE: {
+        /* An accepted write is never repeated on timeout: activation may
+         * already have reached the network. Recovery requires a new epoch. */
+        if (p->phase_deadline_ms) {
+            if (now_ms>=p->phase_deadline_ms) p->phase=IMS_PDN_FAILED;
+            break;
         }
+        struct fmt_tx_frame f;
+        bool built = p->phase==IMS_PDN_RELEASE ? fmt_tx_release_pdp_context(&f,p->cid) :
+            p->phase==IMS_PDN_SET_PROFILE ? fmt_tx_ims_profile(&f,IMS_PDN_APN,p->proto) :
+            p->phase==IMS_PDN_DEFINE ? fmt_tx_ims_define(&f,IMS_PDN_APN,p->proto) :
+            fmt_tx_set_pdp_context(&f,IMS_PDN_APN,p->auth,p->proto,p->cid,1);
+        if (built && p->write(&f,&p->last_write_seq,p->user)) {
+            p->pending_sub=f.sub_cmd;
+            p->phase_deadline_ms=now_ms+IMS_PDN_STEP_TIMEOUT_MS;
+        } else p->phase=IMS_PDN_FAILED;
         break;
+    }
     case IMS_PDN_VERIFY:
     case IMS_PDN_ACTIVE:
     case IMS_PDN_FAILED:
@@ -92,21 +98,18 @@ enum ims_pdn_phase ims_pdn_tick(struct ims_pdn *p, uint64_t now_ms, bool online)
 
 void ims_pdn_gen_result(struct ims_pdn *p, uint16_t result, uint8_t ack_seq)
 {
-    if (!p || p->phase != IMS_PDN_SET_PROFILE ||
-        !p->phase_deadline_ms || ack_seq != p->last_write_seq) return;
-    if (result == FMT_RX_GEN_OK) {
-        if (p->phase == IMS_PDN_SET_PROFILE) {
-            p->attempt = 0;
-            p->next_action_ms = 0;
-            p->phase_deadline_ms = 0;
-            /* Profile accepted; await actual attachment/IP/P-CSCF. */
-            p->active = false;
-            p->phase = IMS_PDN_VERIFY;
-        }
-    } else {
-        p->phase = IMS_PDN_FAILED;
-        p->phase_deadline_ms = 0;
-    }
+    if (!p || !p->phase_deadline_ms || ack_seq!=p->last_write_seq ||
+        (p->phase!=IMS_PDN_SET_PROFILE && p->phase!=IMS_PDN_DEFINE &&
+         p->phase!=IMS_PDN_ACTIVATE && p->phase!=IMS_PDN_RELEASE)) return;
+    p->last_result=result;
+    p->phase_deadline_ms=0;
+    if (result!=FMT_RX_GEN_OK) { p->phase=IMS_PDN_FAILED; return; }
+    /* SetDataProfile (SET_APN_INFO sub=27) accepted. The modem manages the
+     * IMS bearer itself (ImsPdnTriggered checks DataCallList::GetCall(2));
+     * a separate DefinePdpContext(sub=1) is rejected with 0x8001 on this CP.
+     * Advance straight to VERIFY and wait for a real CID-2 attach+IP+P-CSCF. */
+    p->phase = IMS_PDN_VERIFY;
+    if (p->active) p->phase = IMS_PDN_ACTIVE;
 }
 
 static void update_ready(struct ims_pdn *p)
@@ -120,13 +123,14 @@ void ims_pdn_report_cid(struct ims_pdn *p, uint8_t cid, bool attached)
 {
     if (!p || cid != p->cid) return;
     p->attached = attached;
-    if (!attached) p->ip_ready = p->pcscf_ready = false;
+    if (!attached) { p->ip_ready = p->pcscf_ready = false; memset(&p->ip,0,sizeof p->ip); }
     update_ready(p);
 }
 
 void ims_pdn_report_ip(struct ims_pdn *p, const struct fmt_rx_ip *ip)
 {
     if (!p || !ip || ip->cid != p->cid) return;
+    p->ip=*ip;
     p->ip_ready = ip->ipv4_valid || ip->ipv6_valid;
     p->pcscf_ready = (ip->ipv4_valid && ip->pcscf4_count) ||
                      (ip->ipv6_valid && ip->pcscf6_count);

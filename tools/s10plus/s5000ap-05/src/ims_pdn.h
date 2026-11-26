@@ -21,6 +21,9 @@ enum ims_pdn_phase {
     IMS_PDN_VERIFY,       /* confirm the modem managed the IMS bearer itself */
     IMS_PDN_ACTIVE,       /* IMS PDN established (modem-confirmed) */
     IMS_PDN_FAILED,
+    IMS_PDN_DEFINE,
+    IMS_PDN_ACTIVATE,
+    IMS_PDN_RELEASE,
 };
 
 struct ims_pdn {
@@ -32,7 +35,9 @@ struct ims_pdn {
     uint8_t proto;       /* IP family (IPv6 for IMS P-CSCF discovery) */
     uint8_t auth;        /* AUTH_NONE at PDP layer */
     uint8_t profile_id;  /* vendor IMS DataProfile wire id (2 = IMS/ePDN) */
-    uint8_t last_write_seq;
+    uint8_t last_write_seq, pending_sub;
+    uint16_t last_result;
+    struct fmt_rx_ip ip;
     uint64_t next_action_ms;
     uint64_t phase_deadline_ms;
     bool active, attached, ip_ready, pcscf_ready;

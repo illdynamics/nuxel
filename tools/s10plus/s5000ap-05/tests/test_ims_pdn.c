@@ -17,6 +17,11 @@ static bool write_capture(const struct fmt_tx_frame *f, uint8_t *seq, void *u)
 
 int main(void)
 {
+    struct fmt_tx_frame f;
+    assert(fmt_tx_ims_profile(&f,"ims",FMT_TX_PROTO_IPV4V6));
+    assert(f.buf[7+188]==1);
+    assert(fmt_tx_ims_define(&f,"ims",FMT_TX_PROTO_IPV6));
+    assert(f.buf[7+126]==3);
     struct ims_pdn p;
     assert(ims_pdn_open(&p, write_capture, NULL));
     assert(ims_pdn_tick(&p, 0, true) == IMS_PDN_SET_PROFILE);
@@ -26,6 +31,7 @@ int main(void)
     assert(p.phase == IMS_PDN_SET_PROFILE);
     /* Profile acceptance is not bearer readiness. */
     ims_pdn_gen_result(&p, FMT_RX_GEN_OK, last_seq);
+    /* SetDataProfile accepted -> VERIFY (modem-managed attach), not Define. */
     assert(p.phase == IMS_PDN_VERIFY);
     assert(!ims_pdn_active(&p));
 
