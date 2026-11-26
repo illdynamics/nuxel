@@ -257,10 +257,18 @@ bool fmt_tx_set_device_capa(struct fmt_tx_frame *f, uint8_t pref1, uint8_t pref2
 #define FMT_TX_SDM_IMS_MODE_OFF 0u
 #define FMT_TX_SDM_IMS_MODE_ON  1u
 
-/* SmsOverIpFormat (sub=26, 1 byte) — used for the SMS-over-IP format. */
+/* SmsOverIpFormat (sub=26, 1 byte) — the SMS-over-IP format selector.
+ * Recovered from ImsPreference::SetPreference @0x2bf410 struct layout: the
+ * SmsOverIpFormat field (offset 0xc) is written 2 in the vendor's IMS SMS
+ * preference paths. Vendor enum: 0=UNKNOWN, 1=CSFB, 2=3GPP SMS-over-IMS. */
+#define FMT_TX_SDM_SMSOVERIP_FORMAT_UNKNOWN 0u
+#define FMT_TX_SDM_SMSOVERIP_FORMAT_CSFB    1u
+#define FMT_TX_SDM_SMSOVERIP_FORMAT_3GPP    2u
 bool fmt_tx_sdm_ims_sms_fmt(struct fmt_tx_frame *f, uint8_t fmt);
 
 /* SMS-over-IP enable (sub=27, 1 byte): 0 = off, 1 = SMS-over-IP enabled. */
+#define FMT_TX_SDM_SMSOVERIP_DISABLE 0u
+#define FMT_TX_SDM_SMSOVERIP_ENABLE  1u
 bool fmt_tx_sdm_ims_sms_over_ip(struct fmt_tx_frame *f, uint8_t enable);
 
 /* IMS domain (sub=28, variable): the SIP/IMS domain FQDN. */

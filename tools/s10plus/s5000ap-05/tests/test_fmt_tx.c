@@ -136,7 +136,7 @@ int main(void)
     CHECK(f.buf[7] == 2);                 /* DataProfile type 2 (IMS/ePDN) */
     CHECK(memcmp(f.buf+8, "ims", 3) == 0); /* profile label "ims" */
     CHECK(f.buf[7+21] == 0x06);           /* IPv6 wire byte */
-    CHECK(memcmp(f.buf+7+22, "ims.mnc008.mcc204.gprs", 24) == 0); /* APN */
+    CHECK(memcmp(f.buf+7+22, "ims.mnc008.mcc204.gprs", 23) == 0); /* APN (23 bytes, no NUL) */
     /* profile_id is a 1-byte wire value (0 is valid); only label/apn bounds fail */
     CHECK(!fmt_tx_set_data_profile_ex(&f, "ims.mnc008.mcc204.gprs", 0, 3, 2, ""));
     CHECK(!fmt_tx_set_data_profile_ex(&f, "ims.mnc008.mcc204.gprs", 0, 3, 2, NULL));

@@ -26,8 +26,39 @@ static bool write_capture(const struct fmt_tx_frame *f, uint8_t *seq, void *u)
             assert(f->buf[7] == FMT_TX_VOICE_DOMAIN_PS_ONLY);
             assert(f->buf[8] == FMT_TX_VOICE_DOMAIN_PS_ONLY);
         }
+    } else if (f->main_cmd == 10 && f->sub_cmd == 26) {
+        /* SdmImsSmsFmtSet: 8-byte frame, payload[0]=SmsOverIpFormat=3GPP(2). */
+        assert(f->len == 8);
+        assert(f->buf[4] == 10 && f->buf[5] == 26 && f->buf[6] == 3);
+        assert(f->buf[7] == FMT_TX_SDM_SMSOVERIP_FORMAT_3GPP);
+    } else if (f->main_cmd == 10 && f->sub_cmd == 27) {
+        /* SdmImsSmsOverIPSet: 8-byte frame, payload[0]=enable=1. */
+        assert(f->len == 8);
+        assert(f->buf[4] == 10 && f->buf[5] == 27 && f->buf[6] == 3);
+        assert(f->buf[7] == FMT_TX_SDM_SMSOVERIP_ENABLE);
     }
     return true;
+}
+
+static void drive_to_done(struct ims_init *i)
+{
+    /* Sequence: IDLE -> SEND_GET -> WAIT_GET_ACK --capa_response--> SEND_CAPA
+     * -> WAIT_ACK --gen OK--> SEND_SMS_FMT -> WAIT_SMS_FMT --gen OK-->
+     * SEND_SMS_OIP -> WAIT_SMS_OIP --gen OK--> DONE. */
+    assert(ims_init_tick(i, 0, true) == IMS_INIT_SEND_GET);
+    assert(ims_init_tick(i, 1, true) == IMS_INIT_WAIT_GET_ACK); /* writes GetDeviceCapa */
+    ims_init_capa_response(i, last_seq);
+    assert(i->phase == IMS_INIT_SEND_CAPA);
+    assert(ims_init_tick(i, 2, true) == IMS_INIT_WAIT_ACK);     /* writes SetDeviceCapa */
+    ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq);            /* -> SEND_SMS_FMT */
+    assert(i->phase == IMS_INIT_SEND_SMS_FMT);
+    assert(ims_init_tick(i, 3, true) == IMS_INIT_WAIT_SMS_FMT); /* writes SMS_FMT */
+    ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq);            /* -> SEND_SMS_OIP */
+    assert(i->phase == IMS_INIT_SEND_SMS_OIP);
+    assert(ims_init_tick(i, 4, true) == IMS_INIT_WAIT_SMS_OIP); /* writes SMS_OIP */
+    ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq);            /* -> DONE */
+    assert(ims_init_done(i));
+    assert(i->phase == IMS_INIT_DONE);
 }
 
 int main(void)
@@ -40,45 +71,33 @@ int main(void)
     assert(writes == 0);
     assert(!ims_init_done(&i));
 
-    /* Online tick 1: IDLE -> SEND_GET (no write yet). */
-    assert(ims_init_tick(&i, 0, true) == IMS_INIT_SEND_GET);
-    assert(writes == 0);
-
-    /* Online tick 2: SEND_GET -> WAIT_GET_ACK (emits GetDeviceCapa). */
-    assert(ims_init_tick(&i, 1, true) == IMS_INIT_WAIT_GET_ACK);
-    assert(writes == 1);
-    assert(!ims_init_done(&i));
-
-    /* Direct MISC GetDeviceCapa response moves to SEND_CAPA. */
-    ims_init_capa_response(&i, last_seq);
-    assert(i.phase == IMS_INIT_SEND_CAPA);
-
-    /* SEND_CAPA -> WAIT_ACK (emits SetDeviceCapa). */
-    assert(ims_init_tick(&i, 2, true) == IMS_INIT_WAIT_ACK);
-    assert(writes == 2);
-    assert(!ims_init_done(&i));
-
-    /* Generic ack for SET completes init. */
-    ims_init_gen_result(&i, FMT_RX_GEN_OK, last_seq);
-    assert(ims_init_done(&i));
-    assert(i.phase == IMS_INIT_DONE);
+    writes = 0;
+    drive_to_done(&i);
+    assert(writes == 4); /* Get, Set, SmsFmt, SmsOverIP */
 
     ims_init_close(&i);
 
-    /* A direct GET response precedes SET; non-zero GEN on SET does not
-     * complete init. */
+    /* Non-zero GEN on SET retries SET and does not arm SMS-over-IP. */
     struct ims_init i2;
     assert(ims_init_open(&i2, write_capture, NULL));
     writes = 0;
-    ims_init_tick(&i2, 0, true);
-    ims_init_tick(&i2, 1, true);           /* SEND_GET -> WAIT_GET_ACK */
-    ims_init_capa_response(&i2, last_seq);  /* -> SEND_CAPA */
-    assert(i2.phase == IMS_INIT_SEND_CAPA);
-    ims_init_tick(&i2, 2, true);           /* SEND_CAPA -> WAIT_ACK */
-    assert(i2.phase == IMS_INIT_WAIT_ACK);
-    ims_init_gen_result(&i2, 0x8001u, last_seq); /* non-zero -> retry SET */
+    ims_init_tick(&i2, 0, true);                /* -> SEND_GET */
+    ims_init_tick(&i2, 1, true);                /* -> WAIT_GET_ACK (write Get) */
+    ims_init_capa_response(&i2, last_seq);      /* -> SEND_CAPA */
+    ims_init_tick(&i2, 2, true);                /* -> WAIT_ACK (write Set) */
+    ims_init_gen_result(&i2, 0x8001u, last_seq);/* non-zero -> retry SET */
     assert(!ims_init_done(&i2));
     assert(i2.phase == IMS_INIT_SEND_CAPA);
+
+    /* SMS_FMT (sub=26) is REJECTED by the modem (0x8001), but that must NOT
+     * clear done (registration gate) — best-effort only. */
+    ims_init_tick(&i2, 3, true);                /* retry Set -> WAIT_ACK */
+    ims_init_gen_result(&i2, FMT_RX_GEN_OK, last_seq); /* done=true, -> SEND_SMS_FMT */
+    assert(ims_init_done(&i2));                  /* registration gate already open */
+    ims_init_tick(&i2, 4, true);                /* write SmsFmt -> WAIT_SMS_FMT */
+    ims_init_gen_result(&i2, 0x8001u, last_seq);/* rejected; best-effort -> SMS_OIP */
+    assert(ims_init_done(&i2));                  /* still done */
+    assert(i2.phase == IMS_INIT_SEND_SMS_OIP);
     ims_init_close(&i2);
 
     printf("test_ims_init OK\n");
