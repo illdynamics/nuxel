@@ -17,12 +17,12 @@ static bool write_capture(const struct fmt_tx_frame *f, uint8_t *seq, void *u)
     if (f->main_cmd == 22 && f->sub_cmd == 8) {
         assert(f->len == 13);
         assert(f->buf[4] == 22 && f->buf[5] == 8 && f->buf[6] == 3);
-        assert(f->buf[7] == 1);   /* request flag (arg2) */
-        assert(f->buf[8] == FMT_TX_RAT_LTE);  /* NetworkType (arg3) */
-        assert(f->buf[9] == 0);   /* EcmpState (arg4) */
-        assert(f->buf[10] == 0);  /* EpdgState (arg5) */
-        assert(f->buf[11] == 0);  /* EpdgAvailableState (arg6) */
-        assert(f->buf[12] == FMT_TX_RAT_LTE); /* RadioTechnology (arg8) */
+        assert(f->buf[7] == FMT_TX_IMS_REGSTATUS_REGISTERED); /* ImsRegStatus (arg1) */
+        assert(f->buf[8] == 1);   /* request flag (arg2 int) */
+        assert(f->buf[9] == FMT_TX_RAT_LTE);  /* NetworkType (arg3) */
+        assert(f->buf[10] == 0);  /* EcmpState (arg4) */
+        assert(f->buf[11] == 6);  /* EpdgAvailableState (derived, LTE) */
+        assert(f->buf[12] == 0);  /* second int (arg7) */
     }
     return true;
 }

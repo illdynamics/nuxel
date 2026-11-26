@@ -454,21 +454,29 @@ bool fmt_tx_ims_set_reg_state(struct fmt_tx_frame *f, uint8_t reg_status,
     if (!f || reg_status > FMT_TX_IMS_REGSTATUS_DEREG) return false;
     uint8_t p[6] = {0};
     /* Corrected against IpcProtocol41::IpcTxImsReqSetRegState @0x34d230
-     * (aarch64 disassembly, libsec-ril 60889dd7). The 6-byte IMS payload is:
-     *   [0] request flag (int arg2; 1 == request registration)
-     *   [1] NetworkType        (arg3; Android RADIO_TECH, LTE=14)
-     *   [2] EcmpState          (arg4; no CSFB/ECMP override -> 0)
-     *   [3] EpdgState          (arg5; plain VoLTE path -> 0)
-     *   [4] EpdgAvailableState (arg6 derived; 0 = EPDG unavailable on LTE)
-     *   [5] RadioTechnology    (arg8; LTE=14)
-     * ImsRegStatus (arg1) selects the request-flag value and is NOT itself
-     * transmitted in the payload. */
-    p[0] = (reg_status == FMT_TX_IMS_REGSTATUS_REGISTERED) ? 1u : 0u;
-    p[1] = network_type;
-    p[2] = 0u; /* EcmpState */
-    p[3] = 0u; /* EpdgState */
-    p[4] = 0u; /* EpdgAvailableState (plain VoLTE, no EPDG) */
-    p[5] = rat;
+     * (aarch64 disassembly, libsec-ril 60889dd7) and its unique caller
+     * IpcModem::SetImsRegState @0x2fbe88. The demangled signature is
+     *   SetImsRegState(ImsRegStatus, int, NetworkType, EcmpState,
+     *                  EpdgState, EpdgAvailableState, int, RadioTechnology)
+     * and both disassemblies write the SAME 6-byte on-wire layout:
+     *   payload[0] = ImsRegStatus   (w1)
+     *   payload[1] = request flag   (w2, int; 1 == drive registration)
+     *   payload[2] = NetworkType    (w3; Android RADIO_TECH, LTE=14)
+     *   payload[3] = EcmpState      (w4)
+     *   payload[4] = EpdgState/    EpdgAvailableState (derived; 6 for LTE)
+     *   payload[5] = int            (w7, second int)
+     * RadioTechnology (w8/stack) is consumed ONLY to derive payload[4] via a
+     * jump table (LTE/14 -> 6); it is NOT itself a payload byte. The prior
+     * implementation dropped payload[1] and shifted NetworkType/EcmpState,
+     * which left the request flag byte carrying the RAT value (14) instead of
+     * 1 -- a structurally valid but semantically wrong frame the modem ignored. */
+    p[0] = reg_status;                 /* ImsRegStatus (1=REGISTERED,2=DEREG) */
+    p[1] = (reg_status == FMT_TX_IMS_REGSTATUS_DEREG) ? 0u : 1u; /* request flag */
+    p[2] = network_type;               /* NetworkType (LTE=14) */
+    p[3] = 0u;                         /* EcmpState */
+    p[4] = 6u;                         /* Epdg/available-state (LTE -> 6) */
+    p[5] = 0u;                         /* second int (reserved) */
+    (void)rat;
     return fmt_tx_raw(f, 22u /*IMS*/, 8u /*REQ_SET_REG_STATE*/,
                       FMT_TX_TYPE_NOTIFICATION, p, sizeof p);
 }

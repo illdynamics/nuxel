@@ -202,17 +202,18 @@ bool fmt_tx_get_preferred_net_type(struct fmt_tx_frame *f);
 #define FMT_TX_IMS_REGSTATUS_DEREG   2u
 
 /* IpcTxImsReqSetRegState (main=22 sub=8, type=3, 6-byte payload).
- * VERIFIED byte layout (IpcProtocol41::IpcTxImsReqSetRegState @0x34d230):
- *   payload[0] = registration request flag (int arg2; 0/1)
- *   payload[1] = NetworkType        (arg3)
- *   payload[2] = EcmpState          (arg4)
- *   payload[3] = EpdgState          (arg5)
- *   payload[4] = EpdgAvailableState (arg6-derived)
- *   payload[5] = RadioTechnology    (arg8)
- * ImsRegStatus (arg1) selects the request flag; it is not itself transmitted.
+ * VERIFIED byte layout (IpcProtocol41::IpcTxImsReqSetRegState @0x34d230 +
+ * IpcModem::SetImsRegState @0x2fbe88, libsec-ril 60889dd7):
+ *   payload[0] = ImsRegStatus   (arg1; 1=REGISTERED, 2=DEREG, 0=NONE)
+ *   payload[1] = request flag   (arg2 int; 1=drive registration)
+ *   payload[2] = NetworkType    (arg3; Android RADIO_TECH, LTE=14)
+ *   payload[3] = EcmpState      (arg4)
+ *   payload[4] = EpdgAvailableState (derived; 6 for LTE)
+ *   payload[5] = int            (arg7, reserved)
  * The AP requests registration by asserting ImsRegStatus != NONE; the modem
  * autonomously performs the SIP REGISTER + AKA and reports the final state.
- * RadioTechnology uses the Android RADIO_TECH enum (LTE = 14).
+ * RadioTechnology (arg8) is consumed only to derive payload[4]; it is NOT
+ * itself a payload byte.
  */
 bool fmt_tx_ims_set_reg_state(struct fmt_tx_frame *f, uint8_t reg_status,
                               uint8_t network_type, uint8_t rat);

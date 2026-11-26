@@ -298,10 +298,15 @@ static inline const char *ipc41_main_name(uint8_t main) {
  *   IpcTxImsReqSetRegState            0x34d230
  *
  * VERIFIED payload layout for IpcTxImsReqSetRegState (main=22 sub=8,
- * type=3, total_len=13, 6-byte payload):
+ * type=3, total_len=13, 6-byte payload) from @0x34d230 + @0x2fbe88:
  *
- *   [ ImsRegStatus, NetworkType, EcmpState, EpdgState,
- *     EpdgAvailableState, RadioTechnology ]
+ *   [ ImsRegStatus, requestFlag(int), NetworkType, EcmpState,
+ *     EpdgAvailableState(derived), int ]
+ *
+ * requestFlag is a separate `int` parameter BETWEEN ImsRegStatus and
+ * NetworkType (demangled signature: ImsRegStatus, int, NetworkType,
+ * EcmpState, EpdgState, EpdgAvailableState, int, RadioTechnology).
+ * RadioTechnology (8th param) is consumed only to derive EpdgAvailableState.
  *
  * The AP drives the MODEM's built-in IMS stack: SetRegState requests
  * registration, IpcRxIms/IpcRxImsModeChange report the actual state,
