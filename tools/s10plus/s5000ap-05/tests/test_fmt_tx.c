@@ -191,6 +191,28 @@ int main(void)
     CHECK(!fmt_tx_sdm_pcscf(&f, NULL));
     CHECK(!fmt_tx_sdm_pcscf(&f, ""));
 
+
+    /* IpcTxSetSipParam @0x3207e0 — main=3 CDMA_DATA sub=19, 369 bytes. */
+    {
+        struct fmt_tx_frame g;
+        CHECK(fmt_tx_set_sip_param(&g, "proxy.example", "user@ims", "secret",
+                                   FMT_TX_AUTH_NONE, FMT_TX_PROTO_IPV6));
+        CHECK(g.len == 369);
+        CHECK(g.main_cmd == 3 && g.sub_cmd == 19 && g.cmd_type == 3);
+        CHECK(g.buf[0] == (369 & 0xff) && g.buf[1] == 0x01); /* total_len LE 369 */
+        CHECK(g.buf[7 + 0] == 0x07); /* flags bit0|bit1|bit2 */
+        CHECK(!memcmp(&g.buf[7 + 4], "proxy.example", 13)); /* proxy @11 */
+        CHECK(!memcmp(&g.buf[7 + 106], "user@ims", 8));     /* user @113 */
+        CHECK(!memcmp(&g.buf[7 + 233], "secret", 6));       /* pass @240 */
+        CHECK(g.buf[7 + 360] == FMT_TX_AUTH_NONE);          /* auth @367 */
+        CHECK(g.buf[7 + 361] == FMT_TX_PROTO_IPV6);         /* proto @368 */
+        CHECK(!fmt_tx_set_sip_param(&g, NULL, NULL, NULL, 0, 0));
+        /* boundary: proxy 102 ok, 103 fails; user/pass 127 ok, 128 fails */
+        char longp[200]; memset(longp, 'a', sizeof longp);
+        longp[102]=0; CHECK(fmt_tx_set_sip_param(&g, longp, "u", NULL, 0, 2));
+        longp[102]='a'; longp[103]=0; CHECK(!fmt_tx_set_sip_param(&g, longp, "u", NULL, 0, 2));
+    }
+
     printf("FMT vendor golden vectors: %s (%d failures)\n", failures ? "FAIL" : "PASS", failures);
     return failures ? 1 : 0;
 }

@@ -136,6 +136,29 @@ bool fmt_tx_mobile_data(struct fmt_tx_frame *f, bool enable, bool extra);
 bool fmt_tx_define_pdp_context(struct fmt_tx_frame *f, const char *apn,
                                uint8_t proto, uint8_t profile_id);
 
+/* ---- CDMA_DATA (main=3) SIP parameter configuration ---- */
+
+/* IpcTxSetSipParam @0x3207e0 (IpcProtocol41, FMT, NOT IIL). This is the
+ * NORMAL IMS SIP configuration surface (distinct from the E911 IIL path):
+ *   proxy   = P-CSCF FQDN/address (<=102 chars)
+ *   user    = SIP auth username (IMPI, <=127 chars)
+ *   pass    = SIP auth password (<=127 chars, may be empty/NULL)
+ *   auth    = DataAuth (FMT_TX_AUTH_NONE..PAP_OR_CHAP)
+ *   proto   = DataProtocol (IP/IPV6/IPV4V6)
+ * Frame: total_len=369, main=3 (CDMA_DATA) sub=19 type=3.
+ * Recovered byte layout (VERIFIED disassembly):
+ *   [0..6]    FMT 7-byte header
+ *   [7..10]   flags u32 (bit0=proxy present, bit1=user, bit2=pass)
+ *   [11..112] proxy  (102 bytes NUL-padded)
+ *   [113..239] user  (127 bytes NUL-padded)
+ *   [240..366] pass  (127 bytes NUL-padded)
+ *   [367]      auth  (DataAuth value)
+ *   [368]      proto (DataProtocol value)
+ * Never fabricates values; caller supplies P-CSCF/identity from discovery. */
+bool fmt_tx_set_sip_param(struct fmt_tx_frame *f, const char *proxy,
+                          const char *user, const char *pass,
+                          uint8_t auth, uint8_t proto);
+
 /* GPRS data-call establish (main=3 CDMA_DATA, sub=2 CDMA_DATA_CALL_ESTABLISH). */
 bool fmt_tx_set_data_call_establish(struct fmt_tx_frame *f, bool establish);
 

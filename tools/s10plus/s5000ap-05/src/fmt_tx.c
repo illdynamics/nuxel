@@ -651,3 +651,36 @@ bool fmt_tx_ims_define(struct fmt_tx_frame *f, const char *apn, uint8_t proto)
     f->buf[7+126] = proto==FMT_TX_PROTO_IP ? 2 : proto==FMT_TX_PROTO_IPV6 ? 3 : 1;
     return true;
 }
+
+/* IpcTxSetSipParam @0x3207e0: normal IMS SIP config (main=3 CDMA_DATA sub=19).
+ * See fmt_tx.h for the recovered 369-byte layout. */
+bool fmt_tx_set_sip_param(struct fmt_tx_frame *f, const char *proxy,
+                          const char *user, const char *pass,
+                          uint8_t auth, uint8_t proto)
+{
+    if (!f) return false;
+    if (!proxy || !proxy[0]) return false;   /* proxy (P-CSCF) is mandatory */
+    if (strlen(proxy) > 102) return false;
+    if (user  && strlen(user)  > 127) return false;
+    if (pass  && strlen(pass)  > 127) return false;
+    uint8_t *p = fmt_tx_begin(f, 3u /*CDMA_DATA*/, 19u /*SET_SIP_PARAM*/,
+                              3u /*notification*/, 362u);
+    if (!p) return false;
+    memset(p, 0, 362);
+
+    uint32_t flags = 0;
+    if (proxy && proxy[0]) { flags |= 1u; strncpy((char*)&p[4], proxy, 102); p[4+102-1]=0; }
+    if (user  && user[0])  { flags |= 2u; strncpy((char*)&p[106], user, 127); p[106+127-1]=0; }
+    if (pass  && pass[0])  { flags |= 4u; strncpy((char*)&p[233], pass, 127); p[233+127-1]=0; }
+
+    p[0] = (uint8_t)(flags & 0xff);
+    p[1] = (uint8_t)((flags >> 8) & 0xff);
+    p[2] = (uint8_t)((flags >> 16) & 0xff);
+    p[3] = (uint8_t)((flags >> 24) & 0xff);
+
+    /* auth at offset 367 (frame byte), proto at 368. Payload offsets:
+     * p[360] = auth, p[361] = proto. */
+    p[360] = auth;
+    p[361] = proto;
+    return true;
+}
