@@ -282,3 +282,44 @@ static inline const char *ipc41_main_name(uint8_t main) {
  * neighbouring families for completeness; the full recovery covers all
  * 39 families and is reproducible with scripts/resolve_ipc41_vocab.py.
  */
+
+/* =========================================================================
+ * IMS (main=22) sub-command family — recovered round 05 from libsec-ril.so.
+ *
+ * These names are the literal vendor strings exported by IpcProtocol41;
+ * the (sub_cmd -> builder address) pairs are:
+ *
+ *   name                              builder (IpcProtocol41)
+ *   ------------------------------------------------------------
+ *   IpcTxImsReqDeregistration         0x34cdc0
+ *   IpcTxImsAuthResp                  0x34ce10
+ *   IpcTxImsReqDeregistrationE911     0x34ceb0
+ *   IpcTxImsReqSetDeregistration      0x34cf50
+ *   IpcTxImsReqSetRegState            0x34d230
+ *
+ * VERIFIED payload layout for IpcTxImsReqSetRegState (main=22 sub=8,
+ * type=3, total_len=13, 6-byte payload):
+ *
+ *   [ ImsRegStatus, NetworkType, EcmpState, EpdgState,
+ *     EpdgAvailableState, RadioTechnology ]
+ *
+ * The AP drives the MODEM's built-in IMS stack: SetRegState requests
+ * registration, IpcRxIms/IpcRxImsModeChange report the actual state,
+ * and SEC(main=5) sub=9 SEC_IMS_AUTH carries SIM AKA responses.
+ * SMS-over-IMS still uses SMS(main=4) sub=1 SEND_MSG, but with the domain
+ * byte selecting the IMS transport when IMS is registered (DoImsSendIms).
+ *
+ * SAFETY: names only. radiod keeps IMS fail-closed UNKNOWN until a dedicated,
+ * reviewed implementation and the IMS APN PDN exist. No unverified payload is
+ * emitted from these definitions.
+ */
+enum ipc41_ims_subcmd {
+    IPC41_IMS_UNKNOWN_1 = 1,
+    IPC41_IMS_UNKNOWN_2 = 2,
+    IPC41_IMS_UNKNOWN_3 = 3,
+    IPC41_IMS_REQ_SET_REGDEREG = 4,
+    IPC41_IMS_REQ_SET_REGDEREG_E911 = 5,
+    IPC41_IMS_AUTH_RESP = 6,
+    IPC41_IMS_REQ_DEREGISTRATION = 7,
+    IPC41_IMS_REQ_SET_REG_STATE = 8,
+};
