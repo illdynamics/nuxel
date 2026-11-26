@@ -11,9 +11,8 @@ static uint8_t last_seq;
 static bool write_capture(const struct fmt_tx_frame *f, uint8_t *seq, void *u)
 {
     (void)u; writes++; last_seq = (uint8_t)(writes*3); *seq = last_seq;
-    /* SET_DATA_PROFILE = main 13 sub 27; SYNC_PROFILE_INFO = main 13 sub 37. */
+    /* SET_DATA_PROFILE = main 13 sub 27. */
     if (writes==1) assert(f->main_cmd==13 && f->sub_cmd==27);
-    if (writes==2) assert(f->main_cmd==13 && f->sub_cmd==37);
     return true;
 }
 
@@ -23,11 +22,7 @@ int main(void)
     assert(ims_pdn_open(&p, write_capture, NULL));
     assert(ims_pdn_tick(&p, 0, true) == IMS_PDN_SET_PROFILE);
     assert(ims_pdn_tick(&p, 1, true) == IMS_PDN_SET_PROFILE && writes==1);
-    /* set-profile OK -> sync-profile */
-    ims_pdn_gen_result(&p, FMT_RX_GEN_OK, last_seq);
-    assert(p.phase == IMS_PDN_SYNC_PROFILE);
-    assert(ims_pdn_tick(&p, 2, true) == IMS_PDN_SYNC_PROFILE && writes==2);
-    /* sync-profile OK -> verify */
+    /* set-profile OK -> verify (modem-managed bearer; no sync-profile phase) */
     ims_pdn_gen_result(&p, FMT_RX_GEN_OK, last_seq);
     assert(p.phase == IMS_PDN_VERIFY);
     /* modem reports the IMS CID attached -> active */

@@ -25,7 +25,6 @@ typedef bool (*ims_pdn_write_fn)(const struct fmt_tx_frame *f, uint8_t *seq, voi
 enum ims_pdn_phase {
     IMS_PDN_IDLE = 0,
     IMS_PDN_SET_PROFILE,  /* GPRS SET_DATA_PROFILE (IMS DataProfile type 2, APN ims) */
-    IMS_PDN_SYNC_PROFILE, /* GPRS SYNC_PROFILE_INFO (full IMS profile + RAT LTE) */
     IMS_PDN_VERIFY,       /* confirm the modem managed the IMS bearer itself */
     IMS_PDN_ACTIVE,       /* IMS PDN established (modem-confirmed) */
     IMS_PDN_FAILED,

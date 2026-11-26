@@ -49,7 +49,7 @@ bool ims_pdn_active(const struct ims_pdn *p)
 
 const char *ims_pdn_phase_name(enum ims_pdn_phase ph)
 {
-    static const char *const n[] = {"idle","set-profile","sync-profile","verify","active","failed"};
+    static const char *const n[] = {"idle","set-profile","verify","active","failed"};
     return (ph <= IMS_PDN_FAILED) ? n[ph] : "unknown";
 }
 
@@ -85,21 +85,6 @@ enum ims_pdn_phase ims_pdn_tick(struct ims_pdn *p, uint64_t now_ms, bool online)
             p->phase = IMS_PDN_FAILED;
         }
         break;
-    case IMS_PDN_SYNC_PROFILE:
-        if (p->phase_deadline_ms && now_ms < p->phase_deadline_ms) break;
-        if (now_ms >= p->next_action_ms && p->attempt < IMS_PDN_ATTEMPT_LIMIT) {
-            p->attempt++;
-            struct fmt_tx_frame f;
-            uint8_t seq = 0;
-            if (fmt_tx_sync_profile_info(&f, IMS_PDN_APN, p->auth, p->proto) &&
-                p->write(&f, &seq, p->user)) {
-                p->last_write_seq = seq;
-                p->phase_deadline_ms = now_ms + IMS_PDN_STEP_TIMEOUT_MS;
-            } else p->next_action_ms = now_ms + IMS_PDN_RETRY_MS;
-        } else if (p->attempt >= IMS_PDN_ATTEMPT_LIMIT) {
-            p->phase = IMS_PDN_FAILED;
-        }
-        break;
     case IMS_PDN_VERIFY:
     case IMS_PDN_ACTIVE:
     case IMS_PDN_FAILED:
@@ -116,10 +101,6 @@ void ims_pdn_gen_result(struct ims_pdn *p, uint16_t result, uint8_t ack_seq)
         if (p->phase == IMS_PDN_SET_PROFILE) {
             p->attempt = 0;
             p->next_action_ms = 0;
-            p->phase_deadline_ms = 0;
-            p->phase = IMS_PDN_SYNC_PROFILE;
-        } else if (p->phase == IMS_PDN_SYNC_PROFILE) {
-            p->attempt = 0;
             p->phase_deadline_ms = 0;
             p->phase = IMS_PDN_VERIFY;
         }
