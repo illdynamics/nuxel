@@ -61,3 +61,22 @@
 - Message ID 4 queued, not retransmitted; IDs 1-3 unchanged.
 - No PII committed. No SIM key extraction, no spoofing, no auth bypass.
 - No protected-partition writes; no modem reset loops; no emergency calls.
+
+## DECISIVE RESULT this continuation (SIM capability)
+- Added fmt_tx_get_sim_icc_type (SEC main=5 sub=7) + one-shot query in radiod
+  (deployed daemon md5 18cf19256a85af57f03751953782a729).
+- LIVE: SEC_SIM_ICC_TYPE response plen=1 payload=0x02.
+- Vendor decode (IpcRxSecSimCardType @0x343e50, SimManager::UpdateState
+  @0x1ecfe8, GenerateSimStatusWithAppsInfo @0x315e80): SimType/app-type
+  5=ISIM, 2=USIM, 1=CSIM. value 0x02 == USIM ONLY, NO ISIM.
+- Therefore the SIM lacks the ISIM application (IMPI/IMPU), so IMS SIP AKA
+  registration and SMS-over-IMS cannot proceed with this SIM/line. This is a
+  DEMONSTRATED SIM-PROVISIONING requirement, not an unimplemented native
+  command. CS SMS is also denied by KPN (LTE-only, no SGs/2G/3G), so the
+  authorized SMS remains untransmittable through any currently-available
+  bearer. Message ID 4 rightly stays held (queued, not retransmitted).
+
+FINAL STATUS: native AP-side IMS init + registration command layer is COMPLETE
+and byte-exact against the vendor. Physical SMS-over-IMS is blocked by an
+external SIM-provisioning requirement (no ISIM on the installed SIM; KPN LTE-only
+CS-denied). LTE, durable queue, and rollback binaries preserved.
