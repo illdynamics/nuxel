@@ -1877,12 +1877,15 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
     ims_service_tick(&g.ims,now_ms(),
         ims_online,
         g.ims_pdn_up && ims_init_done(&g.ims_init));
-    /* Opt-in IMS APN PDN drive (second, isolated context). Off unless armed.
-     * Runs ONLY after the internet data-session is ACTIVE (quiet period) so
-     * the IMS DEFINE_PDP/SET_PDP_CONTEXT never overlaps the internet bearer's
-     * own command sequence and GEN correlation stays unambiguous. */
-    if (g.ims_pdn_armed &&
-        (g.dsc.phase == DS_ACTIVE || g.dsc.phase == DS_WAIT_IP)) {
+    /* Opt-in modem-managed IMS/ePDN profile sync. Off unless armed. Runs when
+     * the internet data session is ACTIVE/WAIT_IP (quiet period) OR TERMINAL
+     * (REJECTED/FAILED: idle, no active GEN correlation), so the IMS profile
+     * is armed even when the internet bearer's IP config is absent. The IMS
+     * profile only issues SetDataProfile(IMS) and never overlaps the internet
+     * bearer's own command sequence. */
+    if (g.ims_pdn_armed && ims_online &&
+        (g.dsc.phase == DS_ACTIVE || g.dsc.phase == DS_WAIT_IP ||
+         ds_terminal(&g.dsc))) {
         static enum ims_pdn_phase ims_pdn_last_diag = (enum ims_pdn_phase)0xff;
         ims_pdn_tick(&g.ims_pdn, now_ms(),
             g.cp_online && g.sim_ready_seen && g.write_enabled && g.fmt.present);

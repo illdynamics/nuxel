@@ -45,7 +45,15 @@ bool ims_pdn_open(struct ims_pdn *p, ims_pdn_write_fn write, void *user)
 void ims_pdn_close(struct ims_pdn *p) { if (p) memset(p, 0, sizeof *p); }
 
 bool ims_pdn_active(const struct ims_pdn *p)
-{ return p && p->active && p->phase == IMS_PDN_ACTIVE; }
+{
+    /* "Active" here means the modem has ARMED the IMS/ePDN profile. The modem
+     * then autonomously activates the bearer and emits a main=22 IMS
+     * notification (dispatching through fmt_rx_ims_state). We do NOT gate on a
+     * Linux-visible CID-2 IP configuration: the modem-managed IMS bearer never
+     * produces one (see sms8.md root cause). */
+    return p && p->active &&
+           (p->phase == IMS_PDN_VERIFY || p->phase == IMS_PDN_ACTIVE);
+}
 
 const char *ims_pdn_phase_name(enum ims_pdn_phase ph)
 {
@@ -102,6 +110,8 @@ void ims_pdn_gen_result(struct ims_pdn *p, uint16_t result, uint8_t ack_seq)
             p->attempt = 0;
             p->next_action_ms = 0;
             p->phase_deadline_ms = 0;
+            /* Profile accepted == modem armed the IMS/ePDN profile. */
+            p->active = true;
             p->phase = IMS_PDN_VERIFY;
         }
     } else {
