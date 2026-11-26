@@ -30,10 +30,14 @@ size_t ims_base64_encode(const uint8_t *in, size_t n, char *out, size_t cap)
         uint32_t v=in[i]<<16;
         v |= i+1<n ? in[i+1]<<8 : 0;
         v |= i+2<n ? in[i+2] : 0;
-        if (o>=cap) return 0; out[o++]=b64[(v>>18)&63];
-        if (o>=cap) return 0; out[o++]=b64[(v>>12)&63];
-        if (o>=cap) return 0; out[o++]= i+1<n ? b64[(v>>6)&63] : '=';
-        if (o>=cap) return 0; out[o++]= i+2<n ? b64[v&63] : '=';
+        if (o>=cap) return 0;
+        out[o++]=b64[(v>>18)&63];
+        if (o>=cap) return 0;
+        out[o++]=b64[(v>>12)&63];
+        if (o>=cap) return 0;
+        out[o++]= i+1<n ? b64[(v>>6)&63] : '=';
+        if (o>=cap) return 0;
+        out[o++]= i+2<n ? b64[v&63] : '=';
     }
     return o;
 }

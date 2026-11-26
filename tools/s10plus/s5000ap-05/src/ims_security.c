@@ -32,7 +32,8 @@ bool ims_security_parse(const char *value,struct ims_security_offer *out)
         else if(!strcmp(t,"port-c")) {bit=64;if(!number(eq,&n)||!n||n>65535)return false;r.port_c=n;}
         else if(!strcmp(t,"port-s")) {bit=128;if(!number(eq,&n)||!n||n>65535)return false;r.port_s=n;}
         else if(strcmp(t,"q")) return false;
-        if (seen&bit) return false;seen|=bit;
+        if (seen&bit) return false;
+        seen|=bit;
     }
     if ((seen&255)!=255 || r.spi_c==r.spi_s || r.port_c==r.port_s) return false;
     *out=r;return true;

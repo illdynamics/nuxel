@@ -36,6 +36,9 @@
 #include "sms_service.h"
 #include "ims_service.h"
 #include "ims_pdn.h"
+#include "ims_iil.h"
+#include "ims_iil_rx.h"
+#include "iil_pdn.h"
 #include "ims_init.h"
 #include "call_service.h"
 #include "cellular_link.h"
@@ -151,6 +154,9 @@ struct radiod_ctx {
     bool ims_pdn_armed; /* opt-in IMS APN PDN drive */
     bool ims_pdn_up;     /* ims APN PDN actually established (carrier/gate) */
     bool ims_apn_present; /* ims APN string present in profile list (diag only) */
+    struct iil_pdn iil_pdn;      /* IIL (IpcProtocol41Iil) IMS PDN driver */
+    bool iil_pdn_armed;          /* opt-in IIL IMS PDN drive (--arm-data-path) */
+    uint16_t next_iil_seq;       /* IIL 16-bit msg_seq counter */
     uid_t control_uid, bridge_uid;
     sd_bus *data_bus;
     bool     data_path_armed;   /* explicit opt-in (flag / D-Bus) */
@@ -569,6 +575,70 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
     sms_service_receive(&g.sms,f);
     call_service_receive(&g.calls,f);
     ims_service_receive(&g.ims,f);
+
+    /* --- IIL (IpcProtocol41Iil) receive path ---
+     * The stock IMS bearer/auth/registration/SMS events arrive on the IIL
+     * endpoint (main=112) with the same main/sub/type offsets as FMT. Decode
+     * and feed the IIL PDN/registration/auth/sms state machines. Auth material
+     * (RAND/AUTN/RES/CK/IK) and PII are never logged. */
+    if (f->main_cmd == IIL_MAIN_IIL) {
+        struct iil_rx_event ev = {
+            .msg_seq = f->msg_seq, .main_cmd = f->main_cmd, .sub_cmd = f->sub_cmd,
+            .cmd_type = f->cmd_type, .payload = f->payload, .payload_len = f->payload_len
+        };
+        switch (f->sub_cmd) {
+        case IIL_SUB_CONNECTED: {
+            uint8_t cid = 0; bool attached = false;
+            if (iil_rx_connected(&ev, &cid, &attached)) {
+                iil_pdn_on_connected(&g.iil_pdn, &ev);
+                diagf("iil_connected", "\"cid\":%u,\"attached\":%s",
+                      cid, attached ? "true" : "false");
+            }
+            break;
+        }
+        case IIL_SUB_PARAMETERS: {
+            struct iil_pdn *p = &g.iil_pdn;
+            unsigned before = p->pcscf_count;
+            iil_pdn_on_parameters(p, &ev);
+            diagf("iil_parameters",
+                  "\"ip_ready\":%s,\"pcscf_ready\":%s,\"pcscf_count\":%u",
+                  p->ip_ready ? "true" : "false",
+                  p->pcscf_ready ? "true" : "false", p->pcscf_count);
+            if (p->pcscf_count > before) diag("iil_pcscf_present", NULL);
+            break;
+        }
+        case IIL_SUB_ISIM_AUTH: {
+            /* AKA challenge relayed by the modem; RAND/AUTN never logged here.
+             * The SIP backend consumes this via a challenge queue (P5). */
+            diag("iil_isim_auth", "\"plen\":0");
+            break;
+        }
+        case IIL_SUB_REGISTRATION: {
+            bool reg = false;
+            if (iil_rx_registration(&ev, &reg))
+                diagf("iil_registration", "\"registered\":%s", reg ? "true" : "false");
+            break;
+        }
+        case IIL_SUB_PREFERENCE: {
+            uint8_t fmt = 0;
+            if (iil_rx_preference(&ev, &fmt))
+                diagf("iil_preference", "\"sms_over_ip_fmt\":%u", fmt);
+            break;
+        }
+        default:
+            break;
+        }
+    }
+    if (f->main_cmd == IIL_MAIN_SMS_RP &&
+        (f->sub_cmd == IIL_SUB_SMS_INCOMING || f->sub_cmd == IIL_SUB_SMS)) {
+        struct iil_rx_event ev = {
+            .msg_seq = f->msg_seq, .main_cmd = f->main_cmd, .sub_cmd = f->sub_cmd,
+            .cmd_type = f->cmd_type, .payload = f->payload, .payload_len = f->payload_len
+        };
+        const uint8_t *rp = NULL; size_t rp_len = 0;
+        if (iil_rx_sms_incoming(&ev, &rp, &rp_len))
+            diagf("iil_sms_incoming", "\"rp_len\":%u", (unsigned)rp_len);
+    }
     /* CP IMS mode changes are not registration notifications. The stock
      * registration/auth challenge source is the separate AP IMS/IIL endpoint.
      * SEC_IMS_AUTH is a solicited UICC result, not an unsolicited challenge. */
@@ -1042,6 +1112,43 @@ static bool radiod_write_fmt(const struct fmt_tx_frame *f)
         g.stats.permissions++;
     }
     return false;
+}
+
+/* Write ONE serialized IIL frame (IpcProtocol41Iil) to /dev/umts_ipc0.
+ * The IIL header differs from FMT only in bytes 2..3: a 16-bit msg_seq
+ * (no ack_seq). main/sub/type sit at the same offsets, so the kernel
+ * dispatches on (main,sub) exactly as the stock imsservice does. Writes are
+ * bounded and gated by the same write capability. seq is a 16-bit counter. */
+static bool radiod_write_iil(const struct iil_frame *f)
+{
+    if (!g.write_enabled) {
+        diag("iil_tx_refused", "\"reason\":\"write capability disabled\"");
+        return false;
+    }
+    if (!f || f->len < 7 || f->len > IIL_TX_MAX_FRAME) return false;
+    uint8_t frame[IIL_TX_MAX_FRAME];
+    memcpy(frame, f->buf, f->len);
+    frame[2] = (uint8_t)(g.next_iil_seq & 0xff);
+    frame[3] = (uint8_t)(g.next_iil_seq >> 8);
+    enum nuxel_io_status st = nuxel_dev_write(&g.fmt.dev, frame, f->len);
+    if (st == NUXEL_IO_OK) {
+        g.stats.tx_frames++;
+        diagf("iil_tx", "\"main\":%u,\"sub\":%u,\"type\":%u,\"len\":%zu,\"seq\":%u",
+              f->main_cmd, f->sub_cmd, f->cmd_type, f->len, g.next_iil_seq);
+        g.next_iil_seq = (uint16_t)((g.next_iil_seq + 1u) % 0xffffu);
+        return true;
+    }
+    diagf("iil_tx_fail", "\"st\":\"%s\"", nuxel_io_status_name(st));
+    if (st == NUXEL_IO_PERMISSION || st == NUXEL_IO_DISCONNECTED) {
+        g.stats.permissions++;
+    }
+    return false;
+}
+
+static bool iil_pdn_write(const struct iil_frame *f, void *user)
+{
+    (void)user;
+    return g.cp_online && radiod_write_iil(f);
 }
 
 /*
@@ -1907,6 +2014,28 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
             diag("ims_pdn_active", NULL);
         } else if (!ims_pdn_active(&g.ims_pdn)) {
             g.ims_pdn_up = false;
+        }
+    }
+    /* IIL IMS APN PDN drive: recovered IpcProtocol41Iil Define/Activate for
+     * the isolated CID-2 IMS bearer. Runs only when armed (--arm-data-path).
+     * Does NOT overlap the internet bearer command sequence (it is serialized
+     * behind the same endpoint write gate). */
+    if (!ims_online) {
+        iil_pdn_tick(&g.iil_pdn, now_ms(), false);
+    }
+    if (g.iil_pdn_armed && ims_online &&
+        (g.dsc.phase == DS_ACTIVE || g.dsc.phase == DS_WAIT_IP ||
+         ds_terminal(&g.dsc))) {
+        static enum iil_pdn_phase iil_pdn_last_diag = (enum iil_pdn_phase)0xff;
+        iil_pdn_tick(&g.iil_pdn, now_ms(),
+            g.cp_online && g.sim_ready_seen && g.write_enabled && g.fmt.present);
+        if (g.iil_pdn.phase != iil_pdn_last_diag) {
+            iil_pdn_last_diag = g.iil_pdn.phase;
+            diagf("iil_pdn_phase", "\"phase\":\"%s\",\"attempt\":%u,\"cid\":%u",
+                  iil_pdn_phase_name(g.iil_pdn.phase), g.iil_pdn.attempt, g.iil_pdn.cid);
+        }
+        if (iil_pdn_active(&g.iil_pdn)) {
+            diag("iil_pdn_active", NULL);
         }
     }
     call_service_tick(&g.calls,now_ms(),g.cp_online,g.write_enabled && g.fmt.present && g.sim_ready_seen);
@@ -2804,6 +2933,7 @@ int main(int argc, char **argv)
     call_service_init(&g.calls,sms_write,call_notify,NULL);
     ims_service_open(&g.ims,ims_write,ims_state_diag,NULL);
     ims_pdn_open(&g.ims_pdn,ims_pdn_write,NULL);
+    iil_pdn_open(&g.iil_pdn,iil_pdn_write,NULL);
     ims_init_open(&g.ims_init,ims_write,NULL);
     g.ims_pdn_armed = false;
     {
@@ -2811,6 +2941,17 @@ int main(int argc, char **argv)
         g.ims_pdn_armed = imens && (!strcasecmp(imens,"1") || !strcasecmp(imens,"on") ||
                                     !strcasecmp(imens,"true") || !strcasecmp(imens,"yes"));
         diagf("ims_pdn_config", "\"armed\":%s", g.ims_pdn_armed ? "true" : "false");
+    }
+    /* IIL (IpcProtocol41Iil) IMS PDN drive: usable only with --write-enable.
+     * Independently opted-in so the FMT path stays available for rollback. */
+    g.iil_pdn_armed = false;
+    {
+        const char *iil = getenv("NUXEL_IIL_PDN");
+        if (iil && (!strcasecmp(iil,"1") || !strcasecmp(iil,"on") ||
+                    !strcasecmp(iil,"true") || !strcasecmp(iil,"yes"))) {
+            g.iil_pdn_armed = g.write_enabled;
+        }
+        diagf("iil_pdn_config", "\"armed\":%s", g.iil_pdn_armed ? "true" : "false");
     }
 
     if (setup_event() < 0) { diag("event_setup_failed", NULL); return 1; }
