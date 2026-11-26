@@ -38,7 +38,10 @@ bool ims_pdn_open(struct ims_pdn *p, ims_pdn_write_fn write, void *user)
     p->write = write;
     p->user = user;
     p->cid = IMS_PDN_CID;
-    p->proto = FMT_TX_PROTO_IPV4V6;   /* VoLTE/IMS P-CSCF discovery over IPv6 (KPN 204-08) */
+    /* IMS P-CSCF discovery is IPv6 (KPN 204-08). Do NOT use IPV4V6 here:
+     * DefinePdpContext(sub=1) CP validator 0x41219fe4 rejects the dual-stack
+     * wire byte 0x04 with 0x8001; it accepts IP(0x05) and IPV6(0x06) only. */
+    p->proto = FMT_TX_PROTO_IPV6;
     p->auth = FMT_TX_AUTH_NONE;      /* 3GPP IMS APN: no PDP-layer auth; SIP/REGISTER AKA */
     p->profile_id = IMS_PDN_PROFILE_ID;
     p->phase = IMS_PDN_IDLE;
