@@ -184,10 +184,7 @@ bool fmt_tx_get_preferred_net_type(struct fmt_tx_frame *f);
 /* NET VoLTE/IMS state notification (source: IpcTxSetVolteStateNotification
  * @0x338578, libsec-ril 60889dd7). main=8 (NET) sub=52 (0x34 NET_VOLTE_STATE)
  * type=3, 8-byte frame, payload[0] = bool (1 = AP IMS/VoLTE stack ready).
- * Stock Samsung sends this from ModemProxy::SetVolteStateNotification(true)
- * when the AP's IMS stack is armed, BEFORE driving IMS registration. This is
- * the "IMS ready" signal the modem requires before it will emit the
- * authoritative IMS registration notification (main=22 sub=3). */
+ * AP readiness is a state report, not a CP SIP registration trigger. */
 bool fmt_tx_set_volte_state_notification(struct fmt_tx_frame *f, bool ready);
 
 /* NET HVOLTE test-mode (source: IpcTxGetVolteTestmode @0x338410 /

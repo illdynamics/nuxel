@@ -310,15 +310,8 @@ static inline const char *ipc41_main_name(uint8_t main) {
  * EcmpState, EpdgState, EpdgAvailableState, int, RadioTechnology).
  * RadioTechnology (8th param) is consumed only to derive EpdgAvailableState.
  *
- * The AP drives the MODEM's built-in IMS stack: SetRegState requests
- * registration, IpcRxIms/IpcRxImsModeChange report the actual state,
- * and SEC(main=5) sub=9 SEC_IMS_AUTH carries SIM AKA responses.
- * SMS-over-IMS still uses SMS(main=4) sub=1 SEND_MSG, but with the domain
- * byte selecting the IMS transport when IMS is registered (DoImsSendIms).
- *
- * SAFETY: names only. radiod keeps IMS fail-closed UNKNOWN until a dedicated,
- * reviewed implementation and the IMS APN PDN exist. No unverified payload is
- * emitted from these definitions.
+ * These are CP state reports, not a registration engine. See the correction
+ * below: stock authentication/registration and SMS use the AP IMS endpoint.
  */
 enum ipc41_ims_subcmd {
     IPC41_IMS_UNKNOWN_1 = 1,

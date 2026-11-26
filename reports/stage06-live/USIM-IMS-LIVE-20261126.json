@@ -1,0 +1,82 @@
+{
+  "captured_utc": "2026-11-26T14:56:04.941739+00:00",
+  "restart_utc": "2026-11-26T14:54:33Z",
+  "implementation_commit": "0f981030",
+  "built_installed_running_sha256": "f76f7d8f5f60db1fe928af9690066491eb6ea3ccb0cbc22b79bf053f4e03fc12",
+  "ims_status": {
+    "state": "wait-backend",
+    "reason": "sip-registration-backend-missing",
+    "usim_identity_ready": "true",
+    "profile_phase": "verify",
+    "cid_attached": "true",
+    "ip_ready": "false",
+    "pcscf_ready": "false",
+    "context_ready": "false",
+    "init_phase": "done",
+    "auth_pending": "false",
+    "registered": "false",
+    "sms_transport": "unavailable"
+  },
+  "sms_status": {
+    "storage": "available",
+    "device_ready": "accepted",
+    "smsc": "received",
+    "pending": "false",
+    "blocked": "false",
+    "domain": "CS",
+    "delivery_verified": "false",
+    "ready": "false",
+    "registration": "cs-denied"
+  },
+  "messages": [
+    [
+      1,
+      "unknown",
+      -2
+    ],
+    [
+      2,
+      "unknown",
+      -2
+    ],
+    [
+      3,
+      "unknown",
+      -2
+    ],
+    [
+      4,
+      "queued",
+      0
+    ]
+  ],
+  "message4_submission_results": 0,
+  "since_restart_tx": {
+    "sms_submit": 0,
+    "ims_registered_report": 0,
+    "usim_auth_request": 0,
+    "sim_inventory": 0,
+    "rejected_sdm_sms_format_probe": 0
+  },
+  "latest_lte_registration": {
+    "ps_name": "REGISTERED_HOME",
+    "raw_state": 2,
+    "rat": "LTE",
+    "reject_cause": 0
+  },
+  "links": {
+    "rmnet0": {
+      "up": true,
+      "global_ipv6_count": 1
+    },
+    "usb0": {
+      "up": true,
+      "global_ipv6_count": 0
+    },
+    "ztly5zthnf": {
+      "up": true,
+      "global_ipv6_count": 0
+    }
+  },
+  "rollback": "/var/lib/nuxel/radio-install.mz1FzM/rollback.sh"
+}

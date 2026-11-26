@@ -44,6 +44,8 @@ Static DEX analysis of the packaged Samsung
 
 - `getImpuFromSim()` takes the derived-identity path when `hasIsim()` is false.
 - `getDerivedImpi()` and `getDerivedImpu()` format IMSI-based IMS identities.
+  `RegistrationManagerBase.getPrivateUserIdentity()` explicitly calls
+  `getDerivedImpi()` when `hasIsim()` is false.
 - `getIsimAuthentication(String)` selects application type 5 when ISIM is
   loaded, otherwise application type 2 when the SIM is loaded.
 - Its overload invokes `ITelephonyManager.getIccAuthentication` with the
@@ -134,3 +136,41 @@ No subscription provisioning restriction has been verified. There is no
 established need to replace the SIM or request carrier entitlement changes.
 Message 4 must remain queued until genuine transport readiness exists; never
 release historical messages 1–3 or automatically retry an ambiguous submission.
+
+
+## Validation and live result
+
+- Full `build.sh`: host suites, 3,000 host parser fuzz cases, 3,000 sanitized
+  parser fuzz cases, and ASan/UBSan suites passed.
+- Seven affected suites compiled and passed on the physical aarch64 device:
+  fmt_tx, fmt_rx, fmt_sms, sms_service, ims_service, ims_pdn, ims_init.
+- Optional vendor verification is reproducible from repo root:
+  `python3 tools/s10plus/s5000ap-05/tests/check_vendor_usim.py` (pyelftools,
+  Unicorn). It checks the exact ELF hash, USIM wire vector, unsupported CP
+  auth relay and SMS vtable target. Passed.
+- Implementation commit: `0f981030`; deployed at 2026-11-26 14:54:33 UTC.
+- Built/installed/running SHA-256, verified after the service completed exec:
+  `f76f7d8f5f60db1fe928af9690066491eb6ea3ccb0cbc22b79bf053f4e03fc12`.
+  An immediate post-restart `/proc/PID/exe` read caught systemd's pre-exec
+  image; subsequent verification resolved to the installed daemon and all
+  three hashes matched. The final device hash file records the stable result.
+- Rollback: `/var/lib/nuxel/radio-install.mz1FzM/rollback.sh`, then restart
+  nuxel-radiod. SQLite backup and install log are in
+  `/var/lib/nuxel-radio/round12-usim-20261126/` (root-only).
+- Live USIM identity derivation: **ready**; profile sync: acknowledged;
+  CID 2 attached: true; IP/P-CSCF/context ready: false; native SIP backend:
+  missing; authentication: not started; IMS registration: false.
+- Message 4's exact authorized recipient/body was compared on-device without
+  printing it: unchanged, queued, error 0. No submission result for message 4;
+  no SMS submission frame since restart. Messages 1–3 remain unknown/error -2.
+- LTE REGISTERED_HOME, IPv6 on rmnet0, USB and ZeroTier preserved. A UDP DNS
+  query bound to rmnet0 and its IPv6 address returned a matching successful
+  response. Raw ICMP was unavailable due to socket permission, not a detected
+  cellular failure. Read-only artifact mounts were unmounted after inspection.
+- Redacted runtime evidence: `USIM-IMS-LIVE-20261126.json` beside this report.
+
+The packaged KPN VoLTE profile enables `smsip` and IMS registration over
+LTE/Wi-Fi, uses PDN `ims`, IPv4v6 and IPsec. These are stock configuration
+facts, not proof that this particular subscription has or lacks entitlement.
+There is no justification for substituting an unprotected generic SIP client
+for the missing native IMS backend.
