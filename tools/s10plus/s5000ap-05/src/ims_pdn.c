@@ -2,10 +2,17 @@
  *
  * ims_pdn.c — native IMS APN PDN establishment (MODEM-MANAGED bearer).
  *
- * This module synchronizes the IMS profile. ImsPdnTriggered @0x28f0e0
- * only checks an existing DataCall; it does not prove autonomous activation.
- * A profile acknowledgment is not a bearer or P-CSCF readiness indication.
- * CID 1 is never modified by this module.
+ * This module synchronizes the IMS profile and drives the modem-managed IMS
+ * DataCall. ImsPdnTriggered @0x28f0e0 only checks an existing DataCall; it
+ * does not prove autonomous activation. A profile acknowledgment is not a
+ * bearer or P-CSCF readiness indication. CID 1 is never modified.
+ *
+ * The prior implementation sent SetDataProfile(ims) and then stopped in
+ * VERIFY, waiting for a CID-2 attach that never arrived. The CP rejected a
+ * separate DefinePdpContext(profile_id=2) with 0x8001 because payload[1] of
+ * DEFINE is AccessNetworkType (EUTRAN=1), NOT a DataProfile id. This module
+ * now advances SetDataProfile -> DEFINE(EUTRAN) -> ACTIVATE(CID 2) and only
+ * then VERIFYs a real GPRS_IP_CONFIGURATION(cid=2) with a usable P-CSCF.
  */
 #include "ims_pdn.h"
 #include "fmt_rx.h"
@@ -19,6 +26,10 @@
  * ImsPdnTriggered @0x28f0e0). This is the modem-managed IMS bearer profile,
  * NOT the DEFAULT internet profile (id 1). */
 #define IMS_PDN_PROFILE_ID 2u
+
+/* AccessNetworkType EUTRAN selector for DefinePdpContext payload[1].
+ * Stock IpcTxDefinePdpContext uses the same value for internet and IMS. */
+#define IMS_PDN_EUTRAN 1u
 
 bool ims_pdn_open(struct ims_pdn *p, ims_pdn_write_fn write, void *user)
 {
@@ -78,14 +89,26 @@ enum ims_pdn_phase ims_pdn_tick(struct ims_pdn *p, uint64_t now_ms, bool online)
             break;
         }
         struct fmt_tx_frame f;
-        bool built = p->phase==IMS_PDN_RELEASE ? fmt_tx_release_pdp_context(&f,p->cid) :
-            p->phase==IMS_PDN_SET_PROFILE ? fmt_tx_ims_profile(&f,IMS_PDN_APN,p->proto) :
-            p->phase==IMS_PDN_DEFINE ? fmt_tx_ims_define(&f,IMS_PDN_APN,p->proto) :
-            fmt_tx_set_pdp_context(&f,IMS_PDN_APN,p->auth,p->proto,p->cid,1);
-        if (built && p->write(&f,&p->last_write_seq,p->user)) {
-            p->pending_sub=f.sub_cmd;
-            p->phase_deadline_ms=now_ms+IMS_PDN_STEP_TIMEOUT_MS;
-        } else p->phase=IMS_PDN_FAILED;
+        bool built = false;
+        if (p->phase == IMS_PDN_SET_PROFILE) {
+            built = fmt_tx_ims_profile(&f, IMS_PDN_APN, p->proto);
+        } else if (p->phase == IMS_PDN_DEFINE) {
+            /* payload[1]=EUTRAN(1); APN distinguishes the ims bearer. */
+            built = fmt_tx_ims_define(&f, IMS_PDN_APN, p->proto);
+        } else if (p->phase == IMS_PDN_ACTIVATE) {
+            /* main=13 sub=4 ACTIVATE for CID 2, no PDP-layer auth. */
+            built = fmt_tx_set_pdp_context(&f, IMS_PDN_APN, p->auth,
+                                           p->proto, p->cid,
+                                           FMT_TX_PDP_TYPE_FULL);
+        } else {
+            built = fmt_tx_release_pdp_context(&f, p->cid);
+        }
+        if (built && p->write(&f, &p->last_write_seq, p->user)) {
+            p->pending_sub = f.sub_cmd;
+            p->phase_deadline_ms = now_ms + IMS_PDN_STEP_TIMEOUT_MS;
+        } else {
+            p->phase = IMS_PDN_FAILED;
+        }
         break;
     }
     case IMS_PDN_VERIFY:
@@ -98,18 +121,35 @@ enum ims_pdn_phase ims_pdn_tick(struct ims_pdn *p, uint64_t now_ms, bool online)
 
 void ims_pdn_gen_result(struct ims_pdn *p, uint16_t result, uint8_t ack_seq)
 {
-    if (!p || !p->phase_deadline_ms || ack_seq!=p->last_write_seq ||
-        (p->phase!=IMS_PDN_SET_PROFILE && p->phase!=IMS_PDN_DEFINE &&
-         p->phase!=IMS_PDN_ACTIVATE && p->phase!=IMS_PDN_RELEASE)) return;
-    p->last_result=result;
-    p->phase_deadline_ms=0;
-    if (result!=FMT_RX_GEN_OK) { p->phase=IMS_PDN_FAILED; return; }
-    /* SetDataProfile (SET_APN_INFO sub=27) accepted. The modem manages the
-     * IMS bearer itself (ImsPdnTriggered checks DataCallList::GetCall(2));
-     * a separate DefinePdpContext(sub=1) is rejected with 0x8001 on this CP.
-     * Advance straight to VERIFY and wait for a real CID-2 attach+IP+P-CSCF. */
-    p->phase = IMS_PDN_VERIFY;
-    if (p->active) p->phase = IMS_PDN_ACTIVE;
+    if (!p || !p->phase_deadline_ms || ack_seq != p->last_write_seq ||
+        (p->phase != IMS_PDN_SET_PROFILE && p->phase != IMS_PDN_DEFINE &&
+         p->phase != IMS_PDN_ACTIVATE && p->phase != IMS_PDN_RELEASE)) return;
+    p->last_result = result;
+    p->phase_deadline_ms = 0;
+    if (result != FMT_RX_GEN_OK) { p->phase = IMS_PDN_FAILED; return; }
+
+    switch (p->phase) {
+    case IMS_PDN_SET_PROFILE:
+        /* SetDataProfile(ims) accepted -> DEFINE (EUTRAN), NOT straight to
+         * VERIFY. The modem does not auto-create the ims bearer on this CP;
+         * the ims APN string must be defined then activated. */
+        p->phase = IMS_PDN_DEFINE;
+        break;
+    case IMS_PDN_DEFINE:
+        /* DEFINE accepted -> ACTIVATE CID 2. */
+        p->phase = IMS_PDN_ACTIVATE;
+        break;
+    case IMS_PDN_ACTIVATE:
+        /* ACTIVATE accepted -> VERIFY a real CID-2 attach+IP+P-CSCF. */
+        p->phase = IMS_PDN_VERIFY;
+        if (p->active) p->phase = IMS_PDN_ACTIVE;
+        break;
+    case IMS_PDN_RELEASE:
+        p->phase = IMS_PDN_IDLE;
+        break;
+    default:
+        break;
+    }
 }
 
 static void update_ready(struct ims_pdn *p)
