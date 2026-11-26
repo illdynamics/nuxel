@@ -54,6 +54,7 @@ $CC "${CFLAGS[@]}" -Isrc -o test_ims_iil tests/test_ims_iil.c src/ims_iil.c
 $CC "${CFLAGS[@]}" -Isrc -o test_ims_iil_rx tests/test_ims_iil_rx.c src/ims_iil_rx.c
 $CC "${CFLAGS[@]}" -Isrc -o test_iil_pdn tests/test_iil_pdn.c src/iil_pdn.c src/ims_iil.c src/ims_iil_rx.c
 $CC "${CFLAGS[@]}" -Isrc -o test_iil_auth tests/test_iil_auth.c src/iil_auth.c src/ims_iil.c src/fmt_tx.c src/fmt_rx.c src/data_session.c
+$CC "${CFLAGS[@]}" -Isrc -o test_ims_sdm tests/test_ims_sdm.c src/ims_sdm.c src/fmt_tx.c src/fmt_rx.c
 
 $CC "${CFLAGS[@]}" -Isrc -o test_mobile_data tests/test_mobile_data.c src/mobile_data.c src/fmt_tx.c src/fmt_rx.c
 ./test_mobile_data
@@ -88,6 +89,7 @@ echo "=== run Stage-06 MBIM<->SIPC serialization tests ==="
 ./test_ims_iil_rx
 ./test_iil_pdn
 ./test_iil_auth
+./test_ims_sdm
 echo "=== run Stage-06 recovered QBR item dictionary tests ==="
 ./test_qbr_items
 echo "=== run Stage-06 recovered CP-NV record/MD5/policy tests ==="
@@ -135,6 +137,7 @@ for suite in fmt_tx fmt_rx data_session rfs_nv efs_nv oes_cert fmt_sms sms_pdu s
         ims_sms) sources=(src/ims_sms.c) ;;
         ims_sip) sources=(src/ims_sip.c src/ims_sms.c src/nv_items.c) ;;
         ims_iil) sources=(src/ims_iil.c) ;;
+        ims_sdm) sources=(src/ims_sdm.c src/fmt_tx.c src/fmt_rx.c) ;;
     esac
     "$CLANG" -O1 -g -Wall -Wextra -Werror -fsanitize=address,undefined \
         -fno-sanitize-recover=all -std=gnu11 -Isrc -o "test_${suite}_asan" \

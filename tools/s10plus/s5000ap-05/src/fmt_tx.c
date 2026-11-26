@@ -684,3 +684,44 @@ bool fmt_tx_set_sip_param(struct fmt_tx_frame *f, const char *proxy,
     p[361] = proto;
     return true;
 }
+
+/* ---- MISC IMS SDM readback (GET) serializers ----
+ * The modem ANSWERS IpcTxGetImsSdmSettings(SdmImsParm) with a direct type=2
+ * (RESPONSE) frame at the same (main=10, sub) as the corresponding SET. The
+ * recovered Ipc41PacketBuilder GET builders (VERIFIED disassembly, e.g.
+ * BuildIpcModemSdmImsModeGet @0x353790, BuildIpcModemSdmPcscfGet @0x353568)
+ * emit a 7-byte FMT REQUEST frame:
+ *   [u16 total_len=7][u8 msg_seq][u8 ack_seq][u8 main=10][u8 sub][u8 type=2]
+ * with NO payload. This is the authoritative readback of the modem's own
+ * carrier-provisioned IMS SDM values (P-CSCF, domain, mode, SMS-over-IP),
+ * which the AP must NOT fabricate. */
+
+bool fmt_tx_sdm_ims_sms_fmt_get(struct fmt_tx_frame *f)
+{
+    return fmt_tx_raw(f, 10u /*MISC*/, 26u /*SDM_IMS_SMS_FMT*/,
+                      FMT_TX_TYPE_REQUEST, NULL, 0);
+}
+
+bool fmt_tx_sdm_ims_sms_over_ip_get(struct fmt_tx_frame *f)
+{
+    return fmt_tx_raw(f, 10u /*MISC*/, 27u /*SDM_IMS_SMS_OVER_IP*/,
+                      FMT_TX_TYPE_REQUEST, NULL, 0);
+}
+
+bool fmt_tx_sdm_ims_domain_get(struct fmt_tx_frame *f)
+{
+    return fmt_tx_raw(f, 10u /*MISC*/, 28u /*SDM_IMS_DOMAIN*/,
+                      FMT_TX_TYPE_REQUEST, NULL, 0);
+}
+
+bool fmt_tx_sdm_ims_mode_get(struct fmt_tx_frame *f)
+{
+    return fmt_tx_raw(f, 10u /*MISC*/, 32u /*SDM_IMS_MODE*/,
+                      FMT_TX_TYPE_REQUEST, NULL, 0);
+}
+
+bool fmt_tx_sdm_pcscf_get(struct fmt_tx_frame *f)
+{
+    return fmt_tx_raw(f, 10u /*MISC*/, 34u /*SDM_PCSCF*/,
+                      FMT_TX_TYPE_REQUEST, NULL, 0);
+}

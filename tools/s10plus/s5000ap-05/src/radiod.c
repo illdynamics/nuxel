@@ -40,6 +40,7 @@
 #include "ims_iil_rx.h"
 #include "iil_pdn.h"
 #include "iil_auth.h"
+#include "ims_sdm.h"
 #include "ims_init.h"
 #include "call_service.h"
 #include "cellular_link.h"
@@ -158,6 +159,7 @@ struct radiod_ctx {
     struct iil_pdn iil_pdn;      /* IIL (IpcProtocol41Iil) IMS PDN driver */
     bool iil_pdn_armed;          /* opt-in IIL IMS PDN drive (--arm-data-path) */
     struct iil_auth iil_auth;    /* IIL IMS AKA relay (IsimAuth -> USIM -> ImsAuthResp) */
+    struct ims_sdm ims_sdm;      /* modem IMS SDM readback (P-CSCF/domain/mode) */
     bool sip_param_sent;        /* SetSipParam fired once per P-CSCF discovery */
     uid_t control_uid, bridge_uid;
     sd_bus *data_bus;
@@ -697,6 +699,29 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
         f->cmd_type == IPC41_TYPE_RESPONSE && f->ack_seq == g.ims_init.last_write_seq) {
         ims_init_capa_response(&g.ims_init, f->ack_seq);
     }
+    /* IMS SDM readback capture. Direct type=2 RESPONSE at (main=10) for the
+     * SDM sub we queried; capture the modem's authoritative provisioned
+     * value (never fabricated). Values are only used to drive downstream
+     * provisioning; they are not logged verbatim (P-CSCF/domain redacted). */
+    if (f->main_cmd == IPC41_MAIN_MISC && f->cmd_type == IPC41_TYPE_RESPONSE &&
+        (f->sub_cmd == 26u || f->sub_cmd == 27u || f->sub_cmd == 28u ||
+         f->sub_cmd == 32u || f->sub_cmd == 34u)) {
+        if (ims_sdm_receive(&g.ims_sdm, f->sub_cmd, f->ack_seq,
+                            f->payload, f->payload_len)) {
+            diagf("ims_sdm_readback", "\"sub\":%u,\"complete\":%s",
+                  f->sub_cmd, g.ims_sdm.phase == IMS_SDM_DONE ? "true" : "false");
+            if (g.ims_sdm.phase == IMS_SDM_DONE) {
+                /* Redacted summary: presence flags only, never the values. */
+                diagf("ims_sdm_done",
+                      "\"pcscf\":%s,\"domain\":%s,\"mode\":%s,\"smsoverip\":%s,\"smsfmt\":%s",
+                      g.ims_sdm.pcscf_valid ? "true" : "false",
+                      g.ims_sdm.domain_valid ? "true" : "false",
+                      g.ims_sdm.mode_valid ? "true" : "false",
+                      g.ims_sdm.smsoverip_valid ? "true" : "false",
+                      g.ims_sdm.smsfmt_valid ? "true" : "false");
+            }
+        }
+    }
     /* Match both sequence and the outstanding command, including after
      * the 8-bit sequence wraps during status polling. */
     if (f->main_cmd == IPC41_MAIN_GEN && f->cmd_type == IPC41_TYPE_RESPONSE &&
@@ -1203,6 +1228,14 @@ static bool iil_auth_iil_write(const struct iil_frame *f, uint8_t *seq, void *us
 }
 /* The AKA relay reuses the ordinary FMT write path for the USIM request. */
 static bool iil_auth_usim_write(const struct fmt_tx_frame *f, uint8_t *seq, void *user)
+{
+    (void)user;
+    *seq = g.next_seq;
+    return g.cp_online && radiod_write_fmt(f);
+}
+
+/* SDM readback write path: ordinary FMT writes, same shared sequence space. */
+static bool ims_sdm_write(const struct fmt_tx_frame *f, uint8_t *seq, void *user)
 {
     (void)user;
     *seq = g.next_seq;
@@ -2115,6 +2148,11 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
         iil_pdn_tick(&g.iil_pdn, now_ms(), false);
         g.sip_param_sent = false;   /* re-arm on next P-CSCF discovery */
     }
+    /* Modem IMS SDM readback: query the modem's own carrier-provisioned
+     * P-CSCF/domain/mode/SMS-over-IP before any IIL provisioner is armed, so
+     * the recovered values (never fabricated) can be used downstream. Runs
+     * continuously but is a bounded one-pass sequence per online epoch. */
+    ims_sdm_tick(&g.ims_sdm, now_ms(), ims_online);
     if (g.iil_pdn_armed && ims_online &&
         (g.dsc.phase == DS_ACTIVE || g.dsc.phase == DS_WAIT_IP ||
          ds_terminal(&g.dsc))) {
@@ -3031,6 +3069,7 @@ int main(int argc, char **argv)
     iil_pdn_open(&g.iil_pdn,iil_pdn_write,NULL);
     iil_auth_open(&g.iil_auth,iil_auth_iil_write,iil_auth_usim_write,NULL);
     ims_init_open(&g.ims_init,ims_write,NULL);
+    ims_sdm_open(&g.ims_sdm,ims_sdm_write,NULL);
     g.ims_pdn_armed = false;
     {
         const char *imens = getenv("NUXEL_IMS_PDN");

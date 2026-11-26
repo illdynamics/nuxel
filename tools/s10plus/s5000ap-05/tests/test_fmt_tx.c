@@ -191,6 +191,20 @@ int main(void)
     CHECK(!fmt_tx_sdm_pcscf(&f, NULL));
     CHECK(!fmt_tx_sdm_pcscf(&f, ""));
 
+    /* MISC IMS SDM readback (GET) — type=2 REQUEST, no payload, same
+     * (main=10, sub) as the SET; recovered from Ipc41PacketBuilder GET
+     * builders (BuildIpcModemSdmImsModeGet @0x353790, ...PcscfGet @0x353568). */
+    const uint8_t sdm_mode_get[] = {7,0,0,0,10,32,2};
+    CHECK(fmt_tx_sdm_ims_mode_get(&f)); VECTOR(sdm_mode_get);
+    const uint8_t sdm_fmt_get[] = {7,0,0,0,10,26,2};
+    CHECK(fmt_tx_sdm_ims_sms_fmt_get(&f)); VECTOR(sdm_fmt_get);
+    const uint8_t sdm_oip_get[] = {7,0,0,0,10,27,2};
+    CHECK(fmt_tx_sdm_ims_sms_over_ip_get(&f)); VECTOR(sdm_oip_get);
+    const uint8_t sdm_dom_get[] = {7,0,0,0,10,28,2};
+    CHECK(fmt_tx_sdm_ims_domain_get(&f)); VECTOR(sdm_dom_get);
+    const uint8_t sdm_pcscf_get[] = {7,0,0,0,10,34,2};
+    CHECK(fmt_tx_sdm_pcscf_get(&f)); VECTOR(sdm_pcscf_get);
+
 
     /* IpcTxSetSipParam @0x3207e0 — main=3 CDMA_DATA sub=19, 369 bytes. */
     {

@@ -336,3 +336,15 @@ bool fmt_tx_sdm_pcscf(struct fmt_tx_frame *f, const char *pcscf);
 bool fmt_tx_set_data_profile_ex(struct fmt_tx_frame *f, const char *apn,
                                 uint8_t auth_code, uint8_t proto,
                                 uint8_t profile_id, const char *label);
+
+/* ---- MISC IMS SDM readback (GET) serializers ----
+ * Type=2 (REQUEST) readback of the modem's own carrier-provisioned IMS SDM
+ * values (same main=10/sub as the SET). The modem replies with a direct
+ * type=2 RESPONSE whose payload is the current value. These queries are the
+ * authoritative source for P-CSCF/domain/mode/SMS-over-IP and are never used
+ * to fabricate values. */
+bool fmt_tx_sdm_ims_sms_fmt_get(struct fmt_tx_frame *f);
+bool fmt_tx_sdm_ims_sms_over_ip_get(struct fmt_tx_frame *f);
+bool fmt_tx_sdm_ims_domain_get(struct fmt_tx_frame *f);
+bool fmt_tx_sdm_ims_mode_get(struct fmt_tx_frame *f);
+bool fmt_tx_sdm_pcscf_get(struct fmt_tx_frame *f);

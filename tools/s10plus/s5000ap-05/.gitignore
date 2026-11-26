@@ -36,3 +36,8 @@ test_oes_cert
 /test_ims_sms
 
 /test_ims_iil
+
+/test_ims_sdm
+/test_ims_iil_rx
+/test_iil_pdn
+/test_iil_auth
