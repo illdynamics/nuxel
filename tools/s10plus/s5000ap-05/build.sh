@@ -50,6 +50,7 @@ $CC "${CFLAGS[@]}" -Isrc -o test_ims_init tests/test_ims_init.c src/ims_init.c s
 $CC "${CFLAGS[@]}" -Isrc -o test_ims_security tests/test_ims_security.c src/ims_security.c
 $CC "${CFLAGS[@]}" -Isrc -o test_ims_sms tests/test_ims_sms.c src/ims_sms.c
 $CC "${CFLAGS[@]}" -Isrc -o test_ims_sip tests/test_ims_sip.c src/ims_sip.c src/ims_sms.c src/nv_items.c
+$CC "${CFLAGS[@]}" -Isrc -o test_ims_iil tests/test_ims_iil.c src/ims_iil.c
 
 $CC "${CFLAGS[@]}" -Isrc -o test_mobile_data tests/test_mobile_data.c src/mobile_data.c src/fmt_tx.c src/fmt_rx.c
 ./test_mobile_data
@@ -80,6 +81,7 @@ echo "=== run Stage-06 MBIM<->SIPC serialization tests ==="
 ./test_ims_security
 ./test_ims_sms
 ./test_ims_sip
+./test_ims_iil
 echo "=== run Stage-06 recovered QBR item dictionary tests ==="
 ./test_qbr_items
 echo "=== run Stage-06 recovered CP-NV record/MD5/policy tests ==="
@@ -105,7 +107,7 @@ $CLANG -O1 -g -Wall -Wextra -Werror -fsanitize=address,undefined -fno-sanitize-r
 python3 tests/fuzz_sipc5.py ./test_sipc5_fmt_asan --asan --iters=3000
 
 # Both serialization directions, FSM, and NV/backup transactions.
-for suite in fmt_tx fmt_rx data_session rfs_nv efs_nv oes_cert fmt_sms sms_pdu sms_store sms_service fmt_call call_service mobile_data ims_service ims_pdn ims_init ims_security ims_sms ims_sip; do
+for suite in fmt_tx fmt_rx data_session rfs_nv efs_nv oes_cert fmt_sms sms_pdu sms_store sms_service fmt_call call_service mobile_data ims_service ims_pdn ims_init ims_security ims_sms ims_sip ims_iil; do
     libs=()
     case "$suite" in
         mobile_data) sources=(src/mobile_data.c src/fmt_tx.c src/fmt_rx.c) ;;
@@ -126,6 +128,7 @@ for suite in fmt_tx fmt_rx data_session rfs_nv efs_nv oes_cert fmt_sms sms_pdu s
         ims_security) sources=(src/ims_security.c) ;;
         ims_sms) sources=(src/ims_sms.c) ;;
         ims_sip) sources=(src/ims_sip.c src/ims_sms.c src/nv_items.c) ;;
+        ims_iil) sources=(src/ims_iil.c) ;;
     esac
     "$CLANG" -O1 -g -Wall -Wextra -Werror -fsanitize=address,undefined \
         -fno-sanitize-recover=all -std=gnu11 -Isrc -o "test_${suite}_asan" \

@@ -34,3 +34,5 @@ test_oes_cert
 /test_ims_security
 /test_ims_sip
 /test_ims_sms
+
+/test_ims_iil
