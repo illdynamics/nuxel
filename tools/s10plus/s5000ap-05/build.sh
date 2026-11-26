@@ -51,6 +51,8 @@ $CC "${CFLAGS[@]}" -Isrc -o test_ims_security tests/test_ims_security.c src/ims_
 $CC "${CFLAGS[@]}" -Isrc -o test_ims_sms tests/test_ims_sms.c src/ims_sms.c
 $CC "${CFLAGS[@]}" -Isrc -o test_ims_sip tests/test_ims_sip.c src/ims_sip.c src/ims_sms.c src/nv_items.c
 $CC "${CFLAGS[@]}" -Isrc -o test_ims_iil tests/test_ims_iil.c src/ims_iil.c
+$CC "${CFLAGS[@]}" -Isrc -o test_ims_iil_rx tests/test_ims_iil_rx.c src/ims_iil_rx.c
+$CC "${CFLAGS[@]}" -Isrc -o test_iil_pdn tests/test_iil_pdn.c src/iil_pdn.c src/ims_iil.c src/ims_iil_rx.c
 
 $CC "${CFLAGS[@]}" -Isrc -o test_mobile_data tests/test_mobile_data.c src/mobile_data.c src/fmt_tx.c src/fmt_rx.c
 ./test_mobile_data
@@ -82,6 +84,8 @@ echo "=== run Stage-06 MBIM<->SIPC serialization tests ==="
 ./test_ims_sms
 ./test_ims_sip
 ./test_ims_iil
+./test_ims_iil_rx
+./test_iil_pdn
 echo "=== run Stage-06 recovered QBR item dictionary tests ==="
 ./test_qbr_items
 echo "=== run Stage-06 recovered CP-NV record/MD5/policy tests ==="
