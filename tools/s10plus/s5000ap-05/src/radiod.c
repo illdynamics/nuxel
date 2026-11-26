@@ -158,6 +158,7 @@ struct radiod_ctx {
     struct iil_pdn iil_pdn;      /* IIL (IpcProtocol41Iil) IMS PDN driver */
     bool iil_pdn_armed;          /* opt-in IIL IMS PDN drive (--arm-data-path) */
     struct iil_auth iil_auth;    /* IIL IMS AKA relay (IsimAuth -> USIM -> ImsAuthResp) */
+    bool sip_param_sent;        /* SetSipParam fired once per P-CSCF discovery */
     uid_t control_uid, bridge_uid;
     sd_bus *data_bus;
     bool     data_path_armed;   /* explicit opt-in (flag / D-Bus) */
@@ -616,7 +617,14 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
                   "\"ip_ready\":%s,\"pcscf_ready\":%s,\"pcscf_count\":%u",
                   p->ip_ready ? "true" : "false",
                   p->pcscf_ready ? "true" : "false", p->pcscf_count);
-            if (p->pcscf_count > before) diag("iil_pcscf_present", NULL);
+            if (p->pcscf_count > before) {
+                diag("iil_pcscf_present", NULL);
+                /* Newly discovered P-CSCF: configure the modem's SIP stack. */
+                if (!g.sip_param_sent) {
+                    radiod_sip_param_from_pcscf(p);
+                    g.sip_param_sent = true;
+                }
+            }
             break;
         }
         case IIL_SUB_ISIM_AUTH: {
@@ -1198,6 +1206,37 @@ static bool iil_auth_usim_write(const struct fmt_tx_frame *f, uint8_t *seq, void
     (void)user;
     *seq = g.next_seq;
     return g.cp_online && radiod_write_fmt(f);
+}
+
+
+/* Fire IpcTxSetSipParam (main=3 CDMA_DATA sub=19) with a discovered P-CSCF
+ * and the IMSI-derived private identity. This is the modem-internal IMS
+ * stack's SIP configuration; it supplies WHERE to send REGISTER (P-CSCF) and
+ * WHAT identity to assert (IMPI). Password is empty (IMS AKA, no SIP digest
+ * password). Auth=NONE, proto=IPV6 (KPN 204-08 IMS bearer). Never fabricated. */
+static void radiod_sip_param_from_pcscf(const struct iil_pdn *p)
+{
+    if (!p || !p->pcscf_ready || p->pcscf_count == 0) return;
+    if (!g.sim_ready_seen || !g.ims.identity.ready) return;
+    char proxy[64] = {0};
+    int fam = p->family;
+    if (fam == AF_INET) {
+        if (p->pcscf_len[0] != 4) return;
+        inet_ntop(AF_INET, p->pcscf[0], proxy, sizeof proxy);
+    } else {
+        if (p->pcscf_len[0] != 16) return;
+        inet_ntop(AF_INET6, p->pcscf[0], proxy, sizeof proxy);
+    }
+    if (!proxy[0]) return;
+    struct fmt_tx_frame f;
+    uint8_t seq = 0;
+    if (fmt_tx_set_sip_param(&f, proxy, g.ims.identity.impi, "",
+                             FMT_TX_AUTH_NONE, FMT_TX_PROTO_IPV6)) {
+        if (g.cp_online && radiod_write_fmt(&f)) {
+            diag("iil_sip_param", NULL);  /* P-CSCF is not secret; never log it */
+        }
+    }
+    memset(proxy, 0, sizeof proxy);
 }
 
 /*
@@ -2074,6 +2113,7 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
      * behind the same endpoint write gate). */
     if (!ims_online) {
         iil_pdn_tick(&g.iil_pdn, now_ms(), false);
+        g.sip_param_sent = false;   /* re-arm on next P-CSCF discovery */
     }
     if (g.iil_pdn_armed && ims_online &&
         (g.dsc.phase == DS_ACTIVE || g.dsc.phase == DS_WAIT_IP ||
