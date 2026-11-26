@@ -89,3 +89,48 @@ bool iil_tx_set_pdp_context(struct iil_frame *f, uint8_t cid, const char *apn)
     memcpy(p + 6, apn, alen);
     return true;
 }
+
+/* IpcTxImsReqSetImsPdnInfoE911 @0x355fe0. See ims_iil.h for the recovered
+ * layout. The builder reproduces the vendor's exact strlcpy strides:
+ *   apn @7 (21), config[0..7] @28,284,...,1820 (each 256), e911_tail @2076 (256).
+ * total_len is 2332 (7 header + 2325 payload). */
+bool iil_tx_ims_set_pdn_info(struct iil_frame *f, const char *apn,
+                             const char *const config[8], const char *e911_tail)
+{
+    if (!f || !apn) return false;
+    if (strlen(apn) > 20) return false;   /* apn dstsize is 21 incl NUL */
+    f->main_cmd = IIL_MAIN_IIL;
+    f->sub_cmd  = 10u;                     /* IpcTxImsReqSetImsPdnInfoE911 sub */
+    f->cmd_type = 1u;
+    f->len      = 2332u;
+    if (f->len > IIL_TX_MAX_FRAME) return false;
+    memset(f->buf, 0, sizeof f->buf);
+    uint16_t total = 2332u;
+    f->buf[0] = (uint8_t)(total & 0xff);
+    f->buf[1] = (uint8_t)(total >> 8);
+    f->buf[2] = 0;   /* msg_seq lo (assign at send) */
+    f->buf[3] = 0;   /* msg_seq hi */
+    f->buf[4] = IIL_MAIN_IIL;
+    f->buf[5] = 10u;
+    f->buf[6] = 1u;
+    /* apn: 21-byte field at offset 7 (dstsize 21). */
+    strncpy((char *)&f->buf[7], apn, 20);
+    f->buf[7 + 20] = 0;
+    /* config[0..7]: 256-byte fields at offsets 28 + i*256. */
+    if (config) {
+        for (unsigned i = 0; i < 8; i++) {
+            size_t base = 28u + i * 256u;
+            if (base + 256u > 2332u) return false;
+            if (config[i]) {
+                strncpy((char *)&f->buf[base], config[i], 255);
+                f->buf[base + 255] = 0;
+            }
+        }
+    }
+    /* e911_tail: 256-byte field at offset 2076. */
+    if (e911_tail) {
+        strncpy((char *)&f->buf[2076], e911_tail, 255);
+        f->buf[2076 + 255] = 0;
+    }
+    return true;
+}

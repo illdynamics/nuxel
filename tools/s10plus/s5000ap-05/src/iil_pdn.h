@@ -21,9 +21,15 @@ typedef bool (*iil_pdn_write_fn)(const struct iil_frame *f, uint8_t *seq, void *
 
 #define IIL_PDN_CID 2u
 #define IIL_PDN_APN "ims.mnc008.mcc204.gprs"
+/* The recovered IpcTxImsReqSetImsPdnInfoE911 apn field is a 21-byte strlcpy
+ * (dlen 21, so 20 chars + NUL). The IMS bearer APN above is 22 chars and does
+ * NOT fit; the modem internal-IMS provisioning contract is the 3GPP well-known
+ * IMS APN "ims", not the operator DN. This value is standard (TS 23.003 9.2). */
+#define IIL_PDN_E911_PROV_APN "ims"
 
 enum iil_pdn_phase {
     IIL_PDN_IDLE = 0,
+    IIL_PDN_PROVISION,   /* fire IpcTxImsReqSetImsPdnInfoE911 (main=112 sub=10) */
     IIL_PDN_DEFINE,
     IIL_PDN_ACTIVATE,
     IIL_PDN_VERIFY,

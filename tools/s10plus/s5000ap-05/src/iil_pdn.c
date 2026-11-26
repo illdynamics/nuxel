@@ -37,7 +37,7 @@ bool iil_pdn_active(const struct iil_pdn *p)
 
 const char *iil_pdn_phase_name(enum iil_pdn_phase ph)
 {
-    static const char *const n[] = {"idle","define","activate","verify","active","failed"};
+    static const char *const n[] = {"idle","provision","define","activate","verify","active","failed"};
     return (ph <= IIL_PDN_FAILED) ? n[ph] : "unknown";
 }
 
@@ -55,22 +55,32 @@ enum iil_pdn_phase iil_pdn_tick(struct iil_pdn *p, uint64_t now_ms, bool online)
     case IIL_PDN_IDLE:
         p->attempt = 0;
         p->phase_deadline_ms = 0;
-        p->phase = IIL_PDN_DEFINE;
+        p->phase = IIL_PDN_PROVISION;
         break;
+    case IIL_PDN_PROVISION:
     case IIL_PDN_DEFINE:
     case IIL_PDN_ACTIVATE: {
         if (p->phase_deadline_ms) {
             if (now_ms >= p->phase_deadline_ms) {
                 p->phase_deadline_ms = 0;
                 if (++p->attempt >= IIL_PDN_ATTEMPT_LIMIT) p->phase = IIL_PDN_FAILED;
-                else p->phase = IIL_PDN_DEFINE;  /* re-arm from DEFINE */
+                else p->phase = IIL_PDN_PROVISION;  /* re-arm from PROVISION */
             }
             break;
         }
         struct iil_frame f;
-        bool built = (p->phase == IIL_PDN_DEFINE)
-            ? iil_tx_define_pdp(&f, IIL_PDN_APN, 3 /*IPV6*/, 1 /*EUTRAN AccessNetworkType*/)
-            : iil_tx_set_pdp_context(&f, p->cid, IIL_PDN_APN);
+        bool built;
+        const char *empty[8] = {0,0,0,0,0,0,0,0};
+        if (p->phase == IIL_PDN_PROVISION) {
+            /* Fire IpcTxImsReqSetImsPdnInfoE911 first: provision the modem's
+             * INTERNAL IMS stack. Empty config strings -> keep the modem's
+             * NVRAM defaults; we never fabricate P-CSCF/security/identity. */
+            built = iil_tx_ims_set_pdn_info(&f, IIL_PDN_E911_PROV_APN, empty, NULL);
+        } else if (p->phase == IIL_PDN_DEFINE) {
+            built = iil_tx_define_pdp(&f, IIL_PDN_APN, 3 /*IPV6*/, 1 /*EUTRAN AccessNetworkType*/);
+        } else {
+            built = iil_tx_set_pdp_context(&f, p->cid, IIL_PDN_APN);
+        }
         uint8_t seq = 0;
         if (built && p->write(&f, &seq, p->user)) {
             p->last_write_seq = seq;
@@ -94,8 +104,11 @@ void iil_pdn_gen_result(struct iil_pdn *p, uint16_t result, uint8_t ack_seq)
     p->last_result = result;
     p->phase_deadline_ms = 0;
     /* GEN_OK (0x8000 in this CP's encoding) advances the phase; rejection
-     * re-arms from DEFINE. Only DEFINE and ACTIVATE writes await a GEN ack. */
-    if (p->phase == IIL_PDN_DEFINE) {
+     * fails the phase. PROVISION/DEFINE/ACTIVATE writes all await a GEN ack. */
+    if (p->phase == IIL_PDN_PROVISION) {
+        if (result == 0x8000u) { p->phase = IIL_PDN_DEFINE; p->attempt = 0; }
+        else { p->phase = IIL_PDN_FAILED; }
+    } else if (p->phase == IIL_PDN_DEFINE) {
         if (result == 0x8000u) { p->phase = IIL_PDN_ACTIVATE; p->attempt = 0; }
         else { p->phase = IIL_PDN_FAILED; }
     } else if (p->phase == IIL_PDN_ACTIVATE) {

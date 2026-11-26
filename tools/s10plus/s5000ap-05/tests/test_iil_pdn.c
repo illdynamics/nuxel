@@ -22,15 +22,26 @@ int main(void)
     /* offline -> idle reset */
     assert(iil_pdn_tick(&p, 0, false) == IIL_PDN_IDLE);
 
-    /* online -> DEFINE (transition), then emit on the next tick */
+    /* online -> PROVISION (transition), then emit the 2332-byte provisioner */
     last_frame = NULL;
-    assert(iil_pdn_tick(&p, 1000, true) == IIL_PDN_DEFINE);
-    assert(iil_pdn_tick(&p, 1001, true) == IIL_PDN_DEFINE);
+    assert(iil_pdn_tick(&p, 1000, true) == IIL_PDN_PROVISION);
+    assert(iil_pdn_tick(&p, 1001, true) == IIL_PDN_PROVISION);
+    assert(last_frame && last_frame->main_cmd == 112 && last_frame->sub_cmd == 10);
+    assert(last_frame->len == 2332);
+    assert(last_frame->buf[4] == 112 && last_frame->buf[5] == 10 && last_frame->buf[6] == 1);
+
+    /* GEN ack advances PROVISION -> DEFINE */
+    iil_pdn_gen_result(&p, 0x8000u, 1);
+    assert(p.phase == IIL_PDN_DEFINE);
+
+    /* DEFINE emits main=13 sub=1 on next tick */
+    last_frame = NULL;
+    iil_pdn_tick(&p, 1002, true);
     assert(last_frame && last_frame->main_cmd == 13 && last_frame->sub_cmd == 1);
     assert(last_frame->buf[9] == 0x06); /* proto IPV6 */
 
-    /* timeout -> re-arm DEFINE */
-    assert(iil_pdn_tick(&p, 1000 + 13000, true) == IIL_PDN_DEFINE);
+    /* timeout -> re-arm PROVISION */
+    assert(iil_pdn_tick(&p, 1002 + 13000, true) == IIL_PDN_PROVISION);
 
     /* force ACTIVATE by advancing phase manually (test the builder) */
     p.phase = IIL_PDN_ACTIVATE;

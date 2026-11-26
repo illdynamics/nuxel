@@ -27,7 +27,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#define IIL_TX_MAX_FRAME 1024u
+#define IIL_TX_MAX_FRAME 2384u
 
 struct iil_frame {
     uint8_t  buf[IIL_TX_MAX_FRAME];
@@ -77,5 +77,33 @@ bool iil_tx_set_pdp_context(struct iil_frame *f, uint8_t cid, const char *apn);
  * Payload = NUL-terminated text at offset 7, zero-padded to 263 total.
  * Emulation-verified frame: 07 01 00 00 04 15 03 "hello". */
 bool iil_tx_send_rpsmma(struct iil_frame *f, const char *text);
+
+/* IpcTxImsReqSetImsPdnInfoE911 @0x355fe0 (IpcProtocol41Iil) — the modem's
+ * INTERNAL IMS-stack provisioning trigger. main=112 sub=10 type=1, total_len
+ * 2332. Recovered AArch64 disassembly (exact, NULL-invariant, not guessed):
+ *
+ *   [0..1]  total_len = 2332 (0x091c)
+ *   [2..3]  msg_seq   (assigned by the shared endpoint counter at send)
+ *   [4]     main = 112
+ *   [5]     sub  = 10
+ *   [6]     type = 1
+ *   [7..27]   apn (21 bytes, strlcpy dstsize 21, NUL-padded)
+ *   [28..283] config[0] (256 bytes)
+ *   [284..539] config[1] (256)
+ *   [540..795] config[2] (256)
+ *   [796..1051] config[3] (256)
+ *   [1052..1307] config[4] (256)
+ *   [1308..1563] config[5] (256)
+ *   [1564..1819] config[6] (256)
+ *   [1820..2075] config[7] (256)
+ *   [2076..2331] e911_tail (256 bytes)
+ *
+ * Field strides are 0x100 (256) bytes from config[0] at offset 28; the apn
+ * field is the single 21-byte strlcpy the vendor emitted (`mov w2,#0x15`).
+ * Config strings are carrier-provisioned; pass NULL/"" for fields the AP
+ * does not authoritatively hold so the modem keeps its own NVRAM default.
+ * Never fabricated, never a secret channel. */
+bool iil_tx_ims_set_pdn_info(struct iil_frame *f, const char *apn,
+                             const char *const config[8], const char *e911_tail);
 
 #endif /* NUXEL_IMS_IIL_H */

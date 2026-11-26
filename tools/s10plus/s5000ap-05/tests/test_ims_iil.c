@@ -65,6 +65,35 @@ int main(void)
         assert(!memcmp(&g.buf[13], "ims.mnc008.mcc204.gprs", 22));
     }
 
+
+    /* IpcTxImsReqSetImsPdnInfoE911 — recovered: total_len=2332, main=112
+     * sub=10 type=1, apn@7(21B), config[0..7]@28,284,...,1820(256B each),
+     * e911_tail@2076(256B). */
+    {
+        struct iil_frame g;
+        const char *cfg[8] = {"a","b","c","d","e","f","g","h"};
+        assert(iil_tx_ims_set_pdn_info(&g, "ims.apn.test20", cfg, "E911"));
+        assert(g.len == 2332);
+        assert(g.buf[0] == 0x1c && g.buf[1] == 0x09);  /* 0x091c = 2332 */
+        assert(g.buf[4] == 112 && g.buf[5] == 10 && g.buf[6] == 1);
+        assert(g.buf[7] != 0);   /* apn copied */
+        assert(!memcmp(&g.buf[7], "ims.apn.test20", 14));
+        /* config[0] at offset 28, 256-byte stride. */
+        assert(!memcmp(&g.buf[28], "a", 1));
+        assert(!memcmp(&g.buf[28 + 256*1], "b", 1));
+        assert(!memcmp(&g.buf[28 + 256*2], "c", 1));
+        assert(!memcmp(&g.buf[28 + 256*7], "h", 1));
+        assert(!memcmp(&g.buf[2076], "E911", 4));
+        /* NULL configs -> NUL fields (modem keeps NVRAM default). */
+        struct iil_frame h;
+        const char *empty[8] = {0,0,0,0,0,0,0,0};
+        assert(iil_tx_ims_set_pdn_info(&h, "x", empty, NULL));
+        assert(h.buf[7] == 'x' && h.buf[8] == 0);
+        struct iil_frame lo;
+        assert(!iil_tx_ims_set_pdn_info(&lo, "this_apn_is_way_too_long", empty, NULL));
+        assert(h.buf[28] == 0 && h.buf[2076] == 0);
+    }
+
     puts("IMS IIL wire contract: PASS");
     return 0;
 }
