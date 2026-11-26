@@ -446,6 +446,33 @@ bool fmt_tx_get_preferred_net_type(struct fmt_tx_frame *f)
     return fmt_tx_raw(f, MAIN_NET, 10u, FMT_TX_TYPE_REQUEST, NULL, 0);
 }
 
+/* NET_VOLTE_STATE (sub=52) — IpcTxSetVolteStateNotification @0x338578.
+ * 8-byte frame: total=8, msg_seq=0, ack_seq=0, main=8(NET), sub=0x34(52),
+ * type=3, payload[0] = bool (1 = AP IMS/VoLTE stack ready). This is the
+ * "IMS ready" handshake the modem requires before it emits the authoritative
+ * main=22 sub=3 registration notification. Byte-exact vendor frame. */
+bool fmt_tx_set_volte_state_notification(struct fmt_tx_frame *f, bool ready)
+{
+    uint8_t p[1];
+    p[0] = ready ? FMT_TX_VOLTE_STATE_READY : FMT_TX_VOLTE_STATE_NOT_READY;
+    return fmt_tx_raw(f, MAIN_NET, FMT_TX_NET_SUB_VOLTE_STATE,
+                      FMT_TX_TYPE_NOTIFICATION, p, 1);
+}
+
+/* NET_HVOLTE_TESTMODE (sub=40) — IpcTxGetVolteTestmode @0x338410 (type=2,
+ * 7-byte frame) / IpcTxSetVolteTestmode @0x3384c0 (type=3, 8-byte frame). */
+bool fmt_tx_get_volte_testmode(struct fmt_tx_frame *f)
+{
+    return fmt_tx_raw(f, MAIN_NET, FMT_TX_NET_SUB_HVOLTE_TESTMODE,
+                      FMT_TX_TYPE_REQUEST, NULL, 0);
+}
+
+bool fmt_tx_set_volte_testmode(struct fmt_tx_frame *f, uint8_t mode)
+{
+    return fmt_tx_raw(f, MAIN_NET, FMT_TX_NET_SUB_HVOLTE_TESTMODE,
+                      FMT_TX_TYPE_NOTIFICATION, &mode, 1);
+}
+
 /*
  * IMS (main=22) serialization — modem-resident IMS stack drive.
  *

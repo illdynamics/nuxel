@@ -19,7 +19,9 @@
  * SetImsRegState never produces an authoritative registration notification
  * (observed: GEN 0x8000 ack only, then registration timeout). Without the
  * SMS-over-IP format/enable arming the modem silently drops the registration
- * request (observed: no main=22 RX frame).
+ * request (observed: no main=22 RX frame). Finally the AP notifies the modem
+ * its IMS/VoLTE stack is ready via IpcTxSetVolteStateNotification (NET main=8
+ * sub=52 type=3, bool payload) BEFORE registration is driven.
  *
  * This module is a bounded, response-correlated FSM that performs ONLY those
  * legitimate advertisements. It never fabricates capability or registration;
@@ -39,7 +41,9 @@ enum ims_init_phase {
     IMS_INIT_WAIT_SMS_FMT,  /* awaiting GEN ack for SMS_FMT */
     IMS_INIT_SEND_SMS_OIP,  /* enable SMS-over-IP (MISC sub=27 type=3) */
     IMS_INIT_WAIT_SMS_OIP,  /* awaiting GEN ack for SMS_OVER_IP */
-    IMS_INIT_DONE,          /* capability + SMS-over-IP acknowledged */
+    IMS_INIT_SEND_VOLTE_STATE,  /* notify AP IMS stack ready (NET sub=52) */
+    IMS_INIT_WAIT_VOLTE_STATE,  /* awaiting GEN ack for VOLTE_STATE */
+    IMS_INIT_DONE,          /* capability + SMS-over-IP + VoLTE ready */
     IMS_INIT_FAILED,
 };
 

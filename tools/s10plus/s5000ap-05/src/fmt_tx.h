@@ -173,6 +173,27 @@ bool fmt_tx_get_service_domain(struct fmt_tx_frame *f);
 bool fmt_tx_set_preferred_net_type(struct fmt_tx_frame *f, uint8_t net_type);
 bool fmt_tx_get_preferred_net_type(struct fmt_tx_frame *f);
 
+/* NET VoLTE/IMS state notification (source: IpcTxSetVolteStateNotification
+ * @0x338578, libsec-ril 60889dd7). main=8 (NET) sub=52 (0x34 NET_VOLTE_STATE)
+ * type=3, 8-byte frame, payload[0] = bool (1 = AP IMS/VoLTE stack ready).
+ * Stock Samsung sends this from ModemProxy::SetVolteStateNotification(true)
+ * when the AP's IMS stack is armed, BEFORE driving IMS registration. This is
+ * the "IMS ready" signal the modem requires before it will emit the
+ * authoritative IMS registration notification (main=22 sub=3). */
+bool fmt_tx_set_volte_state_notification(struct fmt_tx_frame *f, bool ready);
+
+/* NET HVOLTE test-mode (source: IpcTxGetVolteTestmode @0x338410 /
+ * IpcTxSetVolteTestmode @0x3384c0). main=8 (NET) sub=40 (0x28
+ * NET_HVOLTE_TESTMODE); type=2 request (get) / type=3 (set, 1-byte payload). */
+bool fmt_tx_get_volte_testmode(struct fmt_tx_frame *f);
+bool fmt_tx_set_volte_testmode(struct fmt_tx_frame *f, uint8_t mode);
+
+/* NET_VOLTE_STATE / NET_HVOLTE_TESTMODE wire sub-command values. */
+#define FMT_TX_NET_SUB_VOLTE_STATE   52u
+#define FMT_TX_NET_SUB_HVOLTE_TESTMODE 40u
+#define FMT_TX_VOLTE_STATE_READY 1u
+#define FMT_TX_VOLTE_STATE_NOT_READY 0u
+
 /* Service-domain and preferred-network-type value constants. */
 #define FMT_TX_SERVICE_DOMAIN_CS_PS   0u
 #define FMT_TX_SERVICE_DOMAIN_PS_ONLY 1u

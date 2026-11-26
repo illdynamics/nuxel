@@ -41,6 +41,7 @@ const char *ims_init_phase_name(enum ims_init_phase p)
     static const char *const n[] = {"idle","send-get","wait-get-ack",
                                     "send-capa","wait-ack","send-sms-fmt",
                                     "wait-sms-fmt","send-sms-oip","wait-sms-oip",
+                                    "send-volte-state","wait-volte-state",
                                     "done","failed"};
     return (p <= IMS_INIT_FAILED) ? n[p] : "unknown";
 }
@@ -164,6 +165,34 @@ enum ims_init_phase ims_init_tick(struct ims_init *i, uint64_t now_ms, bool onli
             i->phase = IMS_INIT_SEND_SMS_OIP;
         }
         break;
+    case IMS_INIT_SEND_VOLTE_STATE:
+        if (i->phase_deadline_ms && now_ms < i->phase_deadline_ms) break;
+        if (now_ms >= i->next_action_ms && i->attempt < IMS_INIT_ATTEMPT_LIMIT) {
+            i->attempt++;
+            struct fmt_tx_frame f;
+            uint8_t seq = 0;
+            /* Notify the modem that the AP IMS/VoLTE stack is armed and ready.
+             * This is the "IMS ready" handshake (NET sub=52) the modem requires
+             * before it will emit the authoritative registration notification. */
+            if (fmt_tx_set_volte_state_notification(&f, true) &&
+                i->write(&f, &seq, i->user)) {
+                i->last_write_seq = seq;
+                i->phase_deadline_ms = now_ms + IMS_INIT_STEP_TIMEOUT_MS;
+                i->phase = IMS_INIT_WAIT_VOLTE_STATE;
+            } else {
+                i->next_action_ms = now_ms + IMS_INIT_RETRY_MS;
+            }
+        } else if (i->attempt >= IMS_INIT_ATTEMPT_LIMIT) {
+            i->phase = IMS_INIT_FAILED;
+        }
+        break;
+    case IMS_INIT_WAIT_VOLTE_STATE:
+        if (now_ms >= i->phase_deadline_ms) {
+            i->phase_deadline_ms = 0;
+            i->next_action_ms = 0;
+            i->phase = IMS_INIT_SEND_VOLTE_STATE;
+        }
+        break;
     case IMS_INIT_DONE:
     case IMS_INIT_FAILED:
         break;
@@ -218,7 +247,17 @@ void ims_init_gen_result(struct ims_init *i, uint16_t result, uint8_t ack_seq)
         i->phase = IMS_INIT_SEND_SMS_OIP;
         break;
     case IMS_INIT_WAIT_SMS_OIP:
-        /* Best-effort terminal: registration gate (done) is already true. */
+        /* Best-effort: SMS-over-IP arming done. Advance to the VoLTE
+         * state-notification handshake (the last arming step before done). */
+        i->attempt = 0;
+        i->phase_deadline_ms = 0;
+        i->next_action_ms = 0;
+        i->phase = IMS_INIT_SEND_VOLTE_STATE;
+        break;
+    case IMS_INIT_WAIT_VOLTE_STATE:
+        /* VoLTE-state notification acknowledged (or rejected) — best-effort.
+         * The registration gate (done) is already true; don't clear it. */
+        i->attempt = 0;
         i->phase_deadline_ms = 0;
         i->phase = IMS_INIT_DONE;
         break;

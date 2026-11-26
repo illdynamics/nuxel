@@ -111,6 +111,13 @@ int main(void)
     CHECK(!fmt_tx_set_service_domain(&f, 3));
     CHECK(fmt_tx_get_service_domain(&f)); VECTOR(golden_get_service_domain);
 
+    /* NET VoLTE state notification / testmode (source: IpcTxSetVolteStateNotification
+     * @0x338578, IpcTxGet/SetVolteTestmode @0x338410/@0x3384c0). Byte-exact. */
+    CHECK(fmt_tx_set_volte_state_notification(&f, true)); VECTOR(golden_volte_state_ready);
+    CHECK(fmt_tx_set_volte_state_notification(&f, false)); VECTOR(golden_volte_state_not_ready);
+    CHECK(fmt_tx_get_volte_testmode(&f)); VECTOR(golden_get_volte_testmode);
+    CHECK(fmt_tx_set_volte_testmode(&f, 1)); VECTOR(golden_set_volte_testmode);
+
     char apn[102]; memset(apn, 'a', sizeof apn); apn[101] = 0;
     CHECK(!fmt_tx_set_data_profile(&f, apn, 0, 4));
     CHECK(!fmt_tx_set_lte_attach_profile(&f, apn, 0, 4, 1, 3));

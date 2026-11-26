@@ -36,6 +36,12 @@ static bool write_capture(const struct fmt_tx_frame *f, uint8_t *seq, void *u)
         assert(f->len == 8);
         assert(f->buf[4] == 10 && f->buf[5] == 27 && f->buf[6] == 3);
         assert(f->buf[7] == FMT_TX_SDM_SMSOVERIP_ENABLE);
+    } else if (f->main_cmd == 8 && f->sub_cmd == 52) {
+        /* IpcTxSetVolteStateNotification: NET sub=52, 8-byte frame,
+         * payload[0]=ready=1. */
+        assert(f->len == 8);
+        assert(f->buf[4] == 8 && f->buf[5] == 52 && f->buf[6] == 3);
+        assert(f->buf[7] == FMT_TX_VOLTE_STATE_READY);
     }
     return true;
 }
@@ -44,7 +50,8 @@ static void drive_to_done(struct ims_init *i)
 {
     /* Sequence: IDLE -> SEND_GET -> WAIT_GET_ACK --capa_response--> SEND_CAPA
      * -> WAIT_ACK --gen OK--> SEND_SMS_FMT -> WAIT_SMS_FMT --gen OK-->
-     * SEND_SMS_OIP -> WAIT_SMS_OIP --gen OK--> DONE. */
+     * SEND_SMS_OIP -> WAIT_SMS_OIP --gen OK--> SEND_VOLTE_STATE ->
+     * WAIT_VOLTE_STATE --gen OK--> DONE. */
     assert(ims_init_tick(i, 0, true) == IMS_INIT_SEND_GET);
     assert(ims_init_tick(i, 1, true) == IMS_INIT_WAIT_GET_ACK); /* writes GetDeviceCapa */
     ims_init_capa_response(i, last_seq);
@@ -56,6 +63,9 @@ static void drive_to_done(struct ims_init *i)
     ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq);            /* -> SEND_SMS_OIP */
     assert(i->phase == IMS_INIT_SEND_SMS_OIP);
     assert(ims_init_tick(i, 4, true) == IMS_INIT_WAIT_SMS_OIP); /* writes SMS_OIP */
+    ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq);            /* -> SEND_VOLTE_STATE */
+    assert(i->phase == IMS_INIT_SEND_VOLTE_STATE);
+    assert(ims_init_tick(i, 5, true) == IMS_INIT_WAIT_VOLTE_STATE); /* writes VOLTE_STATE */
     ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq);            /* -> DONE */
     assert(ims_init_done(i));
     assert(i->phase == IMS_INIT_DONE);
@@ -73,7 +83,7 @@ int main(void)
 
     writes = 0;
     drive_to_done(&i);
-    assert(writes == 4); /* Get, Set, SmsFmt, SmsOverIP */
+    assert(writes == 5); /* Get, Set, SmsFmt, SmsOverIP, VolteState */
 
     ims_init_close(&i);
 
@@ -98,6 +108,15 @@ int main(void)
     ims_init_gen_result(&i2, 0x8001u, last_seq);/* rejected; best-effort -> SMS_OIP */
     assert(ims_init_done(&i2));                  /* still done */
     assert(i2.phase == IMS_INIT_SEND_SMS_OIP);
+    ims_init_tick(&i2, 5, true);                  /* write SMS_OIP -> WAIT_SMS_OIP */
+    assert(i2.phase == IMS_INIT_WAIT_SMS_OIP);
+    ims_init_gen_result(&i2, 0x8001u, last_seq);/* any ack -> SEND_VOLTE_STATE */
+    assert(i2.phase == IMS_INIT_SEND_VOLTE_STATE);
+    ims_init_tick(&i2, 6, true);                  /* write VolteState */
+    assert(i2.phase == IMS_INIT_WAIT_VOLTE_STATE);
+    ims_init_gen_result(&i2, 0x8001u, last_seq);/* rejected; best-effort -> DONE */
+    assert(ims_init_done(&i2));                  /* still done */
+    assert(i2.phase == IMS_INIT_DONE);
     ims_init_close(&i2);
 
     printf("test_ims_init OK\n");

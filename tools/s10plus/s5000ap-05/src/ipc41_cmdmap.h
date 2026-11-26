@@ -139,6 +139,8 @@ enum ipc41_net_subcmd {
     IPC41_NET_CELL_INFO              = 18,
     IPC41_NET_ECC_RAT                = 19,
     IPC41_NET_LTE_UE_CAPA            = 20,
+    IPC41_NET_HVOLTE_TESTMODE       = 40,  /* NET_HVOLTE_TESTMODE (IpcTxGet/SetVolteTestmode) */
+    IPC41_NET_VOLTE_STATE           = 52,  /* NET_VOLTE_STATE (IpcTxSetVolteStateNotification) */
 };
 
 /* SMS (main=4), AP name table @0x3a85f8, dispatch @0x3466b8. */
