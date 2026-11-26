@@ -75,6 +75,21 @@ bool ims_service_registered(const struct ims_service *s)
     return s && s->phase == IMS_REGISTERED && s->modem_confirmed_registered;
 }
 
+void ims_service_native_registered(struct ims_service *s, bool registered)
+{
+    if (!s) return;
+    s->modem_confirmed_registered = registered;
+    if (registered) {
+        if (s->phase != IMS_REGISTERED)
+            set_phase(s, IMS_REGISTERED, "native-sip-200-ok");
+    } else {
+        /* A loss of registration (deregister/timeout) returns to WAIT_BACKEND
+         * so SMS transport is held closed until the next authoritative 200. */
+        if (s->phase == IMS_REGISTERED)
+            set_phase(s, IMS_WAIT_BACKEND, "native-sip-deregistered");
+    }
+}
+
 const char *ims_phase_name(enum ims_phase p)
 {
     static const char *const n[] = {

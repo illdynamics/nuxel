@@ -80,6 +80,12 @@ int main(void)
     }
     assert(ims_service_tick(&s, 100001, false, false)==IMS_IDLE);
     assert(!ims_service_registered(&s) && writes==0);
+    /* Native SIP 200 OK is the only authoritative registered transition. */
+    ims_service_native_registered(&s, true);
+    assert(s.phase == IMS_REGISTERED && ims_service_registered(&s));
+    /* Deregistration / loss returns to WAIT_BACKEND and closes SMS. */
+    ims_service_native_registered(&s, false);
+    assert(s.phase == IMS_WAIT_BACKEND && !ims_service_registered(&s));
     ims_service_close(&s);
     test_identity(); test_auth();
     puts("test_ims_service OK");

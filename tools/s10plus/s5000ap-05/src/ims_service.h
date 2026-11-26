@@ -73,6 +73,11 @@ bool ims_service_auth_request(struct ims_service *s, const uint8_t rand[16],
                                ims_auth_fn done, void *user);
 void ims_service_receive(struct ims_service *s, const struct nuxel_sipc_fmt *f);
 bool ims_service_registered(const struct ims_service *s);
+/* Record an AUTHORITATIVE native SIP 200 OK from the connected SIP backend.
+ * This is the only valid path to `modem_confirmed_registered`; it is never
+ * inferred from an AP-to-modem registration-status relay or a generic
+ * acknowledgment. Call when ims_sip_tr_registered() transitions true. */
+void ims_service_native_registered(struct ims_service *s, bool registered);
 const char *ims_phase_name(enum ims_phase p);
 
 #endif /* NUXEL_IMS_SERVICE_H */

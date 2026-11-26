@@ -1418,9 +1418,17 @@ static void sip_tr_tick(uint64_t now)
             if (after != before)
                 diagf("iil_sip_tr_phase", "\"phase\":\"%s\"",
                       ims_sip_tr_phase_name(after));
+            /* Authoritative native SIP 200 OK -> IMS REGISTERED (never from a
+             * modem relay/ack). Drives the SMS-transport readiness gate. */
+            bool reg = ims_sip_tr_registered(&g.sip_tr);
+            if (reg != (g.ims.phase == IMS_REGISTERED))
+                ims_service_native_registered(&g.ims, reg);
         }
     } else {
         if (g.sip_tr_open) { sip_tr_close(); diag("iil_sip_tr_close", NULL); }
+        /* Bearer loss invalidates any prior native registration. */
+        if (g.ims.modem_confirmed_registered)
+            ims_service_native_registered(&g.ims, false);
     }
 }
 
