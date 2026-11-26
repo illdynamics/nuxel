@@ -16,20 +16,16 @@ static bool write_capture(const struct fmt_tx_frame *f, uint8_t *seq, void *u)
     *seq = last_seq;
     if (f->main_cmd == 10 && f->sub_cmd == 45) {
         if (f->cmd_type == 2) {
+            /* IpcTxGetDeviceCapa: request, no payload, len 7. */
             assert(f->len == 7);
             assert(f->buf[4] == 10 && f->buf[5] == 45 && f->buf[6] == 2);
         } else {
+            /* IpcTxSetDeviceCapa: notification, payload [PS_ONLY, PS_ONLY]. */
             assert(f->len == 9);
             assert(f->buf[4] == 10 && f->buf[5] == 45 && f->buf[6] == 3);
             assert(f->buf[7] == FMT_TX_VOICE_DOMAIN_PS_ONLY);
             assert(f->buf[8] == FMT_TX_VOICE_DOMAIN_PS_ONLY);
         }
-    }
-    if (f->main_cmd == 10 && f->sub_cmd == 32) {
-        /* SDM IMS mode=ON: notification, payload [1]. */
-        assert(f->len == 8);
-        assert(f->buf[4] == 10 && f->buf[5] == 32 && f->buf[6] == 3);
-        assert(f->buf[7] == FMT_TX_SDM_IMS_MODE_ON);
     }
     return true;
 }
@@ -39,54 +35,50 @@ int main(void)
     struct ims_init i;
     assert(ims_init_open(&i, write_capture, NULL));
 
+    /* Offline: no write, not done. */
     assert(ims_init_tick(&i, 0, false) == IMS_INIT_IDLE);
     assert(writes == 0);
     assert(!ims_init_done(&i));
 
+    /* Online tick 1: IDLE -> SEND_GET (no write yet). */
     assert(ims_init_tick(&i, 0, true) == IMS_INIT_SEND_GET);
     assert(writes == 0);
 
+    /* Online tick 2: SEND_GET -> WAIT_GET_ACK (emits GetDeviceCapa). */
     assert(ims_init_tick(&i, 1, true) == IMS_INIT_WAIT_GET_ACK);
     assert(writes == 1);
     assert(!ims_init_done(&i));
 
+    /* Direct MISC GetDeviceCapa response moves to SEND_CAPA. */
     ims_init_capa_response(&i, last_seq);
     assert(i.phase == IMS_INIT_SEND_CAPA);
 
+    /* SEND_CAPA -> WAIT_ACK (emits SetDeviceCapa). */
     assert(ims_init_tick(&i, 2, true) == IMS_INIT_WAIT_ACK);
     assert(writes == 2);
+    assert(!ims_init_done(&i));
 
-    /* SetDeviceCapa ack -> SEND_SDM */
-    ims_init_gen_result(&i, FMT_RX_GEN_OK, last_seq);
-    assert(i.phase == IMS_INIT_SEND_SDM);
-
-    assert(ims_init_tick(&i, 3, true) == IMS_INIT_WAIT_SDM_ACK);
-    assert(writes == 3);
-
-    /* SDM mode ack -> DONE */
+    /* Generic ack for SET completes init. */
     ims_init_gen_result(&i, FMT_RX_GEN_OK, last_seq);
     assert(ims_init_done(&i));
     assert(i.phase == IMS_INIT_DONE);
 
     ims_init_close(&i);
 
-    /* SDM rejection does not complete init; bounded retry. */
+    /* A direct GET response precedes SET; non-zero GEN on SET does not
+     * complete init. */
     struct ims_init i2;
     assert(ims_init_open(&i2, write_capture, NULL));
     writes = 0;
     ims_init_tick(&i2, 0, true);
-    ims_init_tick(&i2, 1, true);
-    ims_init_capa_response(&i2, last_seq);
+    ims_init_tick(&i2, 1, true);           /* SEND_GET -> WAIT_GET_ACK */
+    ims_init_capa_response(&i2, last_seq);  /* -> SEND_CAPA */
     assert(i2.phase == IMS_INIT_SEND_CAPA);
-    ims_init_tick(&i2, 2, true);
+    ims_init_tick(&i2, 2, true);           /* SEND_CAPA -> WAIT_ACK */
     assert(i2.phase == IMS_INIT_WAIT_ACK);
-    ims_init_gen_result(&i2, FMT_RX_GEN_OK, last_seq);
-    assert(i2.phase == IMS_INIT_SEND_SDM);
-    ims_init_tick(&i2, 3, true);
-    assert(i2.phase == IMS_INIT_WAIT_SDM_ACK);
-    ims_init_gen_result(&i2, 0x8001u, last_seq); /* SDM rejected -> retry SDM */
+    ims_init_gen_result(&i2, 0x8001u, last_seq); /* non-zero -> retry SET */
     assert(!ims_init_done(&i2));
-    assert(i2.phase == IMS_INIT_SEND_SDM);
+    assert(i2.phase == IMS_INIT_SEND_CAPA);
     ims_init_close(&i2);
 
     printf("test_ims_init OK\n");
