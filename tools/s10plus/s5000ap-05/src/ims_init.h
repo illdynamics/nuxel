@@ -5,41 +5,29 @@
 #include <stdbool.h>
 #include "fmt_tx.h"
 
-/* Native IMS initialization: device-capability advertisement AND IMS SDM
- * (Service Domain Manager) configuration.
+/* Native IMS device-capability initialization.
  *
- * Stock Samsung, before driving registration, performs BOTH:
- *   1. ModemProxy::GetDeviceCapa / SetDeviceCapa (MISC main=10 sub=45) to
- *      advertise truthful voice-domain capability.
- *   2. IpcModem::SetImsSdmSetting (MISC main=10 sub=26/27/28/32/34) to arm the
- *      modem IMS stack with the supported SMS-over-IP format, IMS mode, and the
- *      IMS domain/P-CSCF.
- * Without the SDM configuration the ImsReqSetRegState request (main=22 sub=8)
- * is accepted but the modem never emits an authoritative registration
- * notification (observed: registration timeout with no main=22 response).
+ * Stock Samsung initializes the modem IMS stack by advertising truthful
+ * device voice-domain capability via ModemProxy::GetDeviceCapa/SetDeviceCapa
+ * (IpcTxGetDeviceCapa main=10 MISC sub=45 type=2 request, then IpcTxSetDeviceCapa
+ * main=10 MISC sub=45 type=3 2-byte payload) BEFORE driving registration.
+ * Without this the modem's IMS stack is not armed and SetImsRegState never
+ * produces an authoritative registration notification (observed: GEN 0x8000
+ * ack only, then registration timeout).
  *
- * This module is a bounded, response-correlated FSM that performs ONLY these
- * legitimate, vendor-documented initialization operations. It never fabricates
- * capability, registration, or carrier provisioning; it observes a real modem
- * acknowledgment for every step before reporting readiness to the IMS
- * registration FSM. */
+ * This module is a bounded, response-correlated FSM that performs ONLY that
+ * legitimate capability advertisement. It never fabricates capability or
+ * registration; it observes a real modem acknowledgment and reports readiness
+ * to the IMS registration FSM. */
 typedef bool (*ims_init_write_fn)(const struct fmt_tx_frame *f, uint8_t *seq, void *user);
 
 enum ims_init_phase {
     IMS_INIT_IDLE = 0,
-    IMS_INIT_SEND_GET,       /* query device capability (MISC sub=45 type=2) */
-    IMS_INIT_WAIT_GET_ACK,   /* awaiting direct GetDeviceCapa response */
-    IMS_INIT_SEND_CAPA,      /* advertise device capability (MISC sub=45 type=3) */
-    IMS_INIT_WAIT_ACK,       /* awaiting GEN ack for SetDeviceCapa */
-    IMS_INIT_SEND_SDM_MODE,  /* set IMS mode ON (MISC sub=32) */
-    IMS_INIT_WAIT_SDM_MODE,  /* awaiting GEN ack for IMS mode */
-    IMS_INIT_SEND_SDM_FMT,   /* set SMS-over-IP format 3GPP (MISC sub=26) */
-    IMS_INIT_WAIT_SDM_FMT,   /* awaiting GEN ack for SMS format */
-    IMS_INIT_SEND_SDM_OIP,   /* enable SMS-over-IP (MISC sub=27) */
-    IMS_INIT_WAIT_SDM_OIP,   /* awaiting GEN ack for SMS-over-IP */
-    IMS_INIT_SEND_SDM_DOM,   /* set IMS domain (MISC sub=28) */
-    IMS_INIT_WAIT_SDM_DOM,   /* awaiting GEN ack for IMS domain */
-    IMS_INIT_DONE,           /* all initialization acknowledged; may register */
+    IMS_INIT_SEND_GET,      /* query device capability (MISC sub=45 type=2) */
+    IMS_INIT_WAIT_GET_ACK,  /* awaiting GEN ack for the capability query */
+    IMS_INIT_SEND_CAPA,     /* advertise device capability (MISC sub=45 type=3) */
+    IMS_INIT_WAIT_ACK,      /* awaiting GEN acknowledgment for the capability set */
+    IMS_INIT_DONE,          /* capability acknowledged; IMS may register */
     IMS_INIT_FAILED,
 };
 
@@ -56,10 +44,10 @@ struct ims_init {
 
 bool ims_init_open(struct ims_init *i, ims_init_write_fn write, void *user);
 void ims_init_close(struct ims_init *i);
-/* Advance the init FSM. `now_ms` monotonic; `online` = CP online + SIM ready
- * + writable. Returns current phase. */
+/* Advance the capability-init FSM. `now_ms` monotonic; `online` = CP online +
+ * SIM ready + writable. Returns current phase. */
 enum ims_init_phase ims_init_tick(struct ims_init *i, uint64_t now_ms, bool online);
-/* Correlate a GEN response to the last initialization write. */
+/* Correlate a GEN response to the last capability write (SetDeviceCapa). */
 void ims_init_gen_result(struct ims_init *i, uint16_t result, uint8_t ack_seq);
 /* Report the modem's direct GetDeviceCapa response (main=10 sub=45 type=2). */
 void ims_init_capa_response(struct ims_init *i, uint8_t ack_seq);
