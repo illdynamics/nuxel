@@ -33,7 +33,7 @@ typedef bool (*iil_pdn_write_fn)(const struct iil_frame *f, uint8_t *seq, void *
 typedef bool (*iil_pdn_fmt_write_fn)(const struct fmt_tx_frame *f, uint8_t *seq, void *user);
 
 #define IIL_PDN_CID 2u
-#define IIL_PDN_APN "ims.mnc008.mcc204.gprs"
+#define IIL_PDN_APN "ims"   /* KPN 204-08 well-known IMS APN (TS 23.003); verified working-plain-APN pattern (internet), NOT the unverified FQDN guess */
 /* The recovered IpcTxImsReqSetImsPdnInfoE911 apn field is a 21-byte strlcpy
  * (dlen 21, so 20 chars + NUL). The IMS bearer APN above is 22 chars and does
  * NOT fit; the modem internal-IMS provisioning contract is the 3GPP well-known

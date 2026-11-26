@@ -793,8 +793,8 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
             g.ims_apn_present = false;
             for (unsigned i = 0; i < profiles.count; i++) {
                 const char *a = profiles.profile[i].apn;
-                /* KPN 204-08 IMS APN is the FQDN "ims.mnc008.mcc204.gprs";
-                 * accept both the FQDN and the bare "ims" prefix. APN-string
+                /* KPN 204-08 IMS APN is the well-known "ims" (TS 23.003); accept
+                 * both the bare "ims" and any FQDN form for detection. APN-string
                  * presence is NOT proof the IMS PDN bearer is established; it
                  * must never gate registration. ims_pdn_up is driven only by
                  * ims_pdn_active() after real CID-2 attachment. */
