@@ -80,3 +80,41 @@ FINAL STATUS: native AP-side IMS init + registration command layer is COMPLETE
 and byte-exact against the vendor. Physical SMS-over-IMS is blocked by an
 external SIM-provisioning requirement (no ISIM on the installed SIM; KPN LTE-only
 CS-denied). LTE, durable queue, and rollback binaries preserved.
+
+## ROUND 08d — conclusive disassembly re-verification + resumable checkpoint
+
+### SMS domain contract now FULLY verified (resolves prior "value 8 unverified")
+- `IpcProtocol41::ConvertDomainToIPC` @0x344b98 constant 0x01000302:
+  internal 0->wire2, 1->wire3, 2->wire0 (CS), 3->wire1; >3 -> 0.
+- `SmsManager::DoImsSendIms` @0x21b320: IMS SMS domain wire = **8**
+  (both the CS-fallback branch passes w4=8, and the SMS-format==2 branch
+  passes w3=8). CONFIRMED, not guessed.
+- No other wire domain exists: SMS main=4 uses CS (0..3) or IMS (8) only.
+  There is no separate "SMS over SGs/NAS" wire domain; SGs SMS would present
+  as combined-attach CS registration, which KPN live-denies (raw_state=4).
+
+### IMS registration conclusively not running (180-min trace)
+- `fmt_tx` main=22 sub=8 (REQ_SET_REG_STATE): 60 tx. Modem GEN 0x8000 ack.
+- `fmt_rx` main=22: **ZERO** frames. No ImsModeChange, no reg-state notify.
+- `SEC_IMS_AUTH` (main=5 sub=9): **ZERO** — modem never reaches SIP AKA.
+- IMS CID 2 never in GPRS_IP_CONFIGURATION (only CID 1 internet, 48 events).
+- FSM: request-reg -> reg-timeout -> (retry) -> failed(attempt-limit).
+
+### SIM appliance
+- SEC_SIM_ICC_TYPE (main=5 sub=7, payload 0x02) re-traced through
+  IpcRxSecSimCardType @0x343e50 (reads frame byte offset 7, stores index-1)
+  and GenerateSimStatusWithAppsInfo @0x315e80 (app-type map 5=ISIM,2=USIM,
+  1=CSIM,4=3GPP). Installed SIM exposes no ISIM application (no IMPI/IMPU),
+  so IMS SIP AKA cannot complete.
+
+### Commit
+- 05a3b219: commits the SIM-ICC query serializer/rotation/test/golden that was
+  previously deployed-but-uncommitted (the live investigation behind 996a401c).
+
+### Conclusion
+Native AP-side SMS+IMS command layer is byte-exact and complete; SIM-ICC query,
+capability init, VOLTE-state handshake, IMS profile sync, and registration drive
+are all implemented and live-accepted. Physical SMS is blocked by two
+independently-verified external conditions: (1) KPN CS-attach denied on LTE
+(live raw_state=4), (2) SIM lacks ISIM => IMS SIP AKA impossible. Message ID 4
+rightly remains queued; LTE, rollback binaries, and durable queue preserved.
