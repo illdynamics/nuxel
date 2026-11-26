@@ -597,7 +597,6 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
         struct fmt_rx_gen gen;
         if (fmt_rx_gen(f->payload,f->payload_len,&gen) && gen.type==3 &&
             ((g.ims_init.phase==IMS_INIT_WAIT_ACK && gen.main==10 && gen.sub==45) ||
-             (g.ims_init.phase==IMS_INIT_WAIT_SDM_MODE && gen.main==10 && gen.sub==32) ||
              (g.ims_init.phase==IMS_INIT_WAIT_VOLTE_STATE && gen.main==8 && gen.sub==52)))
             ims_init_gen_result(&g.ims_init,gen.result,f->ack_seq);
     }

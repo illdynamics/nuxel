@@ -17,8 +17,6 @@ enum ims_init_phase {
     IMS_INIT_WAIT_GET_ACK,  /* awaiting GEN ack for the capability query */
     IMS_INIT_SEND_CAPA,     /* advertise device capability (MISC sub=45 type=3) */
     IMS_INIT_WAIT_ACK,      /* awaiting GEN ack for the capability set */
-    IMS_INIT_SEND_SDM_MODE, /* arm modem IMS stack (MISC sub=32 SDM_IMS_MODE ON) */
-    IMS_INIT_WAIT_SDM_MODE, /* awaiting GEN ack for SDM_IMS_MODE */
     IMS_INIT_SEND_SMS_FMT,  /* arm SMS-over-IP format (MISC sub=26 type=3) */
     IMS_INIT_WAIT_SMS_FMT,  /* awaiting GEN ack for SMS_FMT */
     IMS_INIT_SEND_SMS_OIP,  /* enable SMS-over-IP (MISC sub=27 type=3) */
