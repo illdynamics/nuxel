@@ -339,14 +339,11 @@ enum ipc41_ims_subcmd {
  *   names in order. sub_cmd 8 = REQ_SET_REG_STATE (IpcTxImsReqSetRegState
  *   @0x34d230, 6-byte payload, layout fully decoded in fmt_tx.c).
  *
- * The AP drives the modem-resident IMS stack. The modem performs the SIP
- * REGISTER and SIM AKA internally; the AP (a) requests registration via
- * IpcTxImsReqSetRegState, (b) relays IMS AKA via SEC(main=5) sub=9
- * SEC_IMS_AUTH and IpcTxImsAuthResp(main=22 sub=6), and (c) observes the
- * actual state via IpcRxImsModeChange notifications.
- *
- * SAFETY: fail-closed. radiod only emits these after the dedicated reviewed
- * implementation (ims_service) drives bounded, state-correlated requests.
+ * Correction: these CP commands report AP IMS state. Registration is
+ * received from the separate IIL endpoint (IpcRxIilRegistration @0x356528).
+ * IpcRxImsModeChange @0x34cfa0 is a mode-switch intent, not registration.
+ * IpcTxImsAuthResp @0x34ce10 is unsupported on this CP protocol. UICC AKA
+ * uses SEC_IMS_AUTH requests/results, not a main=22 challenge/response relay.
  */
 
 /* QMIIMS (main=64) — separate Qualcomm-style IMS transport. Names only. */

@@ -3,24 +3,49 @@
  * ims_service.c — native IMS registration-driving state machine for the
  * S5000AP (Shannon) modem-over-SIPC5.
  *
- * The modem firmware contains a complete IMS/SIP registration + AKA stack.
- * The AP's role is bounded and well-defined:
- *   1. (data-session) establish the `ims` APN PDN alongside the internet bearer.
- *   2. Drive the modem IMS stack with IpcTxImsReqSetRegState (main=22 sub=8).
- *   3. Relay SIM AKA challenges (SEC_IMS_AUTH) back via IpcTxImsAuthResp.
- *   4. Observe the authoritative state reported by IpcRxImsModeChange.
- *
- * TRUTH CONTRACT: this FSM NEVER fabricates registration. `modem_confirmed_-
- * registered` is set only when the modem reports status==1; it is cleared on
- * deregistration/failure. A local IMS PDN flag is NOT proof of carrier
- * admission. No AKA secret or subscriber identifier is stored or logged.
+ * EFUJ2 libsec-ril 60889dd7 receives IMS registration over IIL from the
+ * AP IMS service. SetImsRegState reports that state to the CP; it does not
+ * start SIP REGISTER. CP main=22/sub=16 is a mode-switch request, not
+ * registration evidence. Until a native SIP backend supplies authenticated
+ * registration and an IMS SMS transport, this service must hold SMS closed.
  */
 #include "ims_service.h"
 #include <string.h>
+#include <stdio.h>
 
-#define IMS_ATTEMPT_LIMIT 6u
-#define IMS_STEP_TIMEOUT_MS 15000u
-#define IMS_RETRY_DELAY_MS 10000u
+static void erase(void *p, size_t n)
+{
+    volatile unsigned char *v=p;
+    while (n--) *v++=0;
+}
+void ims_identity_clear(struct ims_identity *out)
+{ if (out) erase(out,sizeof *out); }
+
+bool ims_identity_from_usim(struct ims_identity *out, const uint8_t *imsi,
+                            size_t len, unsigned mnc_digits)
+{
+    if (!out) return false;
+    ims_identity_clear(out);
+    if (!imsi || len<6 || len>15 || (mnc_digits!=2 && mnc_digits!=3) ||
+        len<=3+mnc_digits) return false;
+    for (size_t i=0;i<len;i++) if (imsi[i]<'0' || imsi[i]>'9') return false;
+    char mnc[4]={0};
+    if (mnc_digits==2) { mnc[0]='0'; memcpy(mnc+1,imsi+3,2); }
+    else memcpy(mnc,imsi+3,3);
+    snprintf(out->domain,sizeof out->domain,"ims.mnc%s.mcc%.3s.3gppnetwork.org",mnc,(const char *)imsi);
+    snprintf(out->impi,sizeof out->impi,"%.*s@%s",(int)len,(const char *)imsi,out->domain);
+    snprintf(out->impu,sizeof out->impu,"sip:%s",out->impi);
+    out->ready=true;
+    return true;
+}
+
+static void auth_complete(struct ims_service *s, const struct fmt_rx_usim_auth *r)
+{
+    ims_auth_fn done=s->auth_done; void *user=s->auth_user;
+    s->auth_pending=false; s->auth_deadline_ms=0;
+    s->auth_done=NULL; s->auth_user=NULL;
+    if (done) done(r,user);
+}
 
 bool ims_service_open(struct ims_service *s, ims_write_fn write, ims_state_fn cb, void *user)
 {
@@ -33,7 +58,8 @@ bool ims_service_open(struct ims_service *s, ims_write_fn write, ims_state_fn cb
     return true;
 }
 
-void ims_service_close(struct ims_service *s) { if (s) memset(s, 0, sizeof *s); }
+void ims_service_close(struct ims_service *s)
+{ if (s) { s->online=false; auth_complete(s,NULL); erase(s,sizeof *s); } }
 
 static void set_phase(struct ims_service *s, enum ims_phase p, const char *reason)
 {
@@ -53,9 +79,9 @@ const char *ims_phase_name(enum ims_phase p)
 {
     static const char *const n[] = {
         "idle","wait-pdn","request-reg","wait-auth","wait-registered",
-        "registered","deregistering","failed"
+        "registered","deregistering","failed","wait-backend"
     };
-    return (p <= IMS_FAILED) ? n[p] : "unknown";
+    return (p <= IMS_WAIT_BACKEND) ? n[p] : "unknown";
 }
 
 enum ims_phase ims_service_tick(struct ims_service *s, uint64_t now_ms,
@@ -63,110 +89,50 @@ enum ims_phase ims_service_tick(struct ims_service *s, uint64_t now_ms,
 {
     if (!s) return IMS_IDLE;
     s->ims_pdn_up = ims_pdn;
+    s->online=online;
 
     if (!online) {
         s->modem_confirmed_registered = false;
-        s->auth_pending = false;
+        auth_complete(s,NULL);
+        ims_identity_clear(&s->identity);
         if (s->phase != IMS_FAILED) set_phase(s, IMS_IDLE, "offline");
         return s->phase;
     }
 
-    switch (s->phase) {
-    case IMS_IDLE:
-        s->attempt = 0;
-        s->next_action_ms = 0;
-        set_phase(s, IMS_WAIT_PDN, "await-ims-pdn");
-        break;
-    case IMS_WAIT_PDN:
-        if (ims_pdn) set_phase(s, IMS_REQUEST_REG, "ims-pdn-up");
-        else if (now_ms >= s->next_action_ms) s->next_action_ms = now_ms + 1000;
-        break;
-    case IMS_REQUEST_REG:
-        if (now_ms >= s->next_action_ms) {
-            if (s->attempt >= IMS_ATTEMPT_LIMIT) {
-                set_phase(s, IMS_FAILED, "attempt-limit");
-                break;
-            }
-            s->attempt++;
-            struct fmt_tx_frame f;
-            uint8_t seq = 0;
-            if (fmt_tx_ims_set_reg_state(&f, FMT_TX_IMS_REGSTATUS_REGISTERED,
-                                         FMT_TX_RAT_LTE, FMT_TX_RAT_LTE) &&
-                s->write(&f, &seq, s->user)) {
-                s->last_write_seq = seq;
-                s->auth_pending = false;
-                set_phase(s, IMS_WAIT_REGISTERED, "reg-request-sent");
-                s->phase_deadline_ms = now_ms + IMS_STEP_TIMEOUT_MS;
-            } else {
-                s->next_action_ms = now_ms + IMS_RETRY_DELAY_MS;
-            }
-        }
-        break;
-    case IMS_WAIT_AUTH:
-        /* Waiting for a secure ISIM response. No polling writes. */
-        if (now_ms >= s->phase_deadline_ms) {
-            s->auth_pending = false;
-            set_phase(s, IMS_REQUEST_REG, "auth-timeout");
-            s->next_action_ms = now_ms + IMS_RETRY_DELAY_MS;
-        }
-        break;
-    case IMS_WAIT_REGISTERED:
-        if (s->modem_confirmed_registered) set_phase(s, IMS_REGISTERED, "modem-confirmed");
-        else if (now_ms >= s->phase_deadline_ms) {
-            set_phase(s, IMS_REQUEST_REG, "reg-timeout");
-            s->next_action_ms = now_ms + IMS_RETRY_DELAY_MS;
-        }
-        break;
-    case IMS_REGISTERED:
-        /* No periodic re-drive; the modem maintains registration. */
-        break;
-    case IMS_FAILED:
-        break;
-    default:
-        break;
-    }
+    /* No CP command starts SIP registration on the recovered stock path. */
+    if (s->auth_pending && now_ms>=s->auth_deadline_ms) auth_complete(s,NULL);
+    set_phase(s, IMS_WAIT_BACKEND, "sip-registration-backend-missing");
     return s->phase;
 }
 
-void ims_service_notify_state(struct ims_service *s, const struct fmt_rx_ims_state *st)
+bool ims_service_auth_request(struct ims_service *s, const uint8_t rand[16],
+                               const uint8_t autn[16], uint64_t now_ms,
+                               ims_auth_fn done, void *user)
 {
-    if (!s || !st) return;
-    if (st->registered) {
-        s->modem_confirmed_registered = true;
-        if (s->phase == IMS_WAIT_REGISTERED || s->phase == IMS_WAIT_AUTH)
-            set_phase(s, IMS_REGISTERED, "modem-confirmed");
-    } else if (s->modem_confirmed_registered) {
-        s->modem_confirmed_registered = false;
-        set_phase(s, IMS_WAIT_PDN, "modem-deregistered");
-        s->next_action_ms = 0;
-    }
+    if (!s || !s->online || s->auth_pending || !done) return false;
+    struct fmt_tx_frame f;
+    if (!fmt_tx_usim_auth(&f,rand,autn)) return false;
+    uint8_t seq=0;
+    bool sent=s->write(&f,&seq,s->user);
+    erase(&f,sizeof f);
+    if (!sent) return false;
+    s->last_write_seq=seq; s->auth_pending=true;
+    s->auth_deadline_ms=now_ms+15000; s->auth_done=done; s->auth_user=user;
+    return true;
 }
 
-void ims_service_auth_challenge(struct ims_service *s, const struct fmt_rx_ims_auth *a)
+void ims_service_receive(struct ims_service *s, const struct nuxel_sipc_fmt *f)
 {
-    if (!s || !a || !a->len) return;
-    s->auth_pending = true;
-    s->phase_deadline_ms = 0; /* recomputed on tick */
-    set_phase(s, IMS_WAIT_AUTH, "sim-aka-challenge");
-}
-
-void ims_service_auth_ready(struct ims_service *s)
-{
-    if (!s || !s->auth_pending || s->phase != IMS_WAIT_AUTH) return;
-    s->auth_pending = false;
-    set_phase(s, IMS_WAIT_REGISTERED, "auth-response-queued");
-    s->phase_deadline_ms = 0;
-}
-
-void ims_service_gen_result(struct ims_service *s, uint16_t result, uint8_t ack_seq)
-{
-    if (!s) return;
-    (void)ack_seq;
-    /* A generic acknowledgment (0x8000) is NOT registration confirmation. Only
-     * the modem's status==1 notification (ims_service_notify_state) marks
-     * registration. We do not advance the FSM on a generic ack alone. */
-    if (result != FMT_RX_GEN_OK && (s->phase == IMS_REQUEST_REG ||
-        s->phase == IMS_WAIT_REGISTERED)) {
-        set_phase(s, IMS_REQUEST_REG, "modem-rejected");
+    if (!s || !f || !s->auth_pending || f->cmd_type!=2 ||
+        f->ack_seq!=s->last_write_seq) return;
+    if (f->main_cmd==5 && f->sub_cmd==9) {
+        struct fmt_rx_usim_auth r;
+        if (!fmt_rx_usim_auth(f->payload,f->payload_len,&r)) auth_complete(s,NULL);
+        else auth_complete(s,&r);
+    } else if (f->main_cmd==128 && f->sub_cmd==1) {
+        struct fmt_rx_gen gen;
+        if (fmt_rx_gen(f->payload,f->payload_len,&gen) && gen.main==5 &&
+            gen.sub==9 && gen.type==2 && gen.result!=FMT_RX_GEN_OK)
+            auth_complete(s,NULL);
     }
 }

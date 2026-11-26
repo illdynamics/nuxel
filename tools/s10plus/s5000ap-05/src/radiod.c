@@ -568,33 +568,15 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
     resolve_pending(f);
     sms_service_receive(&g.sms,f);
     call_service_receive(&g.calls,f);
-    /* IMS (main=22) control plane: reflect authoritative modem state. */
-    if (f->main_cmd == IPC41_MAIN_IMS) {
-        /* IpcRxImsModeChange / registration notification (sub=1..3, type=3). */
-        if (f->cmd_type == IPC41_TYPE_NOTIFICATION && f->payload_len >= 1) {
-            struct fmt_rx_ims_state st;
-            if (fmt_rx_ims_state(f->payload, f->payload_len, &st)) {
-                ims_service_notify_state(&g.ims, &st);
-            }
-        }
-    }
-    /* SEC_IMS_AUTH (main=5 sub=9): SIM AKA challenge relay. Never log. */
-    if (f->main_cmd == IPC41_MAIN_SEC && f->sub_cmd == IPC41_SEC_IMS_AUTH &&
-        f->payload_len) {
-        struct fmt_rx_ims_auth a;
-        if (fmt_rx_ims_auth(f->payload, f->payload_len, &a))
-            ims_service_auth_challenge(&g.ims, &a);
-    }
-    /* Correlate a GEN result to the active IMS write (fail-closed). */
-    if (f->main_cmd == IPC41_MAIN_GEN && f->cmd_type == IPC41_TYPE_RESPONSE &&
-        f->payload_len == 5 && f->ack_seq == g.ims.last_write_seq) {
-        struct fmt_rx_gen gen;
-        if (fmt_rx_gen(f->payload, f->payload_len, &gen))
-            ims_service_gen_result(&g.ims, gen.result, f->ack_seq);
-    }
+    ims_service_receive(&g.ims,f);
+    /* CP IMS mode changes are not registration notifications. The stock
+     * registration/auth challenge source is the separate AP IMS/IIL endpoint.
+     * SEC_IMS_AUTH is a solicited UICC result, not an unsolicited challenge. */
     /* Correlate GEN result to the IMS PDN drive (distinct CID). */
     if (f->main_cmd == IPC41_MAIN_GEN && f->cmd_type == IPC41_TYPE_RESPONSE &&
-        f->payload_len == 5 && f->ack_seq == g.ims_pdn.last_write_seq) {
+        f->payload_len == 5 && f->ack_seq == g.ims_pdn.last_write_seq &&
+        f->payload[0] == IPC41_MAIN_GPRS && f->payload[1] == 27 &&
+        f->payload[2] == FMT_TX_TYPE_NOTIFICATION) {
         struct fmt_rx_gen gen;
         if (fmt_rx_gen(f->payload, f->payload_len, &gen))
             ims_pdn_gen_result(&g.ims_pdn, gen.result, f->ack_seq);
@@ -606,12 +588,15 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
         f->cmd_type == IPC41_TYPE_RESPONSE && f->ack_seq == g.ims_init.last_write_seq) {
         ims_init_capa_response(&g.ims_init, f->ack_seq);
     }
-    /* Correlate GEN result to the device-capability init (MISC sub=45). */
+    /* Match both sequence and the outstanding command, including after
+     * the 8-bit sequence wraps during status polling. */
     if (f->main_cmd == IPC41_MAIN_GEN && f->cmd_type == IPC41_TYPE_RESPONSE &&
         f->payload_len == 5 && f->ack_seq == g.ims_init.last_write_seq) {
         struct fmt_rx_gen gen;
-        if (fmt_rx_gen(f->payload, f->payload_len, &gen))
-            ims_init_gen_result(&g.ims_init, gen.result, f->ack_seq);
+        if (fmt_rx_gen(f->payload,f->payload_len,&gen) && gen.type==3 &&
+            ((g.ims_init.phase==IMS_INIT_WAIT_ACK && gen.main==10 && gen.sub==45) ||
+             (g.ims_init.phase==IMS_INIT_WAIT_VOLTE_STATE && gen.main==8 && gen.sub==52)))
+            ims_init_gen_result(&g.ims_init,gen.result,f->ack_seq);
     }
     /* IMS PDN CID-2 attachment evidence. The IMS context is confirmed by an
      * actual GPRS_CALL_STATUS(cid=2, state active) or GPRS_PDP_CONTEXT list
@@ -634,6 +619,17 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
             ims_pdn_report_cid(&g.ims_pdn, IMS_PDN_CID, attached);
             diagf("ims_pdn_pdp_context", "\"cid\":%u,\"state\":%u,\"attached\":%s",
                   IMS_PDN_CID, ims_state, attached ? "true" : "false");
+        }
+    }
+    if (f->main_cmd == IPC41_MAIN_GPRS &&
+        f->sub_cmd == IPC41_GPRS_IP_CONFIGURATION &&
+        f->cmd_type == IPC41_TYPE_NOTIFICATION) {
+        struct fmt_rx_ip ip;
+        if (fmt_rx_ip(f->payload, f->payload_len, &ip) && ip.cid == IMS_PDN_CID) {
+            ims_pdn_report_ip(&g.ims_pdn, &ip);
+            diagf("ims_context", "\"ip_ready\":%s,\"pcscf_count\":%u",
+                  g.ims_pdn.ip_ready ? "true" : "false",
+                  ip.pcscf4_count + ip.pcscf6_count);
         }
     }
     mobile_stop_receive(&g.mobile_stop,f);
@@ -700,6 +696,13 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
         if (fmt_rx_sim_network(f->payload, f->payload_len, g.home_plmn))
             diagf("sim_home_network", "\"plmn\":\"%s\"", g.home_plmn);
         else diag("sim_home_network", "\"plmn\":\"unknown\"");
+        /* The existing subscription recognizer explicitly identifies 204-08.
+         * Its configured two-digit MNC is not inferred from IMSI length.
+         * Never retain the raw IMSI or log the derived private/public identity. */
+        if (!strcmp(g.home_plmn,"20408") && f->payload_len>1)
+            ims_identity_from_usim(&g.ims.identity,f->payload+1,f->payload_len-1,2);
+        else ims_identity_clear(&g.ims.identity);
+        diagf("ims_usim_identity", "\"ready\":%s",g.ims.identity.ready ? "true" : "false");
     }
     if (f->main_cmd == 10 && f->sub_cmd == 1 && f->cmd_type == IPC41_TYPE_RESPONSE &&
         fmt_rx_baseband(f->payload, f->payload_len, g.baseband))
@@ -780,7 +783,6 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
           f->sub_cmd == IPC41_GPRS_CALL_STATUS)) ||
         (f->main_cmd == IPC41_MAIN_GEN) ||
         f->main_cmd == IPC41_MAIN_DISP ||
-        f->main_cmd == IPC41_MAIN_IMS ||
         (f->main_cmd == IPC41_MAIN_MISC && f->sub_cmd == 82)) {
         char hex[256];
         unsigned k, n = 0;
@@ -1869,12 +1871,10 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
         sms_cs_registered(),
         ims_service_registered(&g.ims),
         g.write_enabled && g.fmt.present);
-    /* Drive the native IMS device-capability initialization FIRST. The modem
-     * IMS stack is only armed after SetDeviceCapa (MISC sub=45) is acked;
-     * registration must not be requested before that. */
+    /* Configure modem preferences; acknowledgments are not registration. */
     bool ims_online = g.cp_online && g.sim_ready_seen && g.write_enabled && g.fmt.present;
     ims_init_tick(&g.ims_init, now_ms(), ims_online);
-    /* Drive the native IMS registration controller (bounded, fail-closed),
+    /* Observe the native IMS backend status (fail-closed),
      * gated on BOTH the ims APN PDN and completed device-capability init. */
     ims_service_tick(&g.ims,now_ms(),
         ims_online,
@@ -1885,6 +1885,10 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
      * is armed even when the internet bearer's IP config is absent. The IMS
      * profile only issues SetDataProfile(IMS) and never overlaps the internet
      * bearer's own command sequence. */
+    if (!ims_online) {
+        ims_pdn_tick(&g.ims_pdn, now_ms(), false);
+        g.ims_pdn_up = false;
+    }
     if (g.ims_pdn_armed && ims_online &&
         (g.dsc.phase == DS_ACTIVE || g.dsc.phase == DS_WAIT_IP ||
          ds_terminal(&g.dsc))) {
@@ -1900,7 +1904,7 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
             g.ims_pdn_up = true;
             diag("ims_pdn_active", NULL);
         } else if (!ims_pdn_active(&g.ims_pdn)) {
-            /* Profile-scan detection still applies (authoritative APN list). */
+            g.ims_pdn_up = false;
         }
     }
     call_service_tick(&g.calls,now_ms(),g.cp_online,g.write_enabled && g.fmt.present && g.sim_ready_seen);
@@ -1924,11 +1928,9 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
         case 7: built = fmt_tx_get_baseband_version(&q); break;
         case 8: built = fmt_call_voice_registration(&q); break;
         case 9: built = fmt_tx_get_pdp_definitions(&q); break;
-        case 10: built = fmt_tx_get_sim_icc_type(&q); break;
-        case 11: built = fmt_tx_get_sim_apps_info(&q); break;
         }
         if (built && radiod_write_fmt(&q)) {
-            g.status_query = (g.status_query + 1) % 12;
+            g.status_query = (g.status_query + 1) % 10;
             g.status_next_ms = now_ms() + (g.status_query ? 1000 : 60000);
         } else g.status_next_ms = now_ms() + 5000;
     }
@@ -2177,6 +2179,30 @@ static int method_get_pdp_profiles(sd_bus_message *m, void *u, sd_bus_error *e)
     return r;
 }
 
+static int method_get_ims_status(sd_bus_message *m, void *u, sd_bus_error *e)
+{
+    (void)u; (void)e;
+    const char *keys[]={"state","reason","usim_identity_ready","profile_phase",
+        "cid_attached","ip_ready","pcscf_ready","context_ready","init_phase",
+        "auth_pending","registered","sms_transport"};
+    const char *vals[]={ims_phase_name(g.ims.phase),
+        g.ims.last_reason ? g.ims.last_reason : "not-started",
+        g.ims.identity.ready ? "true" : "false",ims_pdn_phase_name(g.ims_pdn.phase),
+        g.ims_pdn.attached ? "true" : "false",g.ims_pdn.ip_ready ? "true" : "false",
+        g.ims_pdn.pcscf_ready ? "true" : "false",ims_pdn_active(&g.ims_pdn) ? "true" : "false",
+        ims_init_phase_name(g.ims_init.phase),g.ims.auth_pending ? "true" : "false",
+        ims_service_registered(&g.ims) ? "true" : "false","unavailable"};
+    sd_bus_message *reply=NULL;
+    int r=sd_bus_message_new_method_return(m,&reply);
+    if (r>=0) r=sd_bus_message_open_container(reply,'a',"{ss}");
+    for (unsigned i=0;i<sizeof keys/sizeof keys[0] && r>=0;i++)
+        r=sd_bus_message_append(reply,"{ss}",keys[i],vals[i]);
+    if (r>=0) r=sd_bus_message_close_container(reply);
+    if (r>=0) r=sd_bus_send(NULL,reply,NULL);
+    sd_bus_message_unref(reply);
+    return r;
+}
+
 static int method_get_capabilities(sd_bus_message *m, void *u, sd_bus_error *e)
 {
     (void)u;(void)e;
@@ -2186,7 +2212,8 @@ static int method_get_capabilities(sd_bus_message *m, void *u, sd_bus_error *e)
     const char *lte = (g.dsc.phase == DS_ACTIVE) ? "active" :
                       (g.data_path_armed ? "pending" : "unsupported");
     const char *ims = ims_service_registered(&g.ims) ? "registered" :
-                       (g.ims.phase == IMS_FAILED ? "failed" :
+                       (g.ims.phase == IMS_WAIT_BACKEND ? "backend-missing" :
+                        g.ims.phase == IMS_FAILED ? "failed" :
                         (g.ims_pdn_up ? "attempting" : "unsupported"));
     const char *keys[] = {"lte_data","sms","voice","ims","volte"};
     const char *vals[] = {lte, g.sms.store.db ? (ims_service_registered(&g.ims) ? "ready" : "cs-only") : "unavailable", "call-control-only", ims, ims_service_registered(&g.ims) ? "false" : "false"};
@@ -2645,6 +2672,7 @@ static const sd_bus_vtable radiod_vtable[] = {
     SD_BUS_METHOD("DeleteBearer", "u", "", method_no_bearer, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("StartDataSession", "su", "b", method_start_data_session, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("StopDataSession", "", "b", method_stop_data_session, SD_BUS_VTABLE_UNPRIVILEGED),
+    SD_BUS_METHOD("GetImsStatus", "", "a{ss}", method_get_ims_status, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("GetCapabilities", "", "a{ss}", method_get_capabilities, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_METHOD("GetDiagnostics", "", "a{st}", method_get_diagnostics, SD_BUS_VTABLE_UNPRIVILEGED),
     SD_BUS_SIGNAL("StateChanged", "ss", 0),

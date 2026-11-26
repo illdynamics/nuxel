@@ -79,14 +79,13 @@ void sms_service_tick(struct sms_service *s,uint64_t now,bool online,bool sim_re
         return;
     }
     s->ims_registered = ims_registered;
-    /* Transport selection: prefer CS when genuinely registered; otherwise use IMS
-     * only when the modem has confirmed IMS registration. Never fabricate either.
-     * IMS SMS domain wire value 8 (SmsManager::DoImsSendIms -> IpcModem::SendSms
-     * w3=8), CS domain wire 0 (ConvertDomainToIPC(GetDomain=2)). */
+    /* This writer reaches the CP FMT endpoint only. Stock selects a different
+     * ModemType for IMS; registration alone cannot make this writer an IMS
+     * transport. Keep queued jobs intact until that transport is implemented.
+     * CS domain wire 0 = ConvertDomainToIPC(GetDomain=2). */
     uint8_t domain_wire;
     if (cs_registered) domain_wire = 0u;
-    else if (ims_registered) domain_wire = 8u;
-    else return; /* neither transport genuinely available */
+    else return;
     s->selected_domain = domain_wire;
 
     if (s->active || s->blocked || !s->ready_ack || s->ready_rejected || !s->smsc_len || !sms_store_next(&s->store,&s->job)) return;

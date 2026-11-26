@@ -21,15 +21,29 @@ int main(void)
     assert(ims_pdn_open(&p, write_capture, NULL));
     assert(ims_pdn_tick(&p, 0, true) == IMS_PDN_SET_PROFILE);
     assert(ims_pdn_tick(&p, 1, true) == IMS_PDN_SET_PROFILE && writes==1);
-    /* set-profile OK -> profile armed == active (modem-managed bearer) */
+    /* An unrelated ACK must not accept the profile. */
+    ims_pdn_gen_result(&p, FMT_RX_GEN_OK, last_seq+1);
+    assert(p.phase == IMS_PDN_SET_PROFILE);
+    /* Profile acceptance is not bearer readiness. */
     ims_pdn_gen_result(&p, FMT_RX_GEN_OK, last_seq);
     assert(p.phase == IMS_PDN_VERIFY);
-    assert(ims_pdn_active(&p));
+    assert(!ims_pdn_active(&p));
 
     /* modem-reported CID attachment (optional) also keeps it active */
     ims_pdn_report_cid(&p, 2, true);
-    assert(ims_pdn_active(&p));
+    assert(!ims_pdn_active(&p));
 
+    struct fmt_rx_ip ip = {.cid=1, .ipv6_valid=true, .pcscf6_count=1};
+    ims_pdn_report_ip(&p,&ip); assert(!ims_pdn_active(&p));
+    ip.cid=2; ip.pcscf6_count=0;
+    ims_pdn_report_ip(&p,&ip); assert(!ims_pdn_active(&p));
+    ip.pcscf6_count=1;
+    ims_pdn_report_ip(&p,&ip); assert(ims_pdn_active(&p));
+    ims_pdn_report_cid(&p,2,false); assert(!ims_pdn_active(&p));
+    ims_pdn_report_cid(&p,2,true); assert(!ims_pdn_active(&p));
+    ims_pdn_report_ip(&p,&ip); assert(ims_pdn_active(&p));
+    /* stale GEN cannot undo an already confirmed context */
+    ims_pdn_gen_result(&p,0x8001,last_seq); assert(ims_pdn_active(&p));
     /* offline never leaves active */
     ims_pdn_tick(&p, 3, false);
     assert(!ims_pdn_active(&p));

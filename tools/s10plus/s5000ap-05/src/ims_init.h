@@ -5,30 +5,10 @@
 #include <stdbool.h>
 #include "fmt_tx.h"
 
-/* Native IMS device-capability initialization.
- *
- * Stock Samsung initializes the modem IMS stack by advertising truthful
- * device voice-domain capability (ModemProxy::GetDeviceCapa/SetDeviceCapa,
- * IpcTxGetDeviceCapa main=10 MISC sub=45 type=2 request, then IpcTxSetDeviceCapa
- * main=10 MISC sub=45 type=3 2-byte payload) AND by arming SMS-over-IP via the
- * Service Domain Manager (SdmImsSmsFmtSet main=10 MISC sub=26 type=3 with
- * SmsOverIpFormat=3GPP, then SdmImsSmsOverIPSet main=10 MISC sub=27 type=3
- * with enable=1), all BEFORE driving registration.
- *
- * Without the capability advertisement the modem's IMS stack is not armed and
- * SetImsRegState never produces an authoritative registration notification
- * (observed: GEN 0x8000 ack only, then registration timeout). Without the
- * SMS-over-IP format/enable arming the modem silently drops the registration
- * request (observed: no main=22 RX frame). Finally the AP notifies the modem
- * its IMS/VoLTE stack is ready via IpcTxSetVolteStateNotification (NET main=8
- * sub=52 type=3, bool payload) BEFORE registration is driven.
- *
- * This module is a bounded, response-correlated FSM that performs ONLY those
- * legitimate advertisements. It never fabricates capability or registration;
- * it observes a real modem acknowledgment for each step and reports readiness
- * to the IMS registration FSM. The single-byte sub=32 "IMS mode" flag is NOT
- * emitted (the modem rejects it with GEN 0x8001); the supported arming path is
- * sub=26 SMS_FMT + sub=27 SMS_OVER_IP. */
+/* Modem capability configuration. Completion means configuration was
+ * acknowledged, never SIP registration or IMS transport readiness. The
+ * current runtime reports AP VoLTE not-ready until a native backend exists.
+ * Previously rejected SDM SMS probes are not repeated on service restart. */
 typedef bool (*ims_init_write_fn)(const struct fmt_tx_frame *f, uint8_t *seq, void *user);
 
 enum ims_init_phase {

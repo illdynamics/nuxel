@@ -222,11 +222,22 @@ bool fmt_tx_get_sim_status(struct fmt_tx_frame *f)
     return fmt_tx_raw(f, MAIN_SEC, 1 /*SEC_PIN_STATUS*/, FMT_TX_TYPE_REQUEST, NULL, 0);
 }
 
+bool fmt_tx_usim_auth(struct fmt_tx_frame *f, const uint8_t rand[16],
+                      const uint8_t autn[16])
+{
+    if (!f || !rand || !autn) return false;
+    uint8_t *p = fmt_tx_begin(f, MAIN_SEC, 9, FMT_TX_TYPE_REQUEST, 35);
+    if (!p) return false;
+    p[0]=2; p[1]=16;
+    memcpy(p+2,rand,16); p[18]=16; memcpy(p+19,autn,16);
+    return true;
+}
+
 bool fmt_tx_get_sim_icc_type(struct fmt_tx_frame *f)
 {
     /* SEC_SIM_ICC_TYPE (main=5 sub=7) request, 7-byte frame. Tells whether the
-     * UICC exposes a USIM and/or ISIM (IMS) application. ISIM is required for
-     * IMS SIP AKA registration. */
+     * UICC exposes SIM applications. ISIM absence does not preclude IMS: see
+     * TS 24.229 5.1.1.1A/C.2 and TS 33.203 8.0 (USIM fallback). */
     return fmt_tx_raw(f, MAIN_SEC, 7 /*SEC_SIM_ICC_TYPE*/, FMT_TX_TYPE_REQUEST, NULL, 0);
 }
 
@@ -466,9 +477,8 @@ bool fmt_tx_get_preferred_net_type(struct fmt_tx_frame *f)
 
 /* NET_VOLTE_STATE (sub=52) — IpcTxSetVolteStateNotification @0x338578.
  * 8-byte frame: total=8, msg_seq=0, ack_seq=0, main=8(NET), sub=0x34(52),
- * type=3, payload[0] = bool (1 = AP IMS/VoLTE stack ready). This is the
- * "IMS ready" handshake the modem requires before it emits the authoritative
- * main=22 sub=3 registration notification. Byte-exact vendor frame. */
+ * type=3, payload[0] = bool (1 = AP IMS/VoLTE stack ready).
+ * This does not start SIP registration. Byte-exact vendor frame. */
 bool fmt_tx_set_volte_state_notification(struct fmt_tx_frame *f, bool ready)
 {
     uint8_t p[1];
@@ -492,7 +502,7 @@ bool fmt_tx_set_volte_testmode(struct fmt_tx_frame *f, uint8_t mode)
 }
 
 /*
- * IMS (main=22) serialization — modem-resident IMS stack drive.
+ * IMS (main=22) serialization — AP registration-state reporting.
  *
  * IpcTxImsReqSetRegState (IpcProtocol41::IpcTxImsReqSetRegState @0x34d230):
  * 8-byte header + 6-byte payload (total_len=13). Recovered wire layout:
@@ -516,7 +526,7 @@ bool fmt_tx_ims_set_reg_state(struct fmt_tx_frame *f, uint8_t reg_status,
      *                  EpdgState, EpdgAvailableState, int, RadioTechnology)
      * and both disassemblies write the SAME 6-byte on-wire layout:
      *   payload[0] = ImsRegStatus   (w1)
-     *   payload[1] = request flag   (w2, int; 1 == drive registration)
+     *   payload[1] = service flags  (w2, int)
      *   payload[2] = NetworkType    (w3; Android RADIO_TECH, LTE=14)
      *   payload[3] = EcmpState      (w4)
      *   payload[4] = EpdgState/    EpdgAvailableState (derived; 6 for LTE)
@@ -524,10 +534,10 @@ bool fmt_tx_ims_set_reg_state(struct fmt_tx_frame *f, uint8_t reg_status,
      * RadioTechnology (w8/stack) is consumed ONLY to derive payload[4] via a
      * jump table (LTE/14 -> 6); it is NOT itself a payload byte. The prior
      * implementation dropped payload[1] and shifted NetworkType/EcmpState,
-     * which left the request flag byte carrying the RAT value (14) instead of
+     * which left the service flags byte carrying the RAT value (14) instead of
      * 1 -- a structurally valid but semantically wrong frame the modem ignored. */
     p[0] = reg_status;                 /* ImsRegStatus (1=REGISTERED,2=DEREG) */
-    p[1] = (reg_status == FMT_TX_IMS_REGSTATUS_DEREG) ? 0u : 1u; /* request flag */
+    p[1] = (reg_status == FMT_TX_IMS_REGSTATUS_DEREG) ? 0u : 1u; /* service flags */
     p[2] = network_type;               /* NetworkType (LTE=14) */
     p[3] = 0u;                         /* EcmpState */
     p[4] = 6u;                         /* Epdg/available-state (LTE -> 6) */
@@ -535,15 +545,6 @@ bool fmt_tx_ims_set_reg_state(struct fmt_tx_frame *f, uint8_t reg_status,
     (void)rat;
     return fmt_tx_raw(f, 22u /*IMS*/, 8u /*REQ_SET_REG_STATE*/,
                       FMT_TX_TYPE_NOTIFICATION, p, sizeof p);
-}
-
-/* IpcTxImsAuthResp (main=22 sub=6). Opaque SIM AKA response relay; the modem
- * requested it via SEC_IMS_AUTH. Never persist or log `data`. */
-bool fmt_tx_ims_auth_resp(struct fmt_tx_frame *f, const uint8_t *data, size_t len)
-{
-    if (!f || (len && !data) || len > 255) return false;
-    return fmt_tx_raw(f, 22u /*IMS*/, 6u /*AUTH_RESP*/,
-                      FMT_TX_TYPE_NOTIFICATION, data, len);
 }
 
 bool fmt_tx_ims_deregistration(struct fmt_tx_frame *f)

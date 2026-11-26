@@ -2,12 +2,10 @@
  *
  * ims_init.c — native IMS capability + SMS-over-IP preference initialization.
  *
- * See ims_init.h for the vendor contract. The modem-facing operations are:
- *   IpcTxGetDeviceCapa (MISC sub=45 type=2), IpcTxSetDeviceCapa (sub=45 type=3
- *   payload=[pref1,pref2]), SdmImsSmsFmtSet (sub=26 type=3 SmsOverIpFormat=3GPP),
- *   then SdmImsSmsOverIPSet (sub=27 type=3 enable=1). Each is acknowledged by
- *   a GEN (main=128) response before the next step; we never mark a step done
- *   without observing its acknowledgment, and we never fabricate IMS registration. */
+ * See ims_init.h. The runtime queries/sets device preferences and reports
+ * that the native AP VoLTE backend is not ready. Previously rejected SDM
+ * SMS probes are retained as serializers but not repeated by this lifecycle.
+ */
 #include "ims_init.h"
 #include "fmt_rx.h"
 #include <string.h>
@@ -171,10 +169,9 @@ enum ims_init_phase ims_init_tick(struct ims_init *i, uint64_t now_ms, bool onli
             i->attempt++;
             struct fmt_tx_frame f;
             uint8_t seq = 0;
-            /* Notify the modem that the AP IMS/VoLTE stack is armed and ready.
-             * This is the "IMS ready" handshake (NET sub=52) the modem requires
-             * before it will emit the authoritative registration notification. */
-            if (fmt_tx_set_volte_state_notification(&f, true) &&
+            /* No native SIP backend is connected. Report that truthfully;
+             * this state report cannot initiate registration. */
+            if (fmt_tx_set_volte_state_notification(&f, false) &&
                 i->write(&f, &seq, i->user)) {
                 i->last_write_seq = seq;
                 i->phase_deadline_ms = now_ms + IMS_INIT_STEP_TIMEOUT_MS;
@@ -202,8 +199,7 @@ enum ims_init_phase ims_init_tick(struct ims_init *i, uint64_t now_ms, bool onli
 
 void ims_init_capa_response(struct ims_init *i, uint8_t ack_seq)
 {
-    if (!i) return;
-    (void)ack_seq;
+    if (!i || ack_seq != i->last_write_seq) return;
     if (i->phase == IMS_INIT_WAIT_GET_ACK) {
         /* The modem answered GetDeviceCapa with a direct MISC sub=45 response
          * (2-byte VoiceDomainPref readback). That is the authoritative query
@@ -217,21 +213,18 @@ void ims_init_capa_response(struct ims_init *i, uint8_t ack_seq)
 
 void ims_init_gen_result(struct ims_init *i, uint16_t result, uint8_t ack_seq)
 {
-    if (!i) return;
-    (void)ack_seq;
+    if (!i || ack_seq != i->last_write_seq) return;
     /* GEN responses acknowledge SetDeviceCapa/SmsFmt/SmsOverIP writes. */
     switch (i->phase) {
     case IMS_INIT_WAIT_ACK:
-        /* SetDeviceCapa ack is the REGISTRATION GATE. SMS-over-IP (sub=26/27)
-         * arming is BEST-EFFORT and never blocks registration: the gateway
-         * modem firmware rejects sub=26/sub=32 with GEN 0x8001, but that
-         * rejection must not prevent the registration request. */
+        /* Acknowledged capability configuration, not IMS registration. The
+         * old SDM probes were already rejected; do not repeat those probes. */
         if (result == FMT_RX_GEN_OK) {
             i->done = true;
             i->attempt = 0;
             i->phase_deadline_ms = 0;
             i->next_action_ms = 0;
-            i->phase = IMS_INIT_SEND_SMS_FMT; /* best-effort, non-blocking */
+            i->phase = IMS_INIT_SEND_VOLTE_STATE;
         } else {
             i->done = false;
             i->phase_deadline_ms = 0;

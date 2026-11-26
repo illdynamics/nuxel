@@ -21,6 +21,7 @@ int main(void)
     CHECK(fmt_sms_get_smsc(&f));VECTOR(golden_sms_get_smsc);
     CHECK(fmt_sms_ready(&f));VECTOR(golden_sms_device_ready);
     CHECK(!fmt_sms_send(&f,false,0,pdu,256));CHECK(!fmt_sms_send(&f,false,4,pdu,len));
+    CHECK(!fmt_sms_send(&f,false,8,pdu,len)); /* ModemType is not Domain */
     CHECK(!fmt_sms_send(&f,false,0,NULL,len));CHECK(!fmt_sms_send(NULL,false,0,pdu,len));
     CHECK(!fmt_sms_send(&f,false,0,pdu,0));CHECK(!fmt_sms_ack(&f,1,1));
     uint8_t incoming[]={2,1,0,0,0x42,3,0,1,2};

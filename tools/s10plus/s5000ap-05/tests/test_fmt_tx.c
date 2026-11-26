@@ -27,8 +27,25 @@ static void vector(const struct fmt_tx_frame *f, const uint8_t *v, size_t n,
 }
 #define VECTOR(v) vector(&f, (v), sizeof(v), #v)
 
+static void test_usim_auth(void)
+{
+    struct fmt_tx_frame f;
+    uint8_t rand[16],autn[16];
+    for (unsigned i=0;i<16;i++) { rand[i]=(uint8_t)i; autn[i]=(uint8_t)(16+i); }
+    /* Captured by emulating IpcTxDoUiccAuth from libsec-ril 60889dd7. */
+    static const uint8_t golden[]={0x2a,0,0,0,5,9,2,2,16,
+        0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,
+        16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31};
+    CHECK(fmt_tx_usim_auth(&f,rand,autn));
+    CHECK(f.len==sizeof golden && !memcmp(f.buf,golden,sizeof golden));
+    CHECK(!fmt_tx_usim_auth(NULL,rand,autn));
+    CHECK(!fmt_tx_usim_auth(&f,NULL,autn));
+    CHECK(!fmt_tx_usim_auth(&f,rand,NULL));
+}
+
 int main(void)
 {
+    test_usim_auth();
     struct fmt_tx_frame f;
     memset(&f, 0xa5, sizeof f);
     CHECK(fmt_tx_set_data_profile(&f, "internet", FMT_TX_AUTH_NONE, FMT_TX_PROTO_IPV4V6));

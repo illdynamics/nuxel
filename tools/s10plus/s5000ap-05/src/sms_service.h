@@ -35,10 +35,8 @@ struct sms_service {
     uint64_t next_setup_ms,deadline_ms;
     struct sms_job job;
     unsigned received,decode_errors,store_errors,ack_errors,unmatched;
-    /* Transport selection (round 06): CS is wire domain 0; IMS SMS is domain 8
-     * (recovered from SmsManager::DoImsSendIms passing w3=8 to IpcModem::SendSms).
-     * `ims_registered` reflects the modem-confirmed IMS registration (never a
-     * local guess). When set and CS is unavailable, outbound SMS uses IMS. */
+    /* Registration observation only. The CP FMT writer is not an IMS
+     * transport; ModemType 8 must never be serialized as a domain byte. */
     bool ims_registered;
     uint8_t selected_domain;
 };

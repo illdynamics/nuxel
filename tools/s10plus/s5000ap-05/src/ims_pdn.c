@@ -2,17 +2,10 @@
  *
  * ims_pdn.c — native IMS APN PDN establishment (MODEM-MANAGED bearer).
  *
- * Stock Samsung does NOT drive a raw second GPRS CID for IMS. The AP merely
- * syncs the IMS DataProfile (type 2, label "ims", APN "ims..."), then the
- * modem autonomously activates the IMS/ePDN bearer and performs P-CSCF
- * discovery. This module performs ONLY that supported profile sync; it is
- * fully isolated from the internet bearer (never detaches/releases CID 1).
- *
- * Evidence: LteEpdgDataCallManager::ImsPdnTriggered @0x28f0e0 calls
- * DataCallList::GetCall(2) (IMS/ePDN DataProfile) and waits for the
- * modem-managed data call; the AP does not send DEFINE/SET_PDP_CONTEXT for a
- * second CID. Auth is AUTH_NONE at the PDP layer because IMS bearer auth is
- * SIP/REGISTER via SIM AKA, not at PDP attach.
+ * This module synchronizes the IMS profile. ImsPdnTriggered @0x28f0e0
+ * only checks an existing DataCall; it does not prove autonomous activation.
+ * A profile acknowledgment is not a bearer or P-CSCF readiness indication.
+ * CID 1 is never modified by this module.
  */
 #include "ims_pdn.h"
 #include "fmt_rx.h"
@@ -46,13 +39,8 @@ void ims_pdn_close(struct ims_pdn *p) { if (p) memset(p, 0, sizeof *p); }
 
 bool ims_pdn_active(const struct ims_pdn *p)
 {
-    /* "Active" here means the modem has ARMED the IMS/ePDN profile. The modem
-     * then autonomously activates the bearer and emits a main=22 IMS
-     * notification (dispatching through fmt_rx_ims_state). We do NOT gate on a
-     * Linux-visible CID-2 IP configuration: the modem-managed IMS bearer never
-     * produces one (see sms8.md root cause). */
-    return p && p->active &&
-           (p->phase == IMS_PDN_VERIFY || p->phase == IMS_PDN_ACTIVE);
+    return p && p->active && p->attached && p->ip_ready && p->pcscf_ready &&
+           p->phase == IMS_PDN_ACTIVE;
 }
 
 const char *ims_pdn_phase_name(enum ims_pdn_phase ph)
@@ -66,6 +54,7 @@ enum ims_pdn_phase ims_pdn_tick(struct ims_pdn *p, uint64_t now_ms, bool online)
     if (!p) return IMS_PDN_IDLE;
     if (!online) {
         p->active = false;
+        p->attached = p->ip_ready = p->pcscf_ready = false;
         if (p->phase != IMS_PDN_FAILED) p->phase = IMS_PDN_IDLE;
         return p->phase;
     }
@@ -103,15 +92,15 @@ enum ims_pdn_phase ims_pdn_tick(struct ims_pdn *p, uint64_t now_ms, bool online)
 
 void ims_pdn_gen_result(struct ims_pdn *p, uint16_t result, uint8_t ack_seq)
 {
-    if (!p) return;
-    (void)ack_seq;
+    if (!p || p->phase != IMS_PDN_SET_PROFILE ||
+        !p->phase_deadline_ms || ack_seq != p->last_write_seq) return;
     if (result == FMT_RX_GEN_OK) {
         if (p->phase == IMS_PDN_SET_PROFILE) {
             p->attempt = 0;
             p->next_action_ms = 0;
             p->phase_deadline_ms = 0;
-            /* Profile accepted == modem armed the IMS/ePDN profile. */
-            p->active = true;
+            /* Profile accepted; await actual attachment/IP/P-CSCF. */
+            p->active = false;
             p->phase = IMS_PDN_VERIFY;
         }
     } else {
@@ -120,16 +109,26 @@ void ims_pdn_gen_result(struct ims_pdn *p, uint16_t result, uint8_t ack_seq)
     }
 }
 
+static void update_ready(struct ims_pdn *p)
+{
+    p->active = p->attached && p->ip_ready && p->pcscf_ready;
+    if (p->phase == IMS_PDN_VERIFY || p->phase == IMS_PDN_ACTIVE)
+        p->phase = p->active ? IMS_PDN_ACTIVE : IMS_PDN_VERIFY;
+}
+
 void ims_pdn_report_cid(struct ims_pdn *p, uint8_t cid, bool attached)
 {
     if (!p || cid != p->cid) return;
-    /* A modem-managed IMS/ePDN bearer becomes visible as the modem reports the
-     * distinct IMS CID attached (GPRS_CALL_STATUS or GPRS_PDP_CONTEXT). Only a
-     * real modem notification moves VERIFY -> ACTIVE; never a local guess. */
-    if (attached && p->phase == IMS_PDN_VERIFY) {
-        p->active = true;
-        p->phase = IMS_PDN_ACTIVE;
-    } else if (!attached) {
-        p->active = false;
-    }
+    p->attached = attached;
+    if (!attached) p->ip_ready = p->pcscf_ready = false;
+    update_ready(p);
+}
+
+void ims_pdn_report_ip(struct ims_pdn *p, const struct fmt_rx_ip *ip)
+{
+    if (!p || !ip || ip->cid != p->cid) return;
+    p->ip_ready = ip->ipv4_valid || ip->ipv6_valid;
+    p->pcscf_ready = (ip->ipv4_valid && ip->pcscf4_count) ||
+                     (ip->ipv6_valid && ip->pcscf6_count);
+    update_ready(p);
 }

@@ -41,32 +41,25 @@ static bool write_capture(const struct fmt_tx_frame *f, uint8_t *seq, void *u)
          * payload[0]=ready=1. */
         assert(f->len == 8);
         assert(f->buf[4] == 8 && f->buf[5] == 52 && f->buf[6] == 3);
-        assert(f->buf[7] == FMT_TX_VOLTE_STATE_READY);
+        assert(f->buf[7] == FMT_TX_VOLTE_STATE_NOT_READY);
     }
     return true;
 }
 
 static void drive_to_done(struct ims_init *i)
 {
-    /* Sequence: IDLE -> SEND_GET -> WAIT_GET_ACK --capa_response--> SEND_CAPA
-     * -> WAIT_ACK --gen OK--> SEND_SMS_FMT -> WAIT_SMS_FMT --gen OK-->
-     * SEND_SMS_OIP -> WAIT_SMS_OIP --gen OK--> SEND_VOLTE_STATE ->
-     * WAIT_VOLTE_STATE --gen OK--> DONE. */
+    /* Query/set preference, then truthfully report missing AP backend. */
     assert(ims_init_tick(i, 0, true) == IMS_INIT_SEND_GET);
     assert(ims_init_tick(i, 1, true) == IMS_INIT_WAIT_GET_ACK); /* writes GetDeviceCapa */
     ims_init_capa_response(i, last_seq);
     assert(i->phase == IMS_INIT_SEND_CAPA);
     assert(ims_init_tick(i, 2, true) == IMS_INIT_WAIT_ACK);     /* writes SetDeviceCapa */
-    ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq);            /* -> SEND_SMS_FMT */
-    assert(i->phase == IMS_INIT_SEND_SMS_FMT);
-    assert(ims_init_tick(i, 3, true) == IMS_INIT_WAIT_SMS_FMT); /* writes SMS_FMT */
-    ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq);            /* -> SEND_SMS_OIP */
-    assert(i->phase == IMS_INIT_SEND_SMS_OIP);
-    assert(ims_init_tick(i, 4, true) == IMS_INIT_WAIT_SMS_OIP); /* writes SMS_OIP */
-    ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq);            /* -> SEND_VOLTE_STATE */
+    ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq+1);
+    assert(i->phase == IMS_INIT_WAIT_ACK);
+    ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq);
     assert(i->phase == IMS_INIT_SEND_VOLTE_STATE);
-    assert(ims_init_tick(i, 5, true) == IMS_INIT_WAIT_VOLTE_STATE); /* writes VOLTE_STATE */
-    ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq);            /* -> DONE */
+    assert(ims_init_tick(i, 3, true) == IMS_INIT_WAIT_VOLTE_STATE);
+    ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq);
     assert(ims_init_done(i));
     assert(i->phase == IMS_INIT_DONE);
 }
@@ -83,7 +76,7 @@ int main(void)
 
     writes = 0;
     drive_to_done(&i);
-    assert(writes == 5); /* Get, Set, SmsFmt, SmsOverIP, VolteState */
+    assert(writes == 3); /* Get, Set, truthful VoLTE not-ready */
 
     ims_init_close(&i);
 
@@ -99,23 +92,11 @@ int main(void)
     assert(!ims_init_done(&i2));
     assert(i2.phase == IMS_INIT_SEND_CAPA);
 
-    /* SMS_FMT (sub=26) is REJECTED by the modem (0x8001), but that must NOT
-     * clear done (registration gate) — best-effort only. */
-    ims_init_tick(&i2, 3, true);                /* retry Set -> WAIT_ACK */
-    ims_init_gen_result(&i2, FMT_RX_GEN_OK, last_seq); /* done=true, -> SEND_SMS_FMT */
-    assert(ims_init_done(&i2));                  /* registration gate already open */
-    ims_init_tick(&i2, 4, true);                /* write SmsFmt -> WAIT_SMS_FMT */
-    ims_init_gen_result(&i2, 0x8001u, last_seq);/* rejected; best-effort -> SMS_OIP */
-    assert(ims_init_done(&i2));                  /* still done */
-    assert(i2.phase == IMS_INIT_SEND_SMS_OIP);
-    ims_init_tick(&i2, 5, true);                  /* write SMS_OIP -> WAIT_SMS_OIP */
-    assert(i2.phase == IMS_INIT_WAIT_SMS_OIP);
-    ims_init_gen_result(&i2, 0x8001u, last_seq);/* any ack -> SEND_VOLTE_STATE */
-    assert(i2.phase == IMS_INIT_SEND_VOLTE_STATE);
-    ims_init_tick(&i2, 6, true);                  /* write VolteState */
-    assert(i2.phase == IMS_INIT_WAIT_VOLTE_STATE);
-    ims_init_gen_result(&i2, 0x8001u, last_seq);/* rejected; best-effort -> DONE */
-    assert(ims_init_done(&i2));                  /* still done */
+    ims_init_tick(&i2, 3, true);
+    ims_init_gen_result(&i2, FMT_RX_GEN_OK, last_seq);
+    assert(ims_init_done(&i2) && i2.phase == IMS_INIT_SEND_VOLTE_STATE);
+    ims_init_tick(&i2, 4, true);
+    ims_init_gen_result(&i2, FMT_RX_GEN_OK, last_seq);
     assert(i2.phase == IMS_INIT_DONE);
     ims_init_close(&i2);
 

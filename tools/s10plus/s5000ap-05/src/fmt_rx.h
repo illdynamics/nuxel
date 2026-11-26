@@ -53,29 +53,24 @@ struct fmt_rx_ip {
     bool ipv4_valid, ipv6_valid;
     uint8_t ipv4[4], dns4[2][4], gateway4[4], prefix4;
     uint8_t ipv6[16], dns6[2][16];
+    uint8_t pcscf4[8][4], pcscf6[8][16];
+    uint8_t pcscf4_count, pcscf6_count;
     uint16_t mtu;
 };
 /* Bounds-checked IpcRxIpConfiguration @0x321620, addresses in network order. */
 bool fmt_rx_ip(const uint8_t *p, size_t n, struct fmt_rx_ip *out);
 
+/* SEC_IMS_AUTH is a solicited UICC result, not an incoming AKA challenge.
+ * Views borrow the RX frame only for synchronous consumption. Never log,
+ * persist, or echo these buffers; CK/IK are session key material. */
+struct fmt_rx_usim_auth {
+    uint8_t result;
+    bool authenticated;
+    const uint8_t *res, *ck, *ik, *auts;
+    size_t res_len, auts_len;
+};
+bool fmt_rx_usim_auth(const uint8_t *p, size_t n, struct fmt_rx_usim_auth *out);
+
 /* ---- IMS (main=22) receive-side decode ---- */
 
-/* IpcRxImsModeChange / registration-state notification. The modem reports the
- * actual IMS registration state; this is authoritative (not a local guess). */
-struct fmt_rx_ims_state {
-    uint8_t status;       /* 0=none, 1=registered, 2=deregistering, ... */
-    uint8_t network_type; /* Android RADIO_TECH (14=LTE) */
-    uint8_t rat;
-    bool registered;      /* true only when status implies IMS registered */
-};
-bool fmt_rx_ims_state(const uint8_t *p, size_t n, struct fmt_rx_ims_state *out);
-
-/* SEC_IMS_AUTH (main=5 sub=9) SIM AKA challenge from the modem. The AP must
- * relay this to the UICC/ISIM and return the response via IpcTxImsAuthResp.
- * `data`/`len` are opaque; never log or persist them. */
-struct fmt_rx_ims_auth {
-    const uint8_t *data;
-    size_t len;
-};
-bool fmt_rx_ims_auth(const uint8_t *p, size_t n, struct fmt_rx_ims_auth *out);
 #endif

@@ -73,6 +73,10 @@ uint8_t *fmt_tx_begin(struct fmt_tx_frame *f, uint8_t main, uint8_t sub,
 
 /* Query SIM application status. No payload (len=7). */
 bool fmt_tx_get_sim_status(struct fmt_tx_frame *f);
+/* IpcTxDoUiccAuth @0x341c50: USIM 3G AKA (selector 2), SEC 5/9 GET.
+ * Only a real network RAND/AUTN challenge may be submitted. No key extraction. */
+bool fmt_tx_usim_auth(struct fmt_tx_frame *f, const uint8_t rand[16],
+                      const uint8_t autn[16]);
 /* SEC_SIM_ICC_TYPE (main=5 sub=7) request: USIM/ISIM application presence. */
 bool fmt_tx_get_sim_icc_type(struct fmt_tx_frame *f);
 /* SEC_SIMAPPS_INFO (main=5 sub=15) request: authoritative SIM application inventory. */
@@ -219,9 +223,9 @@ bool fmt_tx_set_volte_testmode(struct fmt_tx_frame *f, uint8_t mode);
 
  /* NUXEL_FMT_TX_H */
 
-/* ---- IMS (main=22) command serializers (AP -> CP, modem-resident stack) ---- */
+/* ---- IMS (main=22) command serializers (AP -> CP, state reporting) ---- */
 
-/* ImsRegStatus values the AP reports to the modem for registration drive. */
+/* ImsRegStatus values the AP reports to the modem after registration. */
 #define FMT_TX_IMS_REGSTATUS_NONE    0u
 #define FMT_TX_IMS_REGSTATUS_REGISTERED 1u
 #define FMT_TX_IMS_REGSTATUS_DEREG   2u
@@ -230,23 +234,17 @@ bool fmt_tx_set_volte_testmode(struct fmt_tx_frame *f, uint8_t mode);
  * VERIFIED byte layout (IpcProtocol41::IpcTxImsReqSetRegState @0x34d230 +
  * IpcModem::SetImsRegState @0x2fbe88, libsec-ril 60889dd7):
  *   payload[0] = ImsRegStatus   (arg1; 1=REGISTERED, 2=DEREG, 0=NONE)
- *   payload[1] = request flag   (arg2 int; 1=drive registration)
+ *   payload[1] = request flag   (arg2 int; service flags)
  *   payload[2] = NetworkType    (arg3; Android RADIO_TECH, LTE=14)
  *   payload[3] = EcmpState      (arg4)
  *   payload[4] = EpdgAvailableState (derived; 6 for LTE)
  *   payload[5] = int            (arg7, reserved)
- * The AP requests registration by asserting ImsRegStatus != NONE; the modem
- * autonomously performs the SIP REGISTER + AKA and reports the final state.
+ * This reports existing AP IMS state to the CP. It does not start registration.
  * RadioTechnology (arg8) is consumed only to derive payload[4]; it is NOT
  * itself a payload byte.
  */
 bool fmt_tx_ims_set_reg_state(struct fmt_tx_frame *f, uint8_t reg_status,
                               uint8_t network_type, uint8_t rat);
-
-/* IpcTxImsAuthResp (main=22 sub=6). Forward a SIM AKA response to the modem.
- * `data`/`len` are the opaque AKA response the modem requested; no secret is
- * persisted or logged. */
-bool fmt_tx_ims_auth_resp(struct fmt_tx_frame *f, const uint8_t *data, size_t len);
 
 /* IpcTxImsReqDeregistration (main=22 sub=7). */
 bool fmt_tx_ims_deregistration(struct fmt_tx_frame *f);

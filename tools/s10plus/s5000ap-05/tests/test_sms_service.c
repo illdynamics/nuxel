@@ -37,6 +37,13 @@ int main(void)
     sms_service_tick(&s,1100,true,true,true,false,true);CHECK(m.last.sub_cmd==10);
     const uint8_t smsc[]={0};receive(&s,4,10,2,0,smsc,1);CHECK(s.smsc_len==1);
     uint32_t id;CHECK(sms_store_queue(&s.store,"+12345678901","hello",&id));
+    /* An IMS registration flag cannot reroute the CP writer to the AP IMS
+     * transport. In particular it must not send payload domain 8. */
+    unsigned before_ims=m.writes;
+    sms_service_tick(&s,1150,true,true,false,true,true);
+    CHECK(m.writes==before_ims && !s.active);
+    struct sms_record held;
+    CHECK(sms_store_get(&s.store,id,&held) && !strcmp(held.state,"queued"));
     sms_service_tick(&s,1200,true,true,true,false,true);CHECK(m.last.sub_cmd==1 && s.active);
     uint8_t submit[]={2,0,0,0,0};submit[3]=s.job.pdu.reference;
     /* Wrong ack_seq is unmatched (still active, no submit). */

@@ -183,30 +183,51 @@ bool fmt_rx_ip(const uint8_t *p, size_t n, struct fmt_rx_ip *out)
         if (mtu > 65535) return false;
         v.mtu = (uint16_t)mtu;
     }
+    /* IpcRxIpConfiguration @0x32198c: three base P-CSCF addresses,
+     * followed by five more in the extended frame. Never read a short field. */
+    for (unsigned i=0; i<8; i++) {
+        size_t o4 = i<3 ? 23u+4u*i : 157u+4u*(i-3);
+        size_t o6 = i<3 ? 51u+16u*i : 177u+16u*(i-3);
+        if (n >= o4+4 && nonzero(p+o4,4) && p[o4] < 224) {
+            memcpy(v.pcscf4[v.pcscf4_count++],p+o4,4);
+        }
+        if (n >= o6+16 && nonzero(p+o6,16) && p[o6] != 0xff) {
+            memcpy(v.pcscf6[v.pcscf6_count++],p+o6,16);
+        }
+    }
     if (!v.ipv4_valid && !v.ipv6_valid) return false;
     *out = v;
     return true;
 }
 
-/* IMS registration-state notification: accept a bounded payload and interpret
- * the status byte conservatively. We only mark registered when the modem's
- * status byte is 1 (registered). No local fabrication. */
-bool fmt_rx_ims_state(const uint8_t *p, size_t n, struct fmt_rx_ims_state *out)
+bool fmt_rx_usim_auth(const uint8_t *p, size_t n, struct fmt_rx_usim_auth *out)
 {
-    if (!p || !out || n < 2) return false;
-    out->status = p[0];
-    out->network_type = (n >= 3) ? p[1] : 0;
-    out->rat = (n >= 3) ? p[2] : 0;
-    out->registered = (out->status == 1);
-    return true;
-}
-
-/* SEC_IMS_AUTH SIM AKA challenge. The modem drives UICC auth; the AP merely
- * relays the opaque challenge payload. Bounded and never persisted/logged. */
-bool fmt_rx_ims_auth(const uint8_t *p, size_t n, struct fmt_rx_ims_auth *out)
-{
-    if (!p || !out || !n) return false;
-    out->data = p;
-    out->len = n;
-    return true;
+    if (!out) return false;
+    memset(out,0,sizeof *out);
+    if (!p || n<2 || p[0]!=2) return false;
+    struct fmt_rx_usim_auth v={.result=p[1]};
+    /* IpcRxSecImsAuth @0x343ec0 accepts result 0,4,5 as data-bearing;
+     * result 3 is a UICC failure, other values are errors. */
+    if (v.result!=0 && v.result!=4 && v.result!=5) {
+        if (n!=2) return false;
+        *out=v; return true;
+    }
+    const uint8_t *part[4]; size_t len[4], off=2;
+    for (unsigned i=0;i<4;i++) {
+        if (off>=n) return false;
+        len[i]=p[off++];
+        if (len[i]>n-off) return false;
+        part[i]=p+off; off+=len[i];
+    }
+    if (off!=n) return false;
+    if (v.result==0) {
+        if (len[0]<4 || len[0]>16 || len[1]!=16 || len[2]!=16 || len[3]!=8)
+            return false;
+        v.authenticated=true; v.res=part[0]; v.res_len=len[0];
+        v.ck=part[1]; v.ik=part[2];
+    } else {
+        if (len[0]!=14 || len[1] || len[2] || len[3]) return false;
+        v.auts=part[0]; v.auts_len=len[0];
+    }
+    *out=v; return true;
 }

@@ -134,6 +134,27 @@ int main(void)
     ip[1] = 0x40; ip[2] = 0; ip[35]=0x20; ip[36]=1; ip[37]=0x0d; ip[38]=0xb8;
     assert(fmt_rx_ip(ip, sizeof ip, &v) && v.ipv6_valid && !v.ipv4_valid);
     assert(!fmt_rx_ip(ip, 130, &v));
+    /* P-CSCF offsets recovered from IpcRxIpConfiguration @0x32198c. */
+    uint8_t ims_ip[257]={2,0x40}; ims_ip[35]=0x20; ims_ip[36]=1;
+    ims_ip[51]=0x20; ims_ip[52]=1; ims_ip[66]=1;
+    ims_ip[177]=0x20; ims_ip[178]=1; ims_ip[192]=2;
+    assert(fmt_rx_ip(ims_ip,sizeof ims_ip,&v) && v.pcscf6_count==2);
+    assert(v.pcscf6[0][15]==1 && v.pcscf6[1][15]==2);
+    assert(fmt_rx_ip(ims_ip,192,&v) && v.pcscf6_count==1);
+    ims_ip[51]=0xff;
+    assert(fmt_rx_ip(ims_ip,sizeof ims_ip,&v) && v.pcscf6_count==1);
+    /* Synthetic USIM result. No test material is sent to a physical card. */
+    uint8_t aka[50]={2,0,4,1,2,3,4,16}; aka[24]=16; aka[41]=8;
+    struct fmt_rx_usim_auth auth;
+    assert(fmt_rx_usim_auth(aka,sizeof aka,&auth) && auth.authenticated);
+    assert(auth.res==aka+3 && auth.res_len==4 && auth.ck==aka+8 && auth.ik==aka+25);
+    for (size_t n=0;n<sizeof aka;n++) assert(!fmt_rx_usim_auth(aka,n,&auth));
+    aka[24]=255; assert(!fmt_rx_usim_auth(aka,sizeof aka,&auth)); aka[24]=16;
+    aka[0]=0; assert(!fmt_rx_usim_auth(aka,sizeof aka,&auth));
+    uint8_t sync[20]={2,4,14};
+    assert(fmt_rx_usim_auth(sync,sizeof sync,&auth) && !auth.authenticated && auth.auts_len==14);
+    uint8_t reject[]={2,3};
+    assert(fmt_rx_usim_auth(reject,sizeof reject,&auth) && !auth.authenticated && !auth.ck);
     puts("FMT receive bounds, result correlation, RAT, PDP and IP: PASS");
     return 0;
 }

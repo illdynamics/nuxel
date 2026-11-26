@@ -4,17 +4,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "fmt_tx.h"
+#include "fmt_rx.h"
 
-/* Native IMS APN PDN establishment — a MODEM-MANAGED IMS/ePDN bearer.
- *
- * Stock Samsung does NOT drive a raw second GPRS CID for IMS. The AP merely
- * syncs the IMS DataProfile (type 2, label "ims", APN "ims..."), and the modem
- * autonomously activates the IMS/ePDN bearer and performs P-CSCF discovery
- * (LteEpdgDataCallManager::ImsPdnTriggered @0x28f0e0 -> ImsManager::OnEpdnConnected
- * @0x23dfb0). IMS auth is SIP/REGISTER via SIM AKA, not PDP-layer auth.
- *
- * Driver contract: bounded, response-correlated, fail-closed. It NEVER releases
- * or modifies the internet bearer (CID 1). No APN credentials are invented. */
+/* IMS profile synchronization and independently observed bearer readiness.
+ * A profile ACK alone cannot establish the bearer. CID 1 remains isolated. */
 typedef bool (*ims_pdn_write_fn)(const struct fmt_tx_frame *f, uint8_t *seq, void *user);
 
 /* Distinct IMS APN data context identity. CID 1 is the ordinary internet
@@ -42,7 +35,7 @@ struct ims_pdn {
     uint8_t last_write_seq;
     uint64_t next_action_ms;
     uint64_t phase_deadline_ms;
-    bool active;
+    bool active, attached, ip_ready, pcscf_ready;
 };
 
 bool ims_pdn_open(struct ims_pdn *p, ims_pdn_write_fn write, void *user);
@@ -54,6 +47,7 @@ enum ims_pdn_phase ims_pdn_tick(struct ims_pdn *p, uint64_t now_ms, bool online)
 void ims_pdn_gen_result(struct ims_pdn *p, uint16_t result, uint8_t ack_seq);
 /* Feed a PDP context LIST state; the caller reports whether CID is attached. */
 void ims_pdn_report_cid(struct ims_pdn *p, uint8_t cid, bool attached);
+void ims_pdn_report_ip(struct ims_pdn *p, const struct fmt_rx_ip *ip);
 bool ims_pdn_active(const struct ims_pdn *p);
 const char *ims_pdn_phase_name(enum ims_pdn_phase ph);
 #endif
