@@ -150,6 +150,7 @@ struct radiod_ctx {
     struct ims_init ims_init;
     bool ims_pdn_armed; /* opt-in IMS APN PDN drive */
     bool ims_pdn_up;     /* ims APN PDN actually established (carrier/gate) */
+    bool ims_apn_present; /* ims APN string present in profile list (diag only) */
     uid_t control_uid, bridge_uid;
     sd_bus *data_bus;
     bool     data_path_armed;   /* explicit opt-in (flag / D-Bus) */
@@ -635,13 +636,16 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
             /* Detect the ims APN PDN. A dedicated ims APN profile present in
              * the live profile definitions is evidence of an IMS PDN, NOT a
              * substitute for modem-confirmed IMS registration. */
-            g.ims_pdn_up = false;
+            g.ims_apn_present = false;
             for (unsigned i = 0; i < profiles.count; i++) {
                 const char *a = profiles.profile[i].apn;
                 /* KPN 204-08 IMS APN is the FQDN "ims.mnc008.mcc204.gprs";
-                 * accept both the FQDN and the bare "ims" prefix. */
+                 * accept both the FQDN and the bare "ims" prefix. APN-string
+                 * presence is NOT proof the IMS PDN bearer is established; it
+                 * must never gate registration. ims_pdn_up is driven only by
+                 * ims_pdn_active() after real CID-2 attachment. */
                 if (!strncmp(a, "ims", 3) && (a[3] == '\0' || a[3] == '.'))
-                    g.ims_pdn_up = true;
+                    g.ims_apn_present = true;
             }
             char apns[FMT_RX_PDP_PROFILES*102] = {0};
             size_t apn_off = 0;
@@ -653,8 +657,8 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
                 apn_off += l;
             }
             apns[apn_off] = 0;
-            diagf("pdp_definitions", "\"count\":%u,\"ims_pdn\":%s,\"apns\":\"%s\"",
-                  profiles.count, g.ims_pdn_up ? "true" : "false", apns);
+            diagf("pdp_definitions", "\"count\":%u,\"ims_apn_present\":%s,\"apns\":\"%s\"",
+                  profiles.count, g.ims_apn_present ? "true" : "false", apns);
         } else diagf("pdp_definitions_invalid", "\"length\":%u", f->payload_len);
     }
     /* Reply only to the CP's actual startup request. Transfer the existing
@@ -1870,7 +1874,8 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
      * Runs ONLY after the internet data-session is ACTIVE (quiet period) so
      * the IMS DEFINE_PDP/SET_PDP_CONTEXT never overlaps the internet bearer's
      * own command sequence and GEN correlation stays unambiguous. */
-    if (g.ims_pdn_armed && g.dsc.phase == DS_ACTIVE) {
+    if (g.ims_pdn_armed &&
+        (g.dsc.phase == DS_ACTIVE || g.dsc.phase == DS_WAIT_IP)) {
         static enum ims_pdn_phase ims_pdn_last_diag = (enum ims_pdn_phase)0xff;
         ims_pdn_tick(&g.ims_pdn, now_ms(),
             g.cp_online && g.sim_ready_seen && g.write_enabled && g.fmt.present);
