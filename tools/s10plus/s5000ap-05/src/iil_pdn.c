@@ -69,9 +69,11 @@ enum iil_pdn_phase iil_pdn_tick(struct iil_pdn *p, uint64_t now_ms, bool online)
         }
         struct iil_frame f;
         bool built = (p->phase == IIL_PDN_DEFINE)
-            ? iil_tx_define_pdp(&f, IIL_PDN_APN, 3 /*IPV6*/, 0)
+            ? iil_tx_define_pdp(&f, IIL_PDN_APN, 3 /*IPV6*/, 1 /*EUTRAN AccessNetworkType*/)
             : iil_tx_set_pdp_context(&f, p->cid, IIL_PDN_APN);
-        if (built && p->write(&f, p->user)) {
+        uint8_t seq = 0;
+        if (built && p->write(&f, &seq, p->user)) {
+            p->last_write_seq = seq;
             p->phase_deadline_ms = now_ms + IIL_PDN_STEP_TIMEOUT_MS;
         } else {
             p->phase = IIL_PDN_FAILED;
@@ -84,6 +86,22 @@ enum iil_pdn_phase iil_pdn_tick(struct iil_pdn *p, uint64_t now_ms, bool online)
         break;
     }
     return p->phase;
+}
+
+void iil_pdn_gen_result(struct iil_pdn *p, uint16_t result, uint8_t ack_seq)
+{
+    if (!p || ack_seq != p->last_write_seq || !p->phase_deadline_ms) return;
+    p->last_result = result;
+    p->phase_deadline_ms = 0;
+    /* GEN_OK (0x8000 in this CP's encoding) advances the phase; rejection
+     * re-arms from DEFINE. Only DEFINE and ACTIVATE writes await a GEN ack. */
+    if (p->phase == IIL_PDN_DEFINE) {
+        if (result == 0x8000u) { p->phase = IIL_PDN_ACTIVATE; p->attempt = 0; }
+        else { p->phase = IIL_PDN_FAILED; }
+    } else if (p->phase == IIL_PDN_ACTIVATE) {
+        if (result == 0x8000u) { p->phase = IIL_PDN_VERIFY; p->attempt = 0; }
+        else { p->phase = IIL_PDN_FAILED; }
+    }
 }
 
 void iil_pdn_on_connected(struct iil_pdn *p, const struct iil_rx_event *e)

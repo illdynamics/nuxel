@@ -156,7 +156,6 @@ struct radiod_ctx {
     bool ims_apn_present; /* ims APN string present in profile list (diag only) */
     struct iil_pdn iil_pdn;      /* IIL (IpcProtocol41Iil) IMS PDN driver */
     bool iil_pdn_armed;          /* opt-in IIL IMS PDN drive (--arm-data-path) */
-    uint16_t next_iil_seq;       /* IIL 16-bit msg_seq counter */
     uid_t control_uid, bridge_uid;
     sd_bus *data_bus;
     bool     data_path_armed;   /* explicit opt-in (flag / D-Bus) */
@@ -642,6 +641,17 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
     /* CP IMS mode changes are not registration notifications. The stock
      * registration/auth challenge source is the separate AP IMS/IIL endpoint.
      * SEC_IMS_AUTH is a solicited UICC result, not an unsolicited challenge. */
+    /* Correlate GEN result to the IIL IMS PDN drive. The IIL GPRS builders
+     * are acknowledged by the ordinary GEN channel with ack_seq == the shared
+     * msg_seq we assigned. Only the active IIL phases await these acks. */
+    if (f->main_cmd == IPC41_MAIN_GEN && f->cmd_type == IPC41_TYPE_RESPONSE &&
+        f->payload_len == 5 && f->ack_seq == g.iil_pdn.last_write_seq) {
+        struct fmt_rx_gen gen;
+        if (fmt_rx_gen(f->payload, f->payload_len, &gen)) {
+            diagf("iil_pdn_result", "\"sub\":%u,\"result\":%u", gen.sub, gen.result);
+            iil_pdn_gen_result(&g.iil_pdn, gen.result, f->ack_seq);
+        }
+    }
     /* Correlate GEN result to the IMS PDN drive (distinct CID). */
     if (f->main_cmd == IPC41_MAIN_GEN && f->cmd_type == IPC41_TYPE_RESPONSE &&
         f->payload_len == 5 && f->ack_seq == g.ims_pdn.last_write_seq &&
@@ -1126,16 +1136,22 @@ static bool radiod_write_iil(const struct iil_frame *f)
         return false;
     }
     if (!f || f->len < 7 || f->len > IIL_TX_MAX_FRAME) return false;
+    /* IIL shares the endpoint sequence space with FMT. The vendor uses ONE
+     * msg_seq counter (byte 2) across both; IIL's 16-bit msg_seq fits in the
+     * low byte for seq<256 and the high byte stays 0. Starting at 1 (never 0,
+     * which the CP treats as a non-correlated write). */
     uint8_t frame[IIL_TX_MAX_FRAME];
     memcpy(frame, f->buf, f->len);
-    frame[2] = (uint8_t)(g.next_iil_seq & 0xff);
-    frame[3] = (uint8_t)(g.next_iil_seq >> 8);
+    if (g.next_seq == 0) g.next_seq = 1;
+    frame[2] = g.next_seq;
+    frame[3] = 0;
     enum nuxel_io_status st = nuxel_dev_write(&g.fmt.dev, frame, f->len);
     if (st == NUXEL_IO_OK) {
         g.stats.tx_frames++;
         diagf("iil_tx", "\"main\":%u,\"sub\":%u,\"type\":%u,\"len\":%zu,\"seq\":%u",
-              f->main_cmd, f->sub_cmd, f->cmd_type, f->len, g.next_iil_seq);
-        g.next_iil_seq = (uint16_t)((g.next_iil_seq + 1u) % 0xffffu);
+              f->main_cmd, f->sub_cmd, f->cmd_type, f->len, g.next_seq);
+        g.next_seq = (uint8_t)((g.next_seq + 1u) % 255u);
+        if (g.next_seq == 0) g.next_seq = 1;
         return true;
     }
     diagf("iil_tx_fail", "\"st\":\"%s\"", nuxel_io_status_name(st));
@@ -1145,9 +1161,10 @@ static bool radiod_write_iil(const struct iil_frame *f)
     return false;
 }
 
-static bool iil_pdn_write(const struct iil_frame *f, void *user)
+static bool iil_pdn_write(const struct iil_frame *f, uint8_t *seq, void *user)
 {
     (void)user;
+    *seq = g.next_seq;   /* radiod_write_iil writes this shared seq */
     return g.cp_online && radiod_write_iil(f);
 }
 
@@ -1998,7 +2015,10 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
         ims_pdn_tick(&g.ims_pdn, now_ms(), false);
         g.ims_pdn_up = false;
     }
-    if (g.ims_pdn_armed && ims_online &&
+    /* Only ONE IMS PDN driver may write the GPRS Define/Activate commands at
+     * a time. When the recovered IIL path is armed, the FMT path is disabled
+     * to avoid competing modem writers on main=13 sub=1/sub=4. */
+    if (g.ims_pdn_armed && !g.iil_pdn_armed && ims_online &&
         (g.dsc.phase == DS_ACTIVE || g.dsc.phase == DS_WAIT_IP ||
          ds_terminal(&g.dsc))) {
         static enum ims_pdn_phase ims_pdn_last_diag = (enum ims_pdn_phase)0xff;

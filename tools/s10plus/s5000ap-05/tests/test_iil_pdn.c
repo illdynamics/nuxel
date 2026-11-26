@@ -6,10 +6,11 @@
 
 static const struct iil_frame *last_frame;
 
-static bool write_cb(const struct iil_frame *f, void *user)
+static bool write_cb(const struct iil_frame *f, uint8_t *seq, void *user)
 {
     (void)user;
     last_frame = f;
+    if (seq) *seq = 1;
     return true;
 }
 

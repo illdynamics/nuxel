@@ -17,7 +17,7 @@
 #include "ims_iil.h"
 #include "ims_iil_rx.h"
 
-typedef bool (*iil_pdn_write_fn)(const struct iil_frame *f, void *user);
+typedef bool (*iil_pdn_write_fn)(const struct iil_frame *f, uint8_t *seq, void *user);
 
 #define IIL_PDN_CID 2u
 #define IIL_PDN_APN "ims.mnc008.mcc204.gprs"
@@ -37,6 +37,8 @@ struct iil_pdn {
     enum iil_pdn_phase phase;
     uint8_t attempt;
     uint8_t cid;
+    uint8_t last_write_seq;   /* msg_seq assigned on the last IIL write */
+    uint16_t last_result;     /* GEN result correlated to the last write */
     uint64_t phase_deadline_ms;
     bool attached, ip_ready, pcscf_ready;
     int family;
@@ -50,6 +52,8 @@ struct iil_pdn {
 bool iil_pdn_open(struct iil_pdn *p, iil_pdn_write_fn write, void *user);
 void iil_pdn_close(struct iil_pdn *p);
 enum iil_pdn_phase iil_pdn_tick(struct iil_pdn *p, uint64_t now_ms, bool online);
+/* Feed a GEN result correlated to the last IIL write (ack_seq matches). */
+void iil_pdn_gen_result(struct iil_pdn *p, uint16_t result, uint8_t ack_seq);
 /* Feed the IIL Connected and Parameters events (from the RX path). */
 void iil_pdn_on_connected(struct iil_pdn *p, const struct iil_rx_event *e);
 void iil_pdn_on_parameters(struct iil_pdn *p, const struct iil_rx_event *e);
