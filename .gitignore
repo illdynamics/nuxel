@@ -213,3 +213,4 @@ SAMFW.COM_SM-G975F_TNL_G975FXXS9DTK9_fac/**
 # S5000AP-05 compiled host test binaries (built by build.sh, not source)
 /tools/s10plus/s5000ap-05/test_iil_pdn
 /tools/s10plus/s5000ap-05/test_ims_iil_rx
+/tools/s10plus/s5000ap-05/test_iil_auth
