@@ -49,8 +49,8 @@ int main(void)
     assert(writes == 1);
     assert(!ims_init_done(&i));
 
-    /* Generic ack for GET moves to SEND_CAPA. */
-    ims_init_gen_result(&i, FMT_RX_GEN_OK, last_seq);
+    /* Direct MISC GetDeviceCapa response moves to SEND_CAPA. */
+    ims_init_capa_response(&i, last_seq);
     assert(i.phase == IMS_INIT_SEND_CAPA);
 
     /* SEND_CAPA -> WAIT_ACK (emits SetDeviceCapa). */
@@ -65,15 +65,20 @@ int main(void)
 
     ims_init_close(&i);
 
-    /* Non-zero GEN result does NOT complete init. */
+    /* A direct GET response precedes SET; non-zero GEN on SET does not
+     * complete init. */
     struct ims_init i2;
     assert(ims_init_open(&i2, write_capture, NULL));
     writes = 0;
     ims_init_tick(&i2, 0, true);
-    ims_init_tick(&i2, 1, true);
-    ims_init_gen_result(&i2, 0x8001u, last_seq);
+    ims_init_tick(&i2, 1, true);           /* SEND_GET -> WAIT_GET_ACK */
+    ims_init_capa_response(&i2, last_seq);  /* -> SEND_CAPA */
+    assert(i2.phase == IMS_INIT_SEND_CAPA);
+    ims_init_tick(&i2, 2, true);           /* SEND_CAPA -> WAIT_ACK */
+    assert(i2.phase == IMS_INIT_WAIT_ACK);
+    ims_init_gen_result(&i2, 0x8001u, last_seq); /* non-zero -> retry SET */
     assert(!ims_init_done(&i2));
-    assert(i2.phase == IMS_INIT_SEND_GET);
+    assert(i2.phase == IMS_INIT_SEND_CAPA);
     ims_init_close(&i2);
 
     printf("test_ims_init OK\n");

@@ -47,8 +47,10 @@ void ims_init_close(struct ims_init *i);
 /* Advance the capability-init FSM. `now_ms` monotonic; `online` = CP online +
  * SIM ready + writable. Returns current phase. */
 enum ims_init_phase ims_init_tick(struct ims_init *i, uint64_t now_ms, bool online);
-/* Correlate a GEN response to the last capability write. */
+/* Correlate a GEN response to the last capability write (SetDeviceCapa). */
 void ims_init_gen_result(struct ims_init *i, uint16_t result, uint8_t ack_seq);
+/* Report the modem's direct GetDeviceCapa response (main=10 sub=45 type=2). */
+void ims_init_capa_response(struct ims_init *i, uint8_t ack_seq);
 bool ims_init_done(const struct ims_init *i);
 const char *ims_init_phase_name(enum ims_init_phase p);
 

@@ -598,6 +598,13 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
         if (fmt_rx_gen(f->payload, f->payload_len, &gen))
             ims_pdn_gen_result(&g.ims_pdn, gen.result, f->ack_seq);
     }
+    /* Correlate the modem's direct GetDeviceCapa response (MISC sub=45
+     * type=2) to the capability query. This is NOT a GEN ack; the modem
+     * answers the request with a 2-byte VoiceDomainPref readback. */
+    if (f->main_cmd == IPC41_MAIN_MISC && f->sub_cmd == 45u &&
+        f->cmd_type == IPC41_TYPE_RESPONSE && f->ack_seq == g.ims_init.last_write_seq) {
+        ims_init_capa_response(&g.ims_init, f->ack_seq);
+    }
     /* Correlate GEN result to the device-capability init (MISC sub=45). */
     if (f->main_cmd == IPC41_MAIN_GEN && f->cmd_type == IPC41_TYPE_RESPONSE &&
         f->payload_len == 5 && f->ack_seq == g.ims_init.last_write_seq) {

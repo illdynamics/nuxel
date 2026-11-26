@@ -112,23 +112,27 @@ enum ims_init_phase ims_init_tick(struct ims_init *i, uint64_t now_ms, bool onli
     return i->phase;
 }
 
-void ims_init_gen_result(struct ims_init *i, uint16_t result, uint8_t ack_seq)
+void ims_init_capa_response(struct ims_init *i, uint8_t ack_seq)
 {
     if (!i) return;
     (void)ack_seq;
     if (i->phase == IMS_INIT_WAIT_GET_ACK) {
-        if (result == FMT_RX_GEN_OK) {
-            i->attempt = 0;
-            i->phase_deadline_ms = 0;
-            i->next_action_ms = 0;
-            i->phase = IMS_INIT_SEND_CAPA;
-        } else {
-            i->done = false;
-            i->phase_deadline_ms = 0;
-            i->next_action_ms = 0;
-            i->phase = IMS_INIT_SEND_GET;
-        }
-    } else if (i->phase == IMS_INIT_WAIT_ACK) {
+        /* The modem answered GetDeviceCapa with a direct MISC sub=45 response
+         * (2-byte VoiceDomainPref readback). That is the authoritative query
+         * completion; advance to the SetDeviceCapa advertisement stage. */
+        i->attempt = 0;
+        i->phase_deadline_ms = 0;
+        i->next_action_ms = 0;
+        i->phase = IMS_INIT_SEND_CAPA;
+    }
+}
+
+void ims_init_gen_result(struct ims_init *i, uint16_t result, uint8_t ack_seq)
+{
+    if (!i) return;
+    (void)ack_seq;
+    /* Only the SetDeviceCapa write is acknowledged via a GEN response. */
+    if (i->phase == IMS_INIT_WAIT_ACK) {
         if (result == FMT_RX_GEN_OK) {
             i->done = true;
             i->phase_deadline_ms = 0;
