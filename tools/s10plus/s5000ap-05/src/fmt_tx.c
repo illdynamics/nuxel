@@ -453,12 +453,21 @@ bool fmt_tx_ims_set_reg_state(struct fmt_tx_frame *f, uint8_t reg_status,
 {
     if (!f || reg_status > FMT_TX_IMS_REGSTATUS_DEREG) return false;
     uint8_t p[6] = {0};
-    p[0] = reg_status;
-    p[1] = (reg_status == FMT_TX_IMS_REGSTATUS_REGISTERED) ? 1u : 0u;
-    p[2] = network_type;
-    p[3] = 0u; /* EcmpState: no CSFB/ECMP override */
-    /* EpdgAvailableState: 0 = EPDG not available on LTE (plain VoLTE path). */
-    p[4] = 0u;
+    /* Corrected against IpcProtocol41::IpcTxImsReqSetRegState @0x34d230
+     * (aarch64 disassembly, libsec-ril 60889dd7). The 6-byte IMS payload is:
+     *   [0] request flag (int arg2; 1 == request registration)
+     *   [1] NetworkType        (arg3; Android RADIO_TECH, LTE=14)
+     *   [2] EcmpState          (arg4; no CSFB/ECMP override -> 0)
+     *   [3] EpdgState          (arg5; plain VoLTE path -> 0)
+     *   [4] EpdgAvailableState (arg6 derived; 0 = EPDG unavailable on LTE)
+     *   [5] RadioTechnology    (arg8; LTE=14)
+     * ImsRegStatus (arg1) selects the request-flag value and is NOT itself
+     * transmitted in the payload. */
+    p[0] = (reg_status == FMT_TX_IMS_REGSTATUS_REGISTERED) ? 1u : 0u;
+    p[1] = network_type;
+    p[2] = 0u; /* EcmpState */
+    p[3] = 0u; /* EpdgState */
+    p[4] = 0u; /* EpdgAvailableState (plain VoLTE, no EPDG) */
     p[5] = rat;
     return fmt_tx_raw(f, 22u /*IMS*/, 8u /*REQ_SET_REG_STATE*/,
                       FMT_TX_TYPE_NOTIFICATION, p, sizeof p);

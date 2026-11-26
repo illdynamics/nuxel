@@ -207,3 +207,5 @@ SAMFW.COM_SM-G975F_TNL_G975FXXS9DTK9_fac/**
 # message bodies; never commit them.
 /sms.md
 /sms-*.md
+/root/sms*.md
+/sms*.md

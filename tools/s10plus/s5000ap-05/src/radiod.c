@@ -595,6 +595,29 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
         if (fmt_rx_gen(f->payload, f->payload_len, &gen))
             ims_pdn_gen_result(&g.ims_pdn, gen.result, f->ack_seq);
     }
+    /* IMS PDN CID-2 attachment evidence. The IMS context is confirmed by an
+     * actual GPRS_CALL_STATUS(cid=2, state active) or GPRS_PDP_CONTEXT list
+     * entry (cid=2, state active). This is the missing feed that moves the
+     * IMS PDN FSM from VERIFY to ACTIVE. Never fabricates; only mirrors a
+     * real modem notification for the distinct IMS CID. */
+    if (f->main_cmd == IPC41_MAIN_GPRS && f->sub_cmd == IPC41_GPRS_CALL_STATUS &&
+        f->cmd_type == IPC41_TYPE_NOTIFICATION && f->payload_len >= 9 &&
+        f->payload[0] == IMS_PDN_CID) {
+        bool attached = ds_gprs_call_connected(f->payload[1]);
+        ims_pdn_report_cid(&g.ims_pdn, IMS_PDN_CID, attached);
+        diagf("ims_pdn_call_status", "\"cid\":%u,\"state\":%u,\"attached\":%s",
+              f->payload[0], f->payload[1], attached ? "true" : "false");
+    }
+    if (f->main_cmd == IPC41_MAIN_GPRS && f->sub_cmd == IPC41_GPRS_PDP_CONTEXT &&
+        f->cmd_type == IPC41_TYPE_RESPONSE) {
+        uint8_t ims_state = 0;
+        if (fmt_rx_pdp_state(f->payload, f->payload_len, IMS_PDN_CID, &ims_state)) {
+            bool attached = ds_gprs_call_connected(ims_state);
+            ims_pdn_report_cid(&g.ims_pdn, IMS_PDN_CID, attached);
+            diagf("ims_pdn_pdp_context", "\"cid\":%u,\"state\":%u,\"attached\":%s",
+                  IMS_PDN_CID, ims_state, attached ? "true" : "false");
+        }
+    }
     mobile_stop_receive(&g.mobile_stop,f);
     if (f->main_cmd == 13 && f->sub_cmd == 1 && f->cmd_type == 2) {
         struct fmt_rx_pdp_profiles profiles;
@@ -1818,8 +1841,14 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
      * the IMS DEFINE_PDP/SET_PDP_CONTEXT never overlaps the internet bearer's
      * own command sequence and GEN correlation stays unambiguous. */
     if (g.ims_pdn_armed && g.dsc.phase == DS_ACTIVE) {
+        static enum ims_pdn_phase ims_pdn_last_diag = (enum ims_pdn_phase)0xff;
         ims_pdn_tick(&g.ims_pdn, now_ms(),
             g.cp_online && g.sim_ready_seen && g.write_enabled && g.fmt.present);
+        if (g.ims_pdn.phase != ims_pdn_last_diag) {
+            ims_pdn_last_diag = g.ims_pdn.phase;
+            diagf("ims_pdn_phase", "\"phase\":\"%s\",\"attempt\":%u,\"cid\":%u",
+                  ims_pdn_phase_name(g.ims_pdn.phase), g.ims_pdn.attempt, g.ims_pdn.cid);
+        }
         if (ims_pdn_active(&g.ims_pdn) && !g.ims_pdn_up) {
             g.ims_pdn_up = true;
             diag("ims_pdn_active", NULL);
@@ -2701,6 +2730,7 @@ int main(int argc, char **argv)
         const char *imens = getenv("NUXEL_IMS_PDN");
         g.ims_pdn_armed = imens && (!strcasecmp(imens,"1") || !strcasecmp(imens,"on") ||
                                     !strcasecmp(imens,"true") || !strcasecmp(imens,"yes"));
+        diagf("ims_pdn_config", "\"armed\":%s", g.ims_pdn_armed ? "true" : "false");
     }
 
     if (setup_event() < 0) { diag("event_setup_failed", NULL); return 1; }

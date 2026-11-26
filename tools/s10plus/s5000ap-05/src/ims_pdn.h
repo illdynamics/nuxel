@@ -14,6 +14,11 @@
  * context (CID 2). No APN credentials are invented. */
 typedef bool (*ims_pdn_write_fn)(const struct fmt_tx_frame *f, uint8_t *seq, void *user);
 
+/* Distinct IMS APN data context identity. CID 1 is the ordinary internet
+ * bearer, CID 2 is the isolated IMS APN PDN (KPN 204-08 "ims"). */
+#define IMS_PDN_CID 2u
+#define IMS_PDN_APN "ims"
+
 enum ims_pdn_phase {
     IMS_PDN_IDLE = 0,
     IMS_PDN_DEFINE,     /* GPRS DEFINE_PDP_CONTEXT (APN "ims", CID 2) */

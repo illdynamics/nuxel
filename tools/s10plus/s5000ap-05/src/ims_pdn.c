@@ -15,8 +15,6 @@
 #include "fmt_rx.h"
 #include <string.h>
 
-#define IMS_PDN_CID 2u
-#define IMS_PDN_APN "ims"
 #define IMS_PDN_ATTEMPT_LIMIT 5u
 #define IMS_PDN_STEP_TIMEOUT_MS 12000u
 #define IMS_PDN_RETRY_MS 8000u
@@ -61,11 +59,21 @@ enum ims_pdn_phase ims_pdn_tick(struct ims_pdn *p, uint64_t now_ms, bool online)
         p->phase = IMS_PDN_DEFINE;
         break;
     case IMS_PDN_DEFINE:
+        /* Wait for an uncorrelated GEN response before retrying; otherwise the
+         * same frame is re-emitted every tick and exhausts the attempt budget
+         * without observing the modem rejection. */
+        if (p->phase_deadline_ms && now_ms < p->phase_deadline_ms) break;
         if (now_ms >= p->next_action_ms && p->attempt < IMS_PDN_ATTEMPT_LIMIT) {
             p->attempt++;
             struct fmt_tx_frame f;
             uint8_t seq = 0;
-            if (fmt_tx_define_pdp_context(&f, IMS_PDN_APN, p->proto, IMS_PDN_CID) &&
+            /* The CP DEFINE validator accepts only PDP wire types 2,5,6
+             * (0x05=IPv4, 0x06=IPv6); the IPv4v6 wire byte 0x04 is rejected
+             * with GEN 0x8001 (invalid parameter). Mirror the proven internet
+             * path: DEFINE an IPv4 context when the profile is dual-stack. */
+            uint8_t define_proto = (p->proto == FMT_TX_PROTO_IPV4V6) ?
+                                   FMT_TX_PROTO_IP : p->proto;
+            if (fmt_tx_define_pdp_context(&f, IMS_PDN_APN, define_proto, IMS_PDN_CID) &&
                 p->write(&f, &seq, p->user)) {
                 p->last_write_seq = seq;
                 p->phase_deadline_ms = now_ms + IMS_PDN_STEP_TIMEOUT_MS;
@@ -75,6 +83,7 @@ enum ims_pdn_phase ims_pdn_tick(struct ims_pdn *p, uint64_t now_ms, bool online)
         }
         break;
     case IMS_PDN_ACTIVATE:
+        if (p->phase_deadline_ms && now_ms < p->phase_deadline_ms) break;
         if (now_ms >= p->next_action_ms && p->attempt < IMS_PDN_ATTEMPT_LIMIT) {
             p->attempt++;
             struct fmt_tx_frame f;
@@ -105,13 +114,16 @@ void ims_pdn_gen_result(struct ims_pdn *p, uint16_t result, uint8_t ack_seq)
         if (p->phase == IMS_PDN_DEFINE) {
             p->attempt = 0;
             p->next_action_ms = 0;
+            p->phase_deadline_ms = 0;
             p->phase = IMS_PDN_ACTIVATE;
         } else if (p->phase == IMS_PDN_ACTIVATE) {
             p->attempt = 0;
+            p->phase_deadline_ms = 0;
             p->phase = IMS_PDN_VERIFY;
         }
     } else {
         p->phase = IMS_PDN_FAILED;
+        p->phase_deadline_ms = 0;
     }
 }
 
