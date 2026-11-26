@@ -183,6 +183,7 @@ struct radiod_ctx {
 static struct radiod_ctx g;
 static void begin_data_session(const char *apn);
 static int setup_session_bus(void);
+static void radiod_sip_param_from_pcscf(const struct iil_pdn *p);
 
 /* ------------------------------------------------------------------ */
 /* time helpers                                                         */
@@ -1229,7 +1230,6 @@ static void radiod_sip_param_from_pcscf(const struct iil_pdn *p)
     }
     if (!proxy[0]) return;
     struct fmt_tx_frame f;
-    uint8_t seq = 0;
     if (fmt_tx_set_sip_param(&f, proxy, g.ims.identity.impi, "",
                              FMT_TX_AUTH_NONE, FMT_TX_PROTO_IPV6)) {
         if (g.cp_online && radiod_write_fmt(&f)) {
