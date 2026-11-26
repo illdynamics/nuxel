@@ -498,6 +498,19 @@ bool fmt_tx_ims_deregistration(struct fmt_tx_frame *f)
 
 /* ---- MISC device capability (AP -> CP) ---- */
 
+/* IpcProtocol41::IpcTxGetDeviceCapa @0x331350 (libsec-ril 60889dd7):
+ *   FMT main=10 (MISC), sub=45 (0x2d), type=2 (REQUEST), no payload.
+ *   Same (main,sub) as SetDeviceCapa but the REQUEST type; the vendor issues
+ *   this first (DoCheckDeviceCapa -> GetDeviceCapa) to trigger the modem's
+ *   device-capability handshake. The modem replies with IpcRxMiscDeviceCapaResp
+ *   (main=10 sub=82). Verified by isolated emulation: frame 07 00 00 00 0a 2d 02.
+ */
+bool fmt_tx_get_device_capa(struct fmt_tx_frame *f)
+{
+    return fmt_tx_raw(f, 10u /*MISC*/, 45u /*GET/SET_DEVICE_CAPA*/,
+                      FMT_TX_TYPE_REQUEST, NULL, 0);
+}
+
 /* IpcProtocol41::IpcTxSetDeviceCapa @0x331400 (libsec-ril 60889dd7):
  *   FMT main=10 (MISC), sub=45 (0x2d), type=3 (notification), 2-byte payload
  *   [ voice_domain_pref_1, voice_domain_pref_2 ].

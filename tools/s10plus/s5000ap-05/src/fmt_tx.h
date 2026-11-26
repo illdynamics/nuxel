@@ -237,5 +237,9 @@ bool fmt_tx_ims_deregistration(struct fmt_tx_frame *f);
 #define FMT_TX_VOICE_DOMAIN_PS_ONLY 1u
 #define FMT_TX_VOICE_DOMAIN_CS_ONLY 2u
 
+/* IpcTxGetDeviceCapa: main=10 (MISC), sub=45, type=2 (request), no payload.
+ * Issued before SetDeviceCapa to trigger the modem capability handshake. */
+bool fmt_tx_get_device_capa(struct fmt_tx_frame *f);
+
 /* IpcTxSetDeviceCapa: main=10 (MISC), sub=45, type=3, payload=[pref1, pref2]. */
 bool fmt_tx_set_device_capa(struct fmt_tx_frame *f, uint8_t pref1, uint8_t pref2);

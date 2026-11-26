@@ -8,8 +8,9 @@
 /* Native IMS device-capability initialization.
  *
  * Stock Samsung initializes the modem IMS stack by advertising truthful
- * device voice-domain capability via ModemProxy::SetDeviceCapa (IpcTxSetDeviceCapa,
- * FMT main=10 MISC sub=45 type=3, 2-byte payload) BEFORE driving registration.
+ * device voice-domain capability via ModemProxy::GetDeviceCapa/SetDeviceCapa
+ * (IpcTxGetDeviceCapa main=10 MISC sub=45 type=2 request, then IpcTxSetDeviceCapa
+ * main=10 MISC sub=45 type=3 2-byte payload) BEFORE driving registration.
  * Without this the modem's IMS stack is not armed and SetImsRegState never
  * produces an authoritative registration notification (observed: GEN 0x8000
  * ack only, then registration timeout).
@@ -22,8 +23,10 @@ typedef bool (*ims_init_write_fn)(const struct fmt_tx_frame *f, uint8_t *seq, vo
 
 enum ims_init_phase {
     IMS_INIT_IDLE = 0,
-    IMS_INIT_SEND_CAPA,     /* advertise device capability (MISC sub=45) */
-    IMS_INIT_WAIT_ACK,      /* awaiting GEN acknowledgment */
+    IMS_INIT_SEND_GET,      /* query device capability (MISC sub=45 type=2) */
+    IMS_INIT_WAIT_GET_ACK,  /* awaiting GEN ack for the capability query */
+    IMS_INIT_SEND_CAPA,     /* advertise device capability (MISC sub=45 type=3) */
+    IMS_INIT_WAIT_ACK,      /* awaiting GEN acknowledgment for the capability set */
     IMS_INIT_DONE,          /* capability acknowledged; IMS may register */
     IMS_INIT_FAILED,
 };
