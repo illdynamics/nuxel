@@ -17,7 +17,7 @@ typedef bool (*ims_pdn_write_fn)(const struct fmt_tx_frame *f, uint8_t *seq, voi
 /* Distinct IMS APN data context identity. CID 1 is the ordinary internet
  * bearer, CID 2 is the isolated IMS APN PDN (KPN 204-08 "ims"). */
 #define IMS_PDN_CID 2u
-#define IMS_PDN_APN "ims"
+#define IMS_PDN_APN "ims.mnc008.mcc204.gprs" /* KPN 204-08 FQDN IMS APN (verified from live CP GET profile list) */
 
 enum ims_pdn_phase {
     IMS_PDN_IDLE = 0,

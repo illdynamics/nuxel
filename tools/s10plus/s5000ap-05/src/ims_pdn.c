@@ -27,7 +27,7 @@ bool ims_pdn_open(struct ims_pdn *p, ims_pdn_write_fn write, void *user)
     p->user = user;
     p->cid = IMS_PDN_CID;
     p->proto = FMT_TX_PROTO_IPV4V6; /* IMS P-CSCF discovery over IPv4v6 */
-    p->auth = FMT_TX_AUTH_NONE;      /* PDP-layer auth NONE (SIP does AKA) */
+    p->auth = FMT_TX_AUTH_CHAP;      /* KPN 204-08 IMS APN uses CHAP (empty creds; SIP AKA at REGISTER) */
     p->phase = IMS_PDN_IDLE;
     p->active = false;
     return true;

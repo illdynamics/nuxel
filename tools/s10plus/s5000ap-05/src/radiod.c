@@ -627,12 +627,25 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
              * the live profile definitions is evidence of an IMS PDN, NOT a
              * substitute for modem-confirmed IMS registration. */
             g.ims_pdn_up = false;
-            for (unsigned i = 0; i < profiles.count; i++)
-                if (!memcmp(profiles.profile[i].apn, "ims", 3) &&
-                    profiles.profile[i].apn[3] == '\0')
+            for (unsigned i = 0; i < profiles.count; i++) {
+                const char *a = profiles.profile[i].apn;
+                /* KPN 204-08 IMS APN is the FQDN "ims.mnc008.mcc204.gprs";
+                 * accept both the FQDN and the bare "ims" prefix. */
+                if (!strncmp(a, "ims", 3) && (a[3] == '\0' || a[3] == '.'))
                     g.ims_pdn_up = true;
-            diagf("pdp_definitions", "\"count\":%u,\"ims_pdn\":%s",
-                  profiles.count, g.ims_pdn_up ? "true" : "false");
+            }
+            char apns[FMT_RX_PDP_PROFILES*102] = {0};
+            size_t apn_off = 0;
+            for (unsigned i = 0; i < profiles.count && apn_off < sizeof(apns)-2; i++) {
+                size_t l = strlen(profiles.profile[i].apn);
+                if (apn_off) apns[apn_off++] = ',';
+                if (l > sizeof(apns)-apn_off-1) l = sizeof(apns)-apn_off-1;
+                memcpy(apns+apn_off, profiles.profile[i].apn, l);
+                apn_off += l;
+            }
+            apns[apn_off] = 0;
+            diagf("pdp_definitions", "\"count\":%u,\"ims_pdn\":%s,\"apns\":\"%s\"",
+                  profiles.count, g.ims_pdn_up ? "true" : "false", apns);
         } else diagf("pdp_definitions_invalid", "\"length\":%u", f->payload_len);
     }
     /* Reply only to the CP's actual startup request. Transfer the existing
