@@ -15,8 +15,8 @@
  * produces an authoritative registration notification (observed: GEN 0x8000
  * ack only, then registration timeout).
  *
- * This module is a bounded, response-correlated FSM that performs ONLY that
- * legitimate capability advertisement. It never fabricates capability or
+ * This module is a bounded, response-correlated FSM that performs the supported
+ * capability advertisement AND the IMS SDM mode-ON arm (SetImsSdmSetting). It never fabricates capability or
  * registration; it observes a real modem acknowledgment and reports readiness
  * to the IMS registration FSM. */
 typedef bool (*ims_init_write_fn)(const struct fmt_tx_frame *f, uint8_t *seq, void *user);
@@ -27,7 +27,9 @@ enum ims_init_phase {
     IMS_INIT_WAIT_GET_ACK,  /* awaiting GEN ack for the capability query */
     IMS_INIT_SEND_CAPA,     /* advertise device capability (MISC sub=45 type=3) */
     IMS_INIT_WAIT_ACK,      /* awaiting GEN acknowledgment for the capability set */
-    IMS_INIT_DONE,          /* capability acknowledged; IMS may register */
+    IMS_INIT_SEND_SDM,      /* arm the IMS stack: SetImsSdmSetting mode=ON (MISC sub=32) */
+    IMS_INIT_WAIT_SDM_ACK,  /* awaiting GEN acknowledgment for the SDM mode set */
+    IMS_INIT_DONE,          /* capability + IMS stack armed; IMS may register */
     IMS_INIT_FAILED,
 };
 
