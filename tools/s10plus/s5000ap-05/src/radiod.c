@@ -1403,8 +1403,32 @@ static void sip_tr_close(void)
     if (sip_tr_fd >= 0) { close(sip_tr_fd); sip_tr_fd = -1; }
 }
 
-/* Tick the native SIP transport: open when P-CSCF+identity are ready, start
- * registration, then advance the FSM. Registers only on an authoritative 200. */
+/* Drain any queued SIP response datagram(s) off the IMS bearer socket and
+ * feed them to the registration FSM. This is the missing receive path: the
+ * FSM previously only SENT REGISTER and never read the network's 401/200
+ * replies, so it could never actually register. Non-blocking, bounded. */
+static void sip_tr_recv(void)
+{
+    if (sip_tr_fd < 0 || !g.sip_tr_open) return;
+    uint8_t buf[IMS_SIP_TR_MAX_REPLY + 1];
+    unsigned budget = 16;   /* bounded per-wake drain */
+    while (budget-- > 0) {
+        ssize_t n = recvfrom(sip_tr_fd, buf, sizeof buf, MSG_DONTWAIT, NULL, NULL);
+        if (n < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) break;  /* drained */
+            if (errno == EINTR) continue;
+            break;   /* hard error: drop the socket on next tick */
+        }
+        if (n == 0) break;
+        /* Feed exactly one datagram; the FSM parse is bounded. Never log body. */
+        ims_sip_tr_feed(&g.sip_tr, buf, (size_t)n);
+        /* A state change is surfaced below in sip_tr_tick. */
+    }
+}
+
+/* Tick the native SIP transport: open when P-CSCF+identity are ready, drain
+ * replies, start registration, then advance the FSM. Registers only on an
+ * authoritative 200. */
 static void sip_tr_tick(uint64_t now)
 {
     if (iil_pdn_active(&g.iil_pdn)) {
@@ -1413,6 +1437,7 @@ static void sip_tr_tick(uint64_t now)
         }
         if (g.sip_tr_open) {
             enum ims_sip_tr_phase before = g.sip_tr.phase;
+            sip_tr_recv();   /* read 401/200 replies before advancing the FSM */
             if (before == IMS_SIP_TR_IDLE) (void)ims_sip_tr_start(&g.sip_tr);
             enum ims_sip_tr_phase after = ims_sip_tr_tick(&g.sip_tr, now, true);
             if (after != before)
