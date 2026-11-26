@@ -106,8 +106,14 @@ void iil_pdn_gen_result(struct iil_pdn *p, uint16_t result, uint8_t ack_seq)
     /* GEN_OK (0x8000 in this CP's encoding) advances the phase; rejection
      * fails the phase. PROVISION/DEFINE/ACTIVATE writes all await a GEN ack. */
     if (p->phase == IIL_PDN_PROVISION) {
-        if (result == 0x8000u) { p->phase = IIL_PDN_DEFINE; p->attempt = 0; }
-        else { p->phase = IIL_PDN_FAILED; }
+        /* The IpcTxImsReqSetImsPdnInfoE911 provisioner is best-effort: it
+         * seeds the modem's INTERNAL IMS stack. On this CP the E911 path is
+         * rejected (0x8003 UNSUPPORTED) or denied (0x8001), but the direct
+         * IIL GPRS Define/Activate for CID-2 is independently acknowledgeable
+         * (0x8000). Treat any provisioner result as "skip provisioner" and
+         * proceed to DEFINE/ACTIVATE so a rejected provisioning step does not
+         * block the only other live path. */
+        p->phase = IIL_PDN_DEFINE; p->attempt = 0;
     } else if (p->phase == IIL_PDN_DEFINE) {
         if (result == 0x8000u) { p->phase = IIL_PDN_ACTIVATE; p->attempt = 0; }
         else { p->phase = IIL_PDN_FAILED; }

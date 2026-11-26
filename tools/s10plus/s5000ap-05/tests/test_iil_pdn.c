@@ -30,8 +30,17 @@ int main(void)
     assert(last_frame->len == 2332);
     assert(last_frame->buf[4] == 112 && last_frame->buf[5] == 10 && last_frame->buf[6] == 1);
 
-    /* GEN ack advances PROVISION -> DEFINE */
+    /* GEN ack (OK) advances PROVISION -> DEFINE */
     iil_pdn_gen_result(&p, 0x8000u, 1);
+    assert(p.phase == IIL_PDN_DEFINE);
+
+    /* Rejected/unsupported provisioner is non-blocking: it still advances to
+     * DEFINE so the direct IIL GPRS Define/Activate path is not skipped. */
+    p.phase = IIL_PDN_PROVISION; p.phase_deadline_ms = 1;
+    iil_pdn_gen_result(&p, 0x8003u, 1);
+    assert(p.phase == IIL_PDN_DEFINE);
+    p.phase = IIL_PDN_PROVISION; p.phase_deadline_ms = 1;
+    iil_pdn_gen_result(&p, 0x8001u, 1);
     assert(p.phase == IIL_PDN_DEFINE);
 
     /* DEFINE emits main=13 sub=1 on next tick */
