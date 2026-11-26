@@ -5,13 +5,16 @@
 #include <stdbool.h>
 #include "fmt_tx.h"
 
-/* Native IMS APN PDN establishment — a SECOND data context alongside the
- * working internet bearer. Establishes APN "ims" (KPN 204-08, documented,
- * AUTH=none at PDP layer; IMS auth is at SIP/REGISTER via SIM AKA).
+/* Native IMS APN PDN establishment — a MODEM-MANAGED IMS/ePDN bearer.
  *
- * Driver contract: bounded, response-correlated, fail-closed. It NEVER
- * releases or modifies the internet bearer (CID 1); it only adds a distinct
- * context (CID 2). No APN credentials are invented. */
+ * Stock Samsung does NOT drive a raw second GPRS CID for IMS. The AP merely
+ * syncs the IMS DataProfile (type 2, label "ims", APN "ims..."), and the modem
+ * autonomously activates the IMS/ePDN bearer and performs P-CSCF discovery
+ * (LteEpdgDataCallManager::ImsPdnTriggered @0x28f0e0 -> ImsManager::OnEpdnConnected
+ * @0x23dfb0). IMS auth is SIP/REGISTER via SIM AKA, not PDP-layer auth.
+ *
+ * Driver contract: bounded, response-correlated, fail-closed. It NEVER releases
+ * or modifies the internet bearer (CID 1). No APN credentials are invented. */
 typedef bool (*ims_pdn_write_fn)(const struct fmt_tx_frame *f, uint8_t *seq, void *user);
 
 /* Distinct IMS APN data context identity. CID 1 is the ordinary internet
@@ -21,10 +24,10 @@ typedef bool (*ims_pdn_write_fn)(const struct fmt_tx_frame *f, uint8_t *seq, voi
 
 enum ims_pdn_phase {
     IMS_PDN_IDLE = 0,
-    IMS_PDN_DEFINE,     /* GPRS DEFINE_PDP_CONTEXT (APN "ims", CID 2) */
-    IMS_PDN_ACTIVATE,   /* GPRS SET_PDP_CONTEXT activate (CID 2) */
-    IMS_PDN_VERIFY,     /* confirm the IMS context is actually attached */
-    IMS_PDN_ACTIVE,     /* IMS PDN established */
+    IMS_PDN_SET_PROFILE,  /* GPRS SET_DATA_PROFILE (IMS DataProfile type 2, APN ims) */
+    IMS_PDN_SYNC_PROFILE, /* GPRS SYNC_PROFILE_INFO (full IMS profile + RAT LTE) */
+    IMS_PDN_VERIFY,       /* confirm the modem managed the IMS bearer itself */
+    IMS_PDN_ACTIVE,       /* IMS PDN established (modem-confirmed) */
     IMS_PDN_FAILED,
 };
 
@@ -34,8 +37,9 @@ struct ims_pdn {
     enum ims_pdn_phase phase;
     uint8_t attempt;
     uint8_t cid;         /* distinct from internet CID 1 */
-    uint8_t proto;       /* IP family (IPV4V6 for IMS P-CSCF discovery) */
+    uint8_t proto;       /* IP family (IPv6 for IMS P-CSCF discovery) */
     uint8_t auth;        /* AUTH_NONE at PDP layer */
+    uint8_t profile_id;  /* vendor IMS DataProfile wire id (2 = IMS/ePDN) */
     uint8_t last_write_seq;
     uint64_t next_action_ms;
     uint64_t phase_deadline_ms;

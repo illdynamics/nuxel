@@ -119,17 +119,19 @@ static uint8_t proto_wire_byte(uint8_t proto)
  * See docs/S5000AP-IPC41-DATA.md and the vendor-emulated golden vectors.
  * This convenience API configures the default internet profile (wire ID 1).
  */
-bool fmt_tx_set_data_profile(struct fmt_tx_frame *f, const char *apn,
-                             uint8_t auth_code, uint8_t proto)
+bool fmt_tx_set_data_profile_ex(struct fmt_tx_frame *f, const char *apn,
+                                  uint8_t auth_code, uint8_t proto,
+                                  uint8_t profile_id, const char *label)
 {
-    if (!f || !apn || auth_code > FMT_TX_AUTH_PAP_OR_CHAP) return false;
+    if (!f || !apn || !label || auth_code > FMT_TX_AUTH_PAP_OR_CHAP) return false;
     size_t alen = strlen(apn);
-    if (alen == 0 || alen > 100u) return false;
+    size_t llen = strlen(label);
+    if (alen == 0 || alen > 100u || llen == 0 || llen > 12u) return false;
     uint8_t *p = fmt_tx_begin(f, MAIN_GPRS, 27u, FMT_TX_TYPE_NOTIFICATION, 196u);
     if (!p) return false;
     memset(p, 0, 196u);
-    p[0] = 1u;                         /* default DataProfile -> wire ID 1 */
-    memcpy(p + 1, "lte_internet", 12); /* fixed profile label, zero padded */
+    p[0] = profile_id;                   /* explicit vendor DataProfile wire id */
+    memcpy(p + 1, label, llen);          /* fixed 12-byte profile label, zero padded */
     p[21] = proto_wire_byte(proto);
     memcpy(p + 22, apn, alen);
     /* DataAuth NONE=0, PAP=1, CHAP=2, PAP_OR_CHAP=3 -> 0,1,2,1. */
@@ -138,6 +140,15 @@ bool fmt_tx_set_data_profile(struct fmt_tx_frame *f, const char *apn,
     p[188] = 0;                        /* no P-CSCF requested */
     p[189] = 0;                        /* enabled: (~true) & 1 */
     return true;
+}
+
+bool fmt_tx_set_data_profile(struct fmt_tx_frame *f, const char *apn,
+                             uint8_t auth_code, uint8_t proto)
+{
+    /* Default internet profile: ConvertProfileId(DEFAULT)==1, label
+     * "lte_internet" (verified golden vector). */
+    return fmt_tx_set_data_profile_ex(f, apn, auth_code, proto, 1u,
+                                      "lte_internet");
 }
 
 /* IpcTxSetPdpContext @0x31f6e0 takes username/password, NOT an APN.

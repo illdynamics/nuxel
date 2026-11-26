@@ -124,6 +124,23 @@ int main(void)
     CHECK(!fmt_tx_set_data_profile(&f, NULL, 0, 4));
     CHECK(!fmt_tx_set_data_profile(&f, "", 0, 4));
     CHECK(!fmt_tx_set_data_profile(&f, "internet", 4, 4));
+
+    /* Explicit IMS DataProfile (type 2, label "ims", APN ims...gprs) — the
+     * modem-managed IMS/ePDN bearer contract recovered from IpcTxSetDataProfile
+     * @0x31ff48 + DataCallList::GetCall(2) in ImsPdnTriggered @0x28f0e0. */
+    CHECK(fmt_tx_set_data_profile_ex(&f, "ims.mnc008.mcc204.gprs",
+                                     FMT_TX_AUTH_NONE, FMT_TX_PROTO_IPV6,
+                                     2u, "ims"));
+    /* header: len=203, main=13(GPRS), sub=27, type=3; payload[0]=profile 2 */
+    CHECK(f.buf[0] == 0xcb && f.buf[4] == 13 && f.buf[5] == 27 && f.buf[6] == 3);
+    CHECK(f.buf[7] == 2);                 /* DataProfile type 2 (IMS/ePDN) */
+    CHECK(memcmp(f.buf+8, "ims", 3) == 0); /* profile label "ims" */
+    CHECK(f.buf[7+21] == 0x06);           /* IPv6 wire byte */
+    CHECK(memcmp(f.buf+7+22, "ims.mnc008.mcc204.gprs", 24) == 0); /* APN */
+    /* profile_id is a 1-byte wire value (0 is valid); only label/apn bounds fail */
+    CHECK(!fmt_tx_set_data_profile_ex(&f, "ims.mnc008.mcc204.gprs", 0, 3, 2, ""));
+    CHECK(!fmt_tx_set_data_profile_ex(&f, "ims.mnc008.mcc204.gprs", 0, 3, 2, NULL));
+    CHECK(!fmt_tx_set_data_profile_ex(&f, "ims.mnc008.mcc204.gprs", 0, 3, 2, "toolonglabelxyz"));
     CHECK(!fmt_tx_set_pdp_context(&f, "internet", 0, 4, 0, 1));
     CHECK(!fmt_tx_set_pdp_context(&f, "internet", 0, 4, 1, 9));
     const uint8_t raw[] = {10,0,0,0,13,3,3,0xaa,0xbb,0xcc};

@@ -271,3 +271,14 @@ bool fmt_tx_sdm_ims_mode(struct fmt_tx_frame *f, uint8_t mode);
 
 /* P-CSCF (sub=34, variable): the P-CSCF FQDN/address. */
 bool fmt_tx_sdm_pcscf(struct fmt_tx_frame *f, const char *pcscf);
+
+/* GPRS set data profile with EXPLICIT vendor DataProfile type + profile label.
+ * The default wrapper always advertises the DEFAULT internet profile
+ * (ConvertProfileId(DEFAULT)=1, label "lte_internet"). The modem manages the
+ * IMS/ePDN bearer itself when the IMS profile (DataProfile type 2, label
+ * "ims", APN "ims...") is synced; the AP never drives a raw second CID.
+ * Recovered from IpcTxSetDataProfile @0x31ff48 + DataCallList::GetCall(2)
+ * in ImsPdnTriggered @0x28f0e0. */
+bool fmt_tx_set_data_profile_ex(struct fmt_tx_frame *f, const char *apn,
+                                uint8_t auth_code, uint8_t proto,
+                                uint8_t profile_id, const char *label);
