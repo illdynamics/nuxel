@@ -642,12 +642,12 @@ bool fmt_tx_ims_profile(struct fmt_tx_frame *f, const char *apn, uint8_t proto)
 }
 bool fmt_tx_ims_define(struct fmt_tx_frame *f, const char *apn, uint8_t proto)
 {
-    /* payload[1] is AccessNetworkType (EUTRAN=1), NOT profile id. The prior
-     * code passed DataProfile id 2 here and the CP rejected the frame with
-     * 0x8001. Stock IpcTxDefinePdpContext(payload[1]=AccessNetworkType) uses
-     * EUTRAN(1) for both the internet and IMS LTE PDNs; the APN string alone
-     * distinguishes the ims bearer. */
-    if (!fmt_tx_define_pdp_context(f, apn, proto, 1u)) return false;
+    /* payload[1] selector restored to the Round 07 fb9da745 value (=2, the
+     * live-verified IMS DataProfile/CID slot that produced GPRS_PDP_CONTEXT
+     * cid=2 state=1). The interim 09980a02 change to 1u (mislabeled
+     * "EUTRAN") plus the IIL/bare-APN regressions drove CID-2 back to
+     * state=3 (deactivated). */
+    if (!fmt_tx_define_pdp_context(f, apn, proto, 2u)) return false;
     f->buf[7+126] = proto==FMT_TX_PROTO_IP ? 2 : proto==FMT_TX_PROTO_IPV6 ? 3 : 1;
     return true;
 }

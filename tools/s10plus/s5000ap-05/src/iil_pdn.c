@@ -132,6 +132,20 @@ enum iil_pdn_phase iil_pdn_tick(struct iil_pdn *p, uint64_t now_ms, bool online)
         break;
     }
     case IIL_PDN_VERIFY:
+        /* The modem acknowledged ACTIVATE (GEN 0x8000) but must also emit
+         * IpcRxIilConnected + IpcRxIilParameters to prove the CID-2 bearer is
+         * usable. If that confirmation never arrives (the observed state=3
+         * deactivation), re-arm the profile/define/activate sequence rather
+         * than sitting inert forever. Bounded by the attempt limit so a truly
+         * unprovisioned bearer cannot retry-storm the CP. */
+        if (p->phase_deadline_ms == 0) {
+            p->phase_deadline_ms = now_ms + IIL_PDN_RETRY_MS;
+        } else if (now_ms >= p->phase_deadline_ms) {
+            p->phase_deadline_ms = 0;
+            if (++p->attempt >= IIL_PDN_ATTEMPT_LIMIT) p->phase = IIL_PDN_FAILED;
+            else p->phase = IIL_PDN_SET_PROFILE;
+        }
+        break;
     case IIL_PDN_ACTIVE:
     case IIL_PDN_FAILED:
         break;

@@ -38,11 +38,13 @@ bool ims_pdn_open(struct ims_pdn *p, ims_pdn_write_fn write, void *user)
     p->write = write;
     p->user = user;
     p->cid = IMS_PDN_CID;
-    /* IMS P-CSCF discovery is IPv6 (KPN 204-08). Do NOT use IPV4V6 here:
-     * DefinePdpContext(sub=1) CP validator 0x41219fe4 rejects the dual-stack
-     * wire byte 0x04 with 0x8001; it accepts IP(0x05) and IPV6(0x06) only. */
-    p->proto = FMT_TX_PROTO_IPV6;
-    p->auth = FMT_TX_AUTH_NONE;      /* 3GPP IMS APN: no PDP-layer auth; SIP/REGISTER AKA */
+    /* Round 07 fb9da745 live-verified config (the only configuration with
+     * physical GPRS_PDP_CONTEXT cid=2 state=1): profile is IPv4v6, DEFINE is
+     * lowered to IPv4 wire 0x05 (the CP validator rejects the dual-stack wire
+     * 0x04), PDP auth is CHAP (empty creds), APN is the FQDN. The later
+     * AUTH_NONE+IPv6 change (da472387) regressed CID-2 to state=3. */
+    p->proto = FMT_TX_PROTO_IPV4V6;
+    p->auth = FMT_TX_AUTH_CHAP;
     p->profile_id = IMS_PDN_PROFILE_ID;
     p->phase = IMS_PDN_IDLE;
     p->active = false;
@@ -96,8 +98,12 @@ enum ims_pdn_phase ims_pdn_tick(struct ims_pdn *p, uint64_t now_ms, bool online)
         if (p->phase == IMS_PDN_SET_PROFILE) {
             built = fmt_tx_ims_profile(&f, IMS_PDN_APN, p->proto);
         } else if (p->phase == IMS_PDN_DEFINE) {
-            /* payload[1]=EUTRAN(1); APN distinguishes the ims bearer. */
-            built = fmt_tx_ims_define(&f, IMS_PDN_APN, p->proto);
+            /* Round 07 fb9da745: DEFINE lowers IPv4v6 profile to IPv4 wire
+             * 0x05 (the CP validator rejects the dual-stack 0x04 with 0x8001).
+             * payload[1] selector is 2 (the IMS DataProfile/CID slot). */
+            uint8_t define_proto = (p->proto == FMT_TX_PROTO_IPV4V6) ?
+                                   FMT_TX_PROTO_IP : p->proto;
+            built = fmt_tx_ims_define(&f, IMS_PDN_APN, define_proto);
         } else if (p->phase == IMS_PDN_ACTIVATE) {
             /* main=13 sub=4 ACTIVATE for CID 2, no PDP-layer auth. */
             built = fmt_tx_set_pdp_context(&f, IMS_PDN_APN, p->auth,
@@ -115,6 +121,20 @@ enum ims_pdn_phase ims_pdn_tick(struct ims_pdn *p, uint64_t now_ms, bool online)
         break;
     }
     case IMS_PDN_VERIFY:
+        /* ACTIVATE was acknowledged (GEN 0x8000) but the modem must independently
+         * confirm a CID-2 attach + IP + P-CSCF. If that confirmation never
+         * arrives (the CID-2 deactivation/state=3 regression), re-arm the whole
+         * SET_PROFILE->DEFINE->ACTIVATE sequence instead of sitting inert.
+         * Bounded by the attempt limit so an unprovisioned bearer cannot
+         * retry-storm the CP. */
+        if (p->phase_deadline_ms == 0) {
+            p->phase_deadline_ms = now_ms + IMS_PDN_RETRY_MS;
+        } else if (now_ms >= p->phase_deadline_ms) {
+            p->phase_deadline_ms = 0;
+            if (++p->attempt >= IMS_PDN_ATTEMPT_LIMIT) p->phase = IMS_PDN_FAILED;
+            else p->phase = IMS_PDN_SET_PROFILE;
+        }
+        break;
     case IMS_PDN_ACTIVE:
     case IMS_PDN_FAILED:
         break;

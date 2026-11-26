@@ -19,13 +19,15 @@ static bool write_capture(const struct fmt_tx_frame *f, uint8_t *seq, void *u)
 int main(void)
 {
     struct fmt_tx_frame f;
-    assert(fmt_tx_ims_profile(&f,"ims",FMT_TX_PROTO_IPV4V6));
+    assert(fmt_tx_ims_profile(&f,"ims.mnc008.mcc204.gprs",FMT_TX_PROTO_IPV4V6));
     assert(f.buf[7+188]==1);
-    /* DefinePdpContext payload[1] must be AccessNetworkType EUTRAN(1), not
-     * DataProfile id 2. This is the corrected CP contract. */
-    assert(fmt_tx_ims_define(&f,"ims",FMT_TX_PROTO_IPV6));
-    assert(f.buf[7+126]==3);   /* P-CSCF selector byte */
-    assert(f.buf[7+1]==1);     /* payload[1] = EUTRAN AccessNetworkType */
+    /* DefinePdpContext payload[1] selector restored to Round 07 fb9da745
+     * value 2 (live-verified IMS DataProfile/CID slot that produced
+     * GPRS_PDP_CONTEXT cid=2 state=1); the interim EUTRAN=1 value regressed
+     * CID-2 to state=3. */
+    assert(fmt_tx_ims_define(&f,"ims.mnc008.mcc204.gprs",FMT_TX_PROTO_IP));
+    assert(f.buf[7+126]==2);   /* P-CSCF selector byte (IP lowered) */
+    assert(f.buf[7+1]==2);     /* payload[1] = IMS DataProfile/CID slot 2 */
 
     struct ims_pdn p;
     assert(ims_pdn_open(&p, write_capture, NULL));
@@ -44,7 +46,7 @@ int main(void)
     assert(p.phase == IMS_PDN_DEFINE);
     assert(!ims_pdn_active(&p));
 
-    /* Phase 2: DEFINE (sub=1) with EUTRAN */
+    /* Phase 2: DEFINE (sub=1) with IMS slot 2 */
     assert(ims_pdn_tick(&p, 2, true) == IMS_PDN_DEFINE && writes==2);
     assert(written_sub == 1);
     ims_pdn_gen_result(&p, FMT_RX_GEN_OK, last_seq);
