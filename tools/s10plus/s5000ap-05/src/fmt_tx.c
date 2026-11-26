@@ -230,6 +230,16 @@ bool fmt_tx_get_sim_icc_type(struct fmt_tx_frame *f)
     return fmt_tx_raw(f, MAIN_SEC, 7 /*SEC_SIM_ICC_TYPE*/, FMT_TX_TYPE_REQUEST, NULL, 0);
 }
 
+bool fmt_tx_get_sim_apps_info(struct fmt_tx_frame *f)
+{
+    /* SEC_SIMAPPS_INFO (main=5 sub=15) request, 7-byte frame. Authoritative
+     * SIM application inventory (USIM/ISIM/CSIM). Recovered from the EFUJ2
+     * IpcTxGetSimAppsInfo @0x341000 wire = [07 00 00 00 05 0f 02]. This is the
+     * vendor GetSimAppsInfo path (ModemProxy/SimManager), not the single-byte
+     * ICC-type heuristic. */
+    return fmt_tx_raw(f, MAIN_SEC, 15 /*SEC_SIMAPPS_INFO*/, FMT_TX_TYPE_REQUEST, NULL, 0);
+}
+
 bool fmt_tx_get_ps_attach(struct fmt_tx_frame *f)
 {
     return fmt_tx_raw(f, 13, 3, 2, NULL, 0);

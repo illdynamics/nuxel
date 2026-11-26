@@ -68,6 +68,7 @@ int main(void)
     CHECK(fmt_tx_get_preferred_net_type(&f)); VECTOR(golden_get_preferred_network);
     CHECK(fmt_tx_get_sim_status(&f)); VECTOR(golden_get_pin_status);
     CHECK(fmt_tx_get_sim_icc_type(&f)); VECTOR(golden_get_sim_icc_type);
+    CHECK(fmt_tx_get_sim_apps_info(&f)); VECTOR(golden_get_sim_apps_info);
     CHECK(fmt_tx_get_sim_network(&f)); VECTOR(golden_get_sim_network);
     CHECK(fmt_tx_get_baseband_version(&f)); VECTOR(golden_get_baseband);
     CHECK(fmt_tx_radio_power(&f, true)); VECTOR(golden_radio_on);

@@ -326,6 +326,7 @@ static const char *fmt_sub_name(uint8_t main, uint8_t sub)
         case IPC41_SEC_SIM_POWER: return "SEC_SIM_POWER";
         case IPC41_SEC_SIM_ON_OFF: return "SEC_SIM_ON_OFF";
         case IPC41_SEC_SIM_INFO: return "SEC_SIM_INFO";
+        case IPC41_SEC_SIMAPPS_INFO: return "SEC_SIMAPPS_INFO";
         case IPC41_SEC_ATR_INFO: return "SEC_ATR_INFO";
         default: break;
         }
@@ -1923,9 +1924,10 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
         case 8: built = fmt_call_voice_registration(&q); break;
         case 9: built = fmt_tx_get_pdp_definitions(&q); break;
         case 10: built = fmt_tx_get_sim_icc_type(&q); break;
+        case 11: built = fmt_tx_get_sim_apps_info(&q); break;
         }
         if (built && radiod_write_fmt(&q)) {
-            g.status_query = (g.status_query + 1) % 11;
+            g.status_query = (g.status_query + 1) % 12;
             g.status_next_ms = now_ms() + (g.status_query ? 1000 : 60000);
         } else g.status_next_ms = now_ms() + 5000;
     }
