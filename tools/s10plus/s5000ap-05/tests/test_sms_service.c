@@ -32,12 +32,12 @@ int main(void)
     struct sms_service s;struct mock m={.service=&s};
     CHECK(sms_service_open(&s,":memory:",write_frame,changed,&m));
     sms_service_set_result_diag(&s,diag);
-    sms_service_tick(&s,100,true,true,true,true);CHECK(m.last.sub_cmd==7 && s.ready_sent);
+    sms_service_tick(&s,100,true,true,true,false,true);CHECK(m.last.sub_cmd==7 && s.ready_sent);
     const uint8_t ack[]={4,7,3,0,0x80};receive(&s,128,1,2,s.ready_sequence,ack,sizeof ack);CHECK(s.ready_ack);
-    sms_service_tick(&s,1100,true,true,true,true);CHECK(m.last.sub_cmd==10);
+    sms_service_tick(&s,1100,true,true,true,false,true);CHECK(m.last.sub_cmd==10);
     const uint8_t smsc[]={0};receive(&s,4,10,2,0,smsc,1);CHECK(s.smsc_len==1);
     uint32_t id;CHECK(sms_store_queue(&s.store,"+12345678901","hello",&id));
-    sms_service_tick(&s,1200,true,true,true,true);CHECK(m.last.sub_cmd==1 && s.active);
+    sms_service_tick(&s,1200,true,true,true,false,true);CHECK(m.last.sub_cmd==1 && s.active);
     uint8_t submit[]={2,0,0,0,0};submit[3]=s.job.pdu.reference;
     /* Wrong ack_seq is unmatched (still active, no submit). */
     receive(&s,4,1,2,(uint8_t)(s.sequence+1),submit,sizeof submit);CHECK(s.active && s.unmatched==1);
@@ -49,7 +49,7 @@ int main(void)
 
     /* Type-3 is decoded/retained, but even equal MR is NOT a correlation token. */
     CHECK(sms_store_queue(&s.store,"+12345678901","notify",&id));
-    sms_service_tick(&s,1210,true,true,true,true);CHECK(s.active);
+    sms_service_tick(&s,1210,true,true,true,false,true);CHECK(s.active);
     unsigned d0=m.diags;
     uint8_t notify_submit[]={2,0,0,0,0};notify_submit[3]=s.job.pdu.reference;
     receive(&s,4,1,3,0,notify_submit,sizeof notify_submit);CHECK(s.active);
@@ -60,7 +60,7 @@ int main(void)
 
     /* Unsuccessful type-2 result (raw 0x8016) marks the segment failed. */
     CHECK(sms_store_queue(&s.store,"+12345678901","reject",&id));
-    sms_service_tick(&s,1220,true,true,true,true);CHECK(s.active);
+    sms_service_tick(&s,1220,true,true,true,false,true);CHECK(s.active);
     uint8_t reject[]={2,0x16,0x80,0,0};reject[3]=s.job.pdu.reference;
     receive(&s,4,1,2,s.sequence,reject,sizeof reject);CHECK(!s.active);
     CHECK(sms_store_get(&s.store,id,&record) && !strcmp(record.state,"failed"));
@@ -68,7 +68,7 @@ int main(void)
 
     /* Malformed notification (bad structure) increments decode errors, never submits. */
     CHECK(sms_store_queue(&s.store,"+12345678901","malformed",&id));
-    sms_service_tick(&s,1230,true,true,true,true);CHECK(s.active);
+    sms_service_tick(&s,1230,true,true,true,false,true);CHECK(s.active);
     unsigned de=s.decode_errors;
     uint8_t malformed[]={9,0,0,0,0};receive(&s,4,1,3,0,malformed,sizeof malformed);
     CHECK(s.active && s.decode_errors==de+1);
@@ -94,7 +94,7 @@ int main(void)
     receive(&s,4,1,3,0,good3,sizeof good3);CHECK(s.unmatched==duplicates+1 && !m.diag.correlated);
 
     CHECK(sms_store_queue(&s.store,"+12345678901","timeout",&id));
-    sms_service_tick(&s,1300,true,true,true,true);CHECK(s.active);
+    sms_service_tick(&s,1300,true,true,true,false,true);CHECK(s.active);
     /* Actual EFUJ2 Round02 shape: result2, returned MR157, no result PDU.
      * Incoming code is not a standardized carrier cause and does not echo MR. */
     uint8_t efuj2[]={2,2,0,157,0};
@@ -107,15 +107,15 @@ int main(void)
           !strcmp((const char *)sqlite3_column_text(receipt,3),"sending"));
     sqlite3_finalize(receipt);
     unsigned writes=m.writes;
-    sms_service_tick(&s,121300,true,true,true,true);CHECK(!s.active && s.blocked);
+    sms_service_tick(&s,121300,true,true,true,false,true);CHECK(!s.active && s.blocked);
     CHECK(sms_store_get(&s.store,id,&record) && !strcmp(record.state,"unknown"));
     CHECK(sms_store_queue(&s.store,"+12345678901","held",&id));
-    sms_service_tick(&s,121400,true,true,true,true);CHECK(m.writes==writes);
+    sms_service_tick(&s,121400,true,true,true,false,true);CHECK(m.writes==writes);
     /* Resolving the unknown timeout message clears the block and lets the
      * next queued message transmit; it does not resend the resolved one. */
     CHECK(sms_service_resolve(&s,s.job.id,"superseded"));CHECK(!s.blocked);
     struct sms_record resolved;CHECK(sms_store_get(&s.store,s.job.id,&resolved) && !strcmp(resolved.state,"unknown"));
-    sms_service_tick(&s,121500,true,true,true,true);CHECK(m.writes==writes+1);
+    sms_service_tick(&s,121500,true,true,true,false,true);CHECK(m.writes==writes+1);
     const uint8_t pdu[]={0,0,11,0x91,0x21,0x43,0x65,0x87,0x09,0xf1,0,0,0x62,0x11,0x42,0x12,0x43,0x65,0x40,5,0xe8,0x32,0x9b,0xfd,6};
     uint8_t incoming[6+sizeof pdu]={2,1,0,0,42,sizeof pdu};memcpy(incoming+6,pdu,sizeof pdu);
     receive(&s,4,2,3,0,incoming,sizeof incoming);CHECK(m.last.sub_cmd==6 && m.last.buf[8]==0 && m.last.buf[9]==0);
