@@ -26,6 +26,11 @@ static bool write_capture(const struct fmt_tx_frame *f, uint8_t *seq, void *u)
             assert(f->buf[7] == FMT_TX_VOICE_DOMAIN_PS_ONLY);
             assert(f->buf[8] == FMT_TX_VOICE_DOMAIN_PS_ONLY);
         }
+    } else if (f->main_cmd == 10 && f->sub_cmd == 32) {
+        /* SdmImsModeSet: 8-byte frame, payload[0]=IMS mode ON(1). */
+        assert(f->len == 8);
+        assert(f->buf[4] == 10 && f->buf[5] == 32 && f->buf[6] == 3);
+        assert(f->buf[7] == FMT_TX_SDM_IMS_MODE_ON);
     } else if (f->main_cmd == 10 && f->sub_cmd == 26) {
         /* SdmImsSmsFmtSet: 8-byte frame, payload[0]=SmsOverIpFormat=3GPP(2). */
         assert(f->len == 8);
@@ -57,8 +62,17 @@ static void drive_to_done(struct ims_init *i)
     ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq+1);
     assert(i->phase == IMS_INIT_WAIT_ACK);
     ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq);
+    assert(i->phase == IMS_INIT_SEND_SDM_MODE);
+    assert(ims_init_tick(i, 3, true) == IMS_INIT_WAIT_SDM_MODE);  /* writes SDM mode */
+    ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq);
+    assert(i->phase == IMS_INIT_SEND_SMS_FMT);
+    assert(ims_init_tick(i, 4, true) == IMS_INIT_WAIT_SMS_FMT);
+    ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq);
+    assert(i->phase == IMS_INIT_SEND_SMS_OIP);
+    assert(ims_init_tick(i, 5, true) == IMS_INIT_WAIT_SMS_OIP);
+    ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq);
     assert(i->phase == IMS_INIT_SEND_VOLTE_STATE);
-    assert(ims_init_tick(i, 3, true) == IMS_INIT_WAIT_VOLTE_STATE);
+    assert(ims_init_tick(i, 6, true) == IMS_INIT_WAIT_VOLTE_STATE);
     ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq);
     assert(ims_init_done(i));
     assert(i->phase == IMS_INIT_DONE);
@@ -76,7 +90,7 @@ int main(void)
 
     writes = 0;
     drive_to_done(&i);
-    assert(writes == 3); /* Get, Set, truthful VoLTE not-ready */
+    assert(writes == 6); /* Get, Set, SDM mode, SmsFmt, SmsOip, VoLTE */
 
     ims_init_close(&i);
 
@@ -94,8 +108,18 @@ int main(void)
 
     ims_init_tick(&i2, 3, true);
     ims_init_gen_result(&i2, FMT_RX_GEN_OK, last_seq);
-    assert(ims_init_done(&i2) && i2.phase == IMS_INIT_SEND_VOLTE_STATE);
-    ims_init_tick(&i2, 4, true);
+    assert(ims_init_done(&i2) && i2.phase == IMS_INIT_SEND_SDM_MODE);
+    /* SDM mode arm + SMS format + SMS-over-IP + Volte-state best-effort */
+    ims_init_tick(&i2, 4, true);   /* SDM mode */
+    ims_init_gen_result(&i2, FMT_RX_GEN_OK, last_seq);
+    assert(i2.phase == IMS_INIT_SEND_SMS_FMT);
+    ims_init_tick(&i2, 5, true);   /* SmsFmt */
+    ims_init_gen_result(&i2, FMT_RX_GEN_OK, last_seq);
+    assert(i2.phase == IMS_INIT_SEND_SMS_OIP);
+    ims_init_tick(&i2, 6, true);   /* SmsOip */
+    ims_init_gen_result(&i2, FMT_RX_GEN_OK, last_seq);
+    assert(i2.phase == IMS_INIT_SEND_VOLTE_STATE);
+    ims_init_tick(&i2, 7, true);   /* Volte state */
     ims_init_gen_result(&i2, FMT_RX_GEN_OK, last_seq);
     assert(i2.phase == IMS_INIT_DONE);
     ims_init_close(&i2);

@@ -37,7 +37,8 @@ bool ims_init_done(const struct ims_init *i)
 const char *ims_init_phase_name(enum ims_init_phase p)
 {
     static const char *const n[] = {"idle","send-get","wait-get-ack",
-                                    "send-capa","wait-ack","send-sms-fmt",
+                                    "send-capa","wait-ack","send-sdm-mode",
+                                    "wait-sdm-mode","send-sms-fmt",
                                     "wait-sms-fmt","send-sms-oip","wait-sms-oip",
                                     "send-volte-state","wait-volte-state",
                                     "done","failed"};
@@ -109,6 +110,35 @@ enum ims_init_phase ims_init_tick(struct ims_init *i, uint64_t now_ms, bool onli
             /* Re-drive capability on timeout (bounded). */
             i->next_action_ms = 0;
             i->phase = IMS_INIT_SEND_CAPA;
+        }
+        break;
+    case IMS_INIT_SEND_SDM_MODE:
+        if (i->phase_deadline_ms && now_ms < i->phase_deadline_ms) break;
+        if (now_ms >= i->next_action_ms && i->attempt < IMS_INIT_ATTEMPT_LIMIT) {
+            i->attempt++;
+            struct fmt_tx_frame f;
+            uint8_t seq = 0;
+            /* Arm the modem's internal IMS/SIP stack. Without this the CP
+             * never brings up the IMS PDN and never performs SIP REGISTER;
+             * it only reflects AP-reported state. This is the arm, not a
+             * fabricated registration result. */
+            if (fmt_tx_sdm_ims_mode(&f, FMT_TX_SDM_IMS_MODE_ON) &&
+                i->write(&f, &seq, i->user)) {
+                i->last_write_seq = seq;
+                i->phase_deadline_ms = now_ms + IMS_INIT_STEP_TIMEOUT_MS;
+                i->phase = IMS_INIT_WAIT_SDM_MODE;
+            } else {
+                i->next_action_ms = now_ms + IMS_INIT_RETRY_MS;
+            }
+        } else if (i->attempt >= IMS_INIT_ATTEMPT_LIMIT) {
+            i->phase = IMS_INIT_FAILED;
+        }
+        break;
+    case IMS_INIT_WAIT_SDM_MODE:
+        if (now_ms >= i->phase_deadline_ms) {
+            i->phase_deadline_ms = 0;
+            i->next_action_ms = 0;
+            i->phase = IMS_INIT_SEND_SDM_MODE;
         }
         break;
     case IMS_INIT_SEND_SMS_FMT:
@@ -224,13 +254,23 @@ void ims_init_gen_result(struct ims_init *i, uint16_t result, uint8_t ack_seq)
             i->attempt = 0;
             i->phase_deadline_ms = 0;
             i->next_action_ms = 0;
-            i->phase = IMS_INIT_SEND_VOLTE_STATE;
+            i->phase = IMS_INIT_SEND_SDM_MODE;
         } else {
             i->done = false;
             i->phase_deadline_ms = 0;
             i->next_action_ms = 0;
             i->phase = IMS_INIT_SEND_CAPA;
         }
+        break;
+    case IMS_INIT_WAIT_SDM_MODE:
+        /* Best-effort: whether the modem accepts or rejects the IMS stack arm,
+         * advance to the SMS-over-IP format arm. done remains set. A non-OK
+         * result is observed here and reported as phase metadata, not retried
+         * past the bounded attempt limit (the modem must not be spammed). */
+        i->attempt = 0;
+        i->phase_deadline_ms = 0;
+        i->next_action_ms = 0;
+        i->phase = IMS_INIT_SEND_SMS_FMT;
         break;
     case IMS_INIT_WAIT_SMS_FMT:
         /* Best-effort: any ack result advances to SMS_OIP; done remains set. */
