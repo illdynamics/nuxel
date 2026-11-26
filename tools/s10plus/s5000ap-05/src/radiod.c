@@ -1813,8 +1813,11 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
     ims_service_tick(&g.ims,now_ms(),
         g.cp_online && g.sim_ready_seen && g.write_enabled && g.fmt.present,
         g.ims_pdn_up);
-    /* Opt-in IMS APN PDN drive (second, isolated context). Off unless armed. */
-    if (g.ims_pdn_armed) {
+    /* Opt-in IMS APN PDN drive (second, isolated context). Off unless armed.
+     * Runs ONLY after the internet data-session is ACTIVE (quiet period) so
+     * the IMS DEFINE_PDP/SET_PDP_CONTEXT never overlaps the internet bearer's
+     * own command sequence and GEN correlation stays unambiguous. */
+    if (g.ims_pdn_armed && g.dsc.phase == DS_ACTIVE) {
         ims_pdn_tick(&g.ims_pdn, now_ms(),
             g.cp_online && g.sim_ready_seen && g.write_enabled && g.fmt.present);
         if (ims_pdn_active(&g.ims_pdn) && !g.ims_pdn_up) {
