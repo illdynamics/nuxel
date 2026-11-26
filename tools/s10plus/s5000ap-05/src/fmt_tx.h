@@ -73,6 +73,8 @@ uint8_t *fmt_tx_begin(struct fmt_tx_frame *f, uint8_t main, uint8_t sub,
 
 /* Query SIM application status. No payload (len=7). */
 bool fmt_tx_get_sim_status(struct fmt_tx_frame *f);
+/* SEC_SIM_ICC_TYPE (main=5 sub=7) request: USIM/ISIM application presence. */
+bool fmt_tx_get_sim_icc_type(struct fmt_tx_frame *f);
 /* IMSI response is used only for known home-PLMN classification. Never log it. */
 bool fmt_tx_get_sim_network(struct fmt_tx_frame *f);
 /* CP GET handler 0x4121a43c returns {PS attached, suspend state}. */

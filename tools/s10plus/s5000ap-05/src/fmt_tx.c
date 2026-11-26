@@ -222,6 +222,14 @@ bool fmt_tx_get_sim_status(struct fmt_tx_frame *f)
     return fmt_tx_raw(f, MAIN_SEC, 1 /*SEC_PIN_STATUS*/, FMT_TX_TYPE_REQUEST, NULL, 0);
 }
 
+bool fmt_tx_get_sim_icc_type(struct fmt_tx_frame *f)
+{
+    /* SEC_SIM_ICC_TYPE (main=5 sub=7) request, 7-byte frame. Tells whether the
+     * UICC exposes a USIM and/or ISIM (IMS) application. ISIM is required for
+     * IMS SIP AKA registration. */
+    return fmt_tx_raw(f, MAIN_SEC, 7 /*SEC_SIM_ICC_TYPE*/, FMT_TX_TYPE_REQUEST, NULL, 0);
+}
+
 bool fmt_tx_get_ps_attach(struct fmt_tx_frame *f)
 {
     return fmt_tx_raw(f, 13, 3, 2, NULL, 0);
