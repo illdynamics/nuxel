@@ -79,6 +79,22 @@ int main(void)
     /* wrong ack/sub must not advance */
     CHECK(!ims_sdm_receive(&s, 34, 7, (const uint8_t*)pcscf, strlen(pcscf)+1));
 
+    /* GEN reject advances without retrying; direct value absent stays absent. */
+    {
+        struct ims_sdm r;
+        CHECK(ims_sdm_open(&r, capture_write, NULL));
+        ims_sdm_tick(&r, 1000, true); /* IDLE -> GET_MODE */
+        ims_sdm_tick(&r, 1000, true); /* fire GET_MODE (sub=32) */
+        CHECK(r.pending_sub == 32 && r.last_write_seq == 42);
+
+        /* GEN REJECT (0x8001) advances to GET_PCSCF and does NOT set mode. */
+        CHECK(ims_sdm_gen_result(&r, 0x8001u, 42));
+        CHECK(r.phase == IMS_SDM_GET_PCSCF);
+        CHECK(!r.mode_valid);
+        /* OK result does not advance; still await direct value. */
+        CHECK(!ims_sdm_gen_result(&r, 0x8000u, 42));
+        ims_sdm_close(&r);
+    }
     ims_sdm_close(&s);
     CHECK(s.phase == IMS_SDM_IDLE);
     printf("ims_sdm readback: PASS (%d failures)\n", failures);

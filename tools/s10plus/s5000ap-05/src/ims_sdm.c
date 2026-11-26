@@ -20,6 +20,31 @@ bool ims_sdm_open(struct ims_sdm *s, ims_sdm_write_fn write, void *user)
     return true;
 }
 
+/* The modem may answer an SDM GET via the ordinary GEN channel (main=128)
+ * with result 0x8000=OK, 0x8001=REJECT, or 0x8003=UNSUPPORTED instead of a
+ * direct (main=10) value. On rejection, advance past the query WITHOUT
+ * retrying so a dead readback surface never produces a retry storm. */
+bool ims_sdm_gen_result(struct ims_sdm *s, uint16_t result, uint8_t ack_seq)
+{
+    if (!s || !s->next_action_ms) return false;
+    if (ack_seq != s->last_write_seq) return false;
+    if (result == 0x8000u) return false;   /* OK: still await the direct value */
+    /* Reject/unsupported: mark the pending field absent and advance. */
+    enum ims_sdm_phase next;
+    switch (s->phase) {
+    case IMS_SDM_GET_MODE:      next = IMS_SDM_GET_PCSCF; break;
+    case IMS_SDM_GET_PCSCF:     next = IMS_SDM_GET_DOMAIN; break;
+    case IMS_SDM_GET_DOMAIN:    next = IMS_SDM_GET_SMSOVERIP; break;
+    case IMS_SDM_GET_SMSOVERIP: next = IMS_SDM_GET_SMSFMT; break;
+    case IMS_SDM_GET_SMSFMT:    next = IMS_SDM_DONE; break;
+    default: return false;
+    }
+    s->phase = next;
+    s->next_action_ms = 0;
+    s->online_done_seen = (next == IMS_SDM_DONE);
+    return true;
+}
+
 void ims_sdm_close(struct ims_sdm *s) { if (s) memset(s, 0, sizeof *s); }
 
 const char *ims_sdm_phase_name(enum ims_sdm_phase ph)

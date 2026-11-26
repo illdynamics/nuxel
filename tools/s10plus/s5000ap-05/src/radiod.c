@@ -699,6 +699,17 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
         f->cmd_type == IPC41_TYPE_RESPONSE && f->ack_seq == g.ims_init.last_write_seq) {
         ims_init_capa_response(&g.ims_init, f->ack_seq);
     }
+    /* Correlate a GEN result to the last SDM GET. The modem answers SDM
+     * readbacks via the ordinary GEN channel (0x8001 reject here), not a
+     * direct value; advance on reject so the surface never retry-storms. */
+    if (f->main_cmd == IPC41_MAIN_GEN && f->cmd_type == IPC41_TYPE_RESPONSE &&
+        f->payload_len == 5 && f->ack_seq == g.ims_sdm.last_write_seq) {
+        struct fmt_rx_gen gen;
+        if (fmt_rx_gen(f->payload, f->payload_len, &gen)) {
+            if (ims_sdm_gen_result(&g.ims_sdm, gen.result, f->ack_seq))
+                diagf("ims_sdm_reject", "\"sub\":%u,\"result\":%u", gen.sub, gen.result);
+        }
+    }
     /* IMS SDM readback capture. Direct type=2 RESPONSE at (main=10) for the
      * SDM sub we queried; capture the modem's authoritative provisioned
      * value (never fabricated). Values are only used to drive downstream

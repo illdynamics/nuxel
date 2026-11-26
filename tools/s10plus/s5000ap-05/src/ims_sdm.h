@@ -58,3 +58,8 @@ bool ims_sdm_receive(struct ims_sdm *s, uint8_t sub, uint8_t ack_seq,
 const char *ims_sdm_phase_name(enum ims_sdm_phase ph);
 
 #endif /* NUXEL_IMS_SDM_H */
+
+/* Feed a GEN result (main=128) correlated to the last SDM GET query. On a
+ * reject/unsupported result the pending field is marked absent and the FSM
+ * advances without retrying, so a dead readback surface never retry-storms. */
+bool ims_sdm_gen_result(struct ims_sdm *s, uint16_t result, uint8_t ack_seq);
