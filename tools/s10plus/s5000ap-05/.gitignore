@@ -31,3 +31,6 @@ test_oes_cert
 /test_sms_service
 /test_fmt_call
 /test_call_service
+/test_ims_security
+/test_ims_sip
+/test_ims_sms
