@@ -3230,6 +3230,10 @@ int main(int argc, char **argv)
     ims_service_open(&g.ims,ims_write,ims_state_diag,NULL);
     ims_pdn_open(&g.ims_pdn,ims_pdn_write,NULL);
     iil_pdn_open(&g.iil_pdn,iil_pdn_write,NULL);
+    /* IMS DataProfile (type 2) sync via the FMT GPRS SET_DATA_PROFILE path
+     * before the IIL Define/Activate. This is the missing provisioning step
+     * that seeds the modem's IMS APN profile. Shared sequence space. */
+    iil_pdn_set_fmt_write(&g.iil_pdn, ims_pdn_write, NULL);
     iil_auth_open(&g.iil_auth,iil_auth_iil_write,iil_auth_usim_write,NULL);
     ims_init_open(&g.ims_init,ims_write,NULL);
     ims_sdm_open(&g.ims_sdm,ims_sdm_write,NULL);

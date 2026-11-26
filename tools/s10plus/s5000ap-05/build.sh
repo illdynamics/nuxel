@@ -53,7 +53,7 @@ $CC "${CFLAGS[@]}" -Isrc -o test_ims_sip tests/test_ims_sip.c src/ims_sip.c src/
 $CC "${CFLAGS[@]}" -Isrc -o test_ims_sip_tr tests/test_ims_sip_tr.c src/ims_sip_tr.c src/ims_sip.c src/ims_sms.c src/nv_items.c
 $CC "${CFLAGS[@]}" -Isrc -o test_ims_iil tests/test_ims_iil.c src/ims_iil.c
 $CC "${CFLAGS[@]}" -Isrc -o test_ims_iil_rx tests/test_ims_iil_rx.c src/ims_iil_rx.c
-$CC "${CFLAGS[@]}" -Isrc -o test_iil_pdn tests/test_iil_pdn.c src/iil_pdn.c src/ims_iil.c src/ims_iil_rx.c
+$CC "${CFLAGS[@]}" -Isrc -o test_iil_pdn tests/test_iil_pdn.c src/iil_pdn.c src/ims_iil.c src/ims_iil_rx.c src/fmt_tx.c
 $CC "${CFLAGS[@]}" -Isrc -o test_iil_auth tests/test_iil_auth.c src/iil_auth.c src/ims_iil.c src/fmt_tx.c src/fmt_rx.c src/data_session.c
 $CC "${CFLAGS[@]}" -Isrc -o test_ims_sdm tests/test_ims_sdm.c src/ims_sdm.c src/fmt_tx.c src/fmt_rx.c
 
