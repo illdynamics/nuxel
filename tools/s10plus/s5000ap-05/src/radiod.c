@@ -765,6 +765,7 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
     if ((f->main_cmd == IPC41_MAIN_SEC &&
          (f->sub_cmd == IPC41_SEC_PIN_STATUS ||
           f->sub_cmd == IPC41_SEC_SIM_ICC_TYPE ||
+          f->sub_cmd == IPC41_SEC_SIMAPPS_INFO ||
           f->sub_cmd == IPC41_SEC_SIM_ON_OFF)) ||
         (f->main_cmd == IPC41_MAIN_NET &&
          (f->sub_cmd == IPC41_NET_REGIST ||
