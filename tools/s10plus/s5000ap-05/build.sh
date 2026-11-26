@@ -46,6 +46,7 @@ $CC "${CFLAGS[@]}" -Isrc -o test_fmt_call tests/test_fmt_call.c src/fmt_call.c s
 $CC "${CFLAGS[@]}" -Isrc -o test_call_service tests/test_call_service.c src/call_service.c src/fmt_call.c src/fmt_tx.c
 $CC "${CFLAGS[@]}" -Isrc -o test_ims_service tests/test_ims_service.c src/ims_service.c src/fmt_tx.c src/fmt_rx.c
 $CC "${CFLAGS[@]}" -Isrc -o test_ims_pdn tests/test_ims_pdn.c src/ims_pdn.c src/fmt_tx.c src/fmt_rx.c
+$CC "${CFLAGS[@]}" -Isrc -o test_ims_init tests/test_ims_init.c src/ims_init.c src/fmt_tx.c src/fmt_rx.c
 
 $CC "${CFLAGS[@]}" -Isrc -o test_mobile_data tests/test_mobile_data.c src/mobile_data.c src/fmt_tx.c src/fmt_rx.c
 ./test_mobile_data
@@ -72,6 +73,7 @@ echo "=== run Stage-06 MBIM<->SIPC serialization tests ==="
 ./test_mbim_tx
 ./test_ims_service
 ./test_ims_pdn
+./test_ims_init
 echo "=== run Stage-06 recovered QBR item dictionary tests ==="
 ./test_qbr_items
 echo "=== run Stage-06 recovered CP-NV record/MD5/policy tests ==="
@@ -97,7 +99,7 @@ $CLANG -O1 -g -Wall -Wextra -Werror -fsanitize=address,undefined -fno-sanitize-r
 python3 tests/fuzz_sipc5.py ./test_sipc5_fmt_asan --asan --iters=3000
 
 # Both serialization directions, FSM, and NV/backup transactions.
-for suite in fmt_tx fmt_rx data_session rfs_nv efs_nv oes_cert fmt_sms sms_pdu sms_store sms_service fmt_call call_service mobile_data ims_service ims_pdn; do
+for suite in fmt_tx fmt_rx data_session rfs_nv efs_nv oes_cert fmt_sms sms_pdu sms_store sms_service fmt_call call_service mobile_data ims_service ims_pdn ims_init; do
     libs=()
     case "$suite" in
         mobile_data) sources=(src/mobile_data.c src/fmt_tx.c src/fmt_rx.c) ;;
@@ -114,6 +116,7 @@ for suite in fmt_tx fmt_rx data_session rfs_nv efs_nv oes_cert fmt_sms sms_pdu s
         call_service) sources=(src/call_service.c src/fmt_call.c src/fmt_tx.c) ;;
         ims_service) sources=(src/ims_service.c src/fmt_tx.c src/fmt_rx.c) ;;
         ims_pdn) sources=(src/ims_pdn.c src/fmt_tx.c src/fmt_rx.c) ;;
+        ims_init) sources=(src/ims_init.c src/fmt_tx.c src/fmt_rx.c) ;;
     esac
     "$CLANG" -O1 -g -Wall -Wextra -Werror -fsanitize=address,undefined \
         -fno-sanitize-recover=all -std=gnu11 -Isrc -o "test_${suite}_asan" \

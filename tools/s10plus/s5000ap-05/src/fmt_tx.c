@@ -495,3 +495,23 @@ bool fmt_tx_ims_deregistration(struct fmt_tx_frame *f)
     return fmt_tx_raw(f, 22u /*IMS*/, 7u /*REQ_DEREGISTRATION*/,
                       FMT_TX_TYPE_NOTIFICATION, NULL, 0);
 }
+
+/* ---- MISC device capability (AP -> CP) ---- */
+
+/* IpcProtocol41::IpcTxSetDeviceCapa @0x331400 (libsec-ril 60889dd7):
+ *   FMT main=10 (MISC), sub=45 (0x2d), type=3 (notification), 2-byte payload
+ *   [ voice_domain_pref_1, voice_domain_pref_2 ].
+ * The vendor calls this from MiscManager::DoOemSetDeviceCapa (and the startup
+ * DoCheckDeviceCapa) BEFORE driving IMS registration; it advertises the
+ * truthful device voice-domain capability to the modem's IMS stack. Without
+ * this the modem's IMS stack is not armed and SetImsRegState never yields an
+ * authoritative registration notification. */
+bool fmt_tx_set_device_capa(struct fmt_tx_frame *f, uint8_t pref1, uint8_t pref2)
+{
+    uint8_t p[2];
+    p[0] = pref1;
+    p[1] = pref2;
+    /* Truthful capabilities only; caller supplies documented domain values. */
+    return fmt_tx_raw(f, 10u /*MISC*/, 45u /*SET_DEVICE_CAPA*/, 3u /*notification*/,
+                      p, sizeof p);
+}

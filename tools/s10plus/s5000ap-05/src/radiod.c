@@ -36,6 +36,7 @@
 #include "sms_service.h"
 #include "ims_service.h"
 #include "ims_pdn.h"
+#include "ims_init.h"
 #include "call_service.h"
 #include "cellular_link.h"
 #include "mobile_data.h"
@@ -146,6 +147,7 @@ struct radiod_ctx {
     struct call_service calls;
     struct ims_service ims;
     struct ims_pdn ims_pdn;
+    struct ims_init ims_init;
     bool ims_pdn_armed; /* opt-in IMS APN PDN drive */
     bool ims_pdn_up;     /* ims APN PDN actually established (carrier/gate) */
     uid_t control_uid, bridge_uid;
@@ -594,6 +596,13 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
         struct fmt_rx_gen gen;
         if (fmt_rx_gen(f->payload, f->payload_len, &gen))
             ims_pdn_gen_result(&g.ims_pdn, gen.result, f->ack_seq);
+    }
+    /* Correlate GEN result to the device-capability init (MISC sub=45). */
+    if (f->main_cmd == IPC41_MAIN_GEN && f->cmd_type == IPC41_TYPE_RESPONSE &&
+        f->payload_len == 5 && f->ack_seq == g.ims_init.last_write_seq) {
+        struct fmt_rx_gen gen;
+        if (fmt_rx_gen(f->payload, f->payload_len, &gen))
+            ims_init_gen_result(&g.ims_init, gen.result, f->ack_seq);
     }
     /* IMS PDN CID-2 attachment evidence. The IMS context is confirmed by an
      * actual GPRS_CALL_STATUS(cid=2, state active) or GPRS_PDP_CONTEXT list
@@ -1847,10 +1856,16 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
         sms_cs_registered(),
         ims_service_registered(&g.ims),
         g.write_enabled && g.fmt.present);
-    /* Drive the native IMS registration controller (bounded, fail-closed). */
+    /* Drive the native IMS device-capability initialization FIRST. The modem
+     * IMS stack is only armed after SetDeviceCapa (MISC sub=45) is acked;
+     * registration must not be requested before that. */
+    bool ims_online = g.cp_online && g.sim_ready_seen && g.write_enabled && g.fmt.present;
+    ims_init_tick(&g.ims_init, now_ms(), ims_online);
+    /* Drive the native IMS registration controller (bounded, fail-closed),
+     * gated on BOTH the ims APN PDN and completed device-capability init. */
     ims_service_tick(&g.ims,now_ms(),
-        g.cp_online && g.sim_ready_seen && g.write_enabled && g.fmt.present,
-        g.ims_pdn_up);
+        ims_online,
+        g.ims_pdn_up && ims_init_done(&g.ims_init));
     /* Opt-in IMS APN PDN drive (second, isolated context). Off unless armed.
      * Runs ONLY after the internet data-session is ACTIVE (quiet period) so
      * the IMS DEFINE_PDP/SET_PDP_CONTEXT never overlaps the internet bearer's
@@ -2740,6 +2755,7 @@ int main(int argc, char **argv)
     call_service_init(&g.calls,sms_write,call_notify,NULL);
     ims_service_open(&g.ims,ims_write,ims_state_diag,NULL);
     ims_pdn_open(&g.ims_pdn,ims_pdn_write,NULL);
+    ims_init_open(&g.ims_init,ims_write,NULL);
     g.ims_pdn_armed = false;
     {
         const char *imens = getenv("NUXEL_IMS_PDN");
@@ -2778,6 +2794,7 @@ int main(int argc, char **argv)
     sms_service_close(&g.sms);
     ims_service_close(&g.ims);
     ims_pdn_close(&g.ims_pdn);
+    ims_init_close(&g.ims_init);
     ep_close(&g.fmt);
     ep_close(&g.rfs);
     (void)r;

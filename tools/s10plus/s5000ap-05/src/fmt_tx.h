@@ -226,3 +226,16 @@ bool fmt_tx_ims_auth_resp(struct fmt_tx_frame *f, const uint8_t *data, size_t le
 /* IpcTxImsReqDeregistration (main=22 sub=7). */
 bool fmt_tx_ims_deregistration(struct fmt_tx_frame *f);
 #endif
+
+/* ---- MISC device capability (main=10 sub=45) ---- */
+
+/* VoiceDomainPref wire values (Verizon-style PS/CS preference, recovered from
+ * IpcTxSetDeviceCapa @0x331400 + DoCheckDeviceCapa @0x247550). The two args
+ * are the home and roaming voice-domain preference. KPN 204-08 is LTE-only
+ * with VoLTE/IMS, so PS (IMS) is the truthful capability for this handset. */
+#define FMT_TX_VOICE_DOMAIN_CS_PS   0u
+#define FMT_TX_VOICE_DOMAIN_PS_ONLY 1u
+#define FMT_TX_VOICE_DOMAIN_CS_ONLY 2u
+
+/* IpcTxSetDeviceCapa: main=10 (MISC), sub=45, type=3, payload=[pref1, pref2]. */
+bool fmt_tx_set_device_capa(struct fmt_tx_frame *f, uint8_t pref1, uint8_t pref2);
