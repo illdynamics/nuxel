@@ -31,7 +31,7 @@ gcc "${CFLAGS[@]}" -I"$HERE/src" -o "$HERE/nuxel-radiod" \
     "$HERE/src/ims_pdn.c" "$HERE/src/ims_service.c" "$HERE/src/ims_init.c" \
     "$HERE/src/ims_iil.c" "$HERE/src/ims_iil_rx.c" "$HERE/src/iil_pdn.c" "$HERE/src/iil_auth.c" \
     "$HERE/src/ims_sdm.c" \
-    "$HERE/src/ims_sip.c" "$HERE/src/ims_security.c" "$HERE/src/ims_sms.c" -lsystemd -lsqlite3
+    "$HERE/src/ims_sip.c" "$HERE/src/ims_sip_tr.c" "$HERE/src/ims_security.c" "$HERE/src/ims_sms.c" -lsystemd -lsqlite3
 # Preserve the complete replaced userspace files before the first installation.
 backup=$(mktemp -d /var/lib/nuxel/radio-install.XXXXXX)
 paths=("$DEST_BIN/nuxel-radiod" "$DEST_BIN/nuxel-cellular-link"

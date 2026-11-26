@@ -45,9 +45,12 @@
 #include "call_service.h"
 #include "cellular_link.h"
 #include "mobile_data.h"
+#include "ims_sip_tr.h"
 #define MOBILE_PREFERENCE "/var/lib/nuxel-radio/mobile-data"
 
 #include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <pwd.h>
@@ -161,6 +164,8 @@ struct radiod_ctx {
     struct iil_auth iil_auth;    /* IIL IMS AKA relay (IsimAuth -> USIM -> ImsAuthResp) */
     struct ims_sdm ims_sdm;      /* modem IMS SDM readback (P-CSCF/domain/mode) */
     bool sip_param_sent;        /* SetSipParam fired once per P-CSCF discovery */
+    struct ims_sip_tr sip_tr;   /* native SIP/IMS transport + registration FSM */
+    bool sip_tr_open;           /* transport opened (P-CSCF + local IP known) */
     uid_t control_uid, bridge_uid;
     sd_bus *data_bus;
     bool     data_path_armed;   /* explicit opt-in (flag / D-Bus) */
@@ -1283,6 +1288,142 @@ static void radiod_sip_param_from_pcscf(const struct iil_pdn *p)
     memset(proxy, 0, sizeof proxy);
 }
 
+
+/* ------------------------------------------------------------------ */
+/* native SIP transport (ims_sip_tr) integration                       */
+/* ------------------------------------------------------------------ */
+static int sip_tr_fd = -1;               /* UDP socket bound to the IMS bearer */
+
+static bool sip_tr_send_cb(const void *msg, size_t len, void *user)
+{
+    (void)user;
+    if (sip_tr_fd < 0 || !msg || len == 0) return false;
+    /* Target is the P-CSCF configured in g.sip_tr.cfg; sendto is captured by
+     * the ipsec-3gpp ESP policies installed from CK/IK when negotiated. */
+    struct sockaddr_storage peer = {0};
+    socklen_t plen = 0;
+    if (g.sip_tr.cfg.pcscf[0] && strchr(g.sip_tr.cfg.pcscf, ':') == NULL) {
+        struct sockaddr_in *a = (struct sockaddr_in *)&peer;
+        a->sin_family = AF_INET;
+        a->sin_port = htons(g.sip_tr.cfg.pcscf_port);
+        if (inet_pton(AF_INET, g.sip_tr.cfg.pcscf, &a->sin_addr) != 1) return false;
+        plen = sizeof *a;
+    } else {
+        struct sockaddr_in6 *a = (struct sockaddr_in6 *)&peer;
+        a->sin6_family = AF_INET6;
+        a->sin6_port = htons(g.sip_tr.cfg.pcscf_port);
+        if (inet_pton(AF_INET6, g.sip_tr.cfg.pcscf, &a->sin6_addr) != 1) return false;
+        plen = sizeof *a;
+    }
+    ssize_t w = sendto(sip_tr_fd, msg, len, 0, (struct sockaddr *)&peer, plen);
+    return w == (ssize_t)len;
+}
+
+/* Open (or re-open) the native SIP transport from the discovered IIL P-CSCF
+ * and IMS bearer local address. This does NOT start registration; tick() does
+ * when bearer + P-CSCF are ready. Bounded, fail-closed; never fabricates. */
+static bool sip_tr_open_from_iil(const struct iil_pdn *p)
+{
+    if (!p || !p->ip_ready || !p->pcscf_ready || p->pcscf_count == 0) return false;
+    char pcscf[64] = {0}, local[64] = {0};
+    if (p->family == AF_INET) {
+        if (p->pcscf_len[0] != 4) return false;
+        inet_ntop(AF_INET, p->pcscf[0], pcscf, sizeof pcscf);
+        inet_ntop(AF_INET, p->ip, local, sizeof local);
+    } else if (p->family == AF_INET6) {
+        if (p->pcscf_len[0] != 16) return false;
+        inet_ntop(AF_INET6, p->pcscf[0], pcscf, sizeof pcscf);
+        inet_ntop(AF_INET6, p->ip, local, sizeof local);
+    } else {
+        return false;
+    }
+    if (!pcscf[0] || !local[0]) return false;
+
+    /* Close a previous socket and open a fresh one bound to the IMS local IP. */
+    if (sip_tr_fd >= 0) { close(sip_tr_fd); sip_tr_fd = -1; }
+    int fam = (p->family == AF_INET) ? AF_INET : AF_INET6;
+    sip_tr_fd = socket(fam, SOCK_DGRAM | SOCK_CLOEXEC | SOCK_NONBLOCK, 0);
+    if (sip_tr_fd < 0) return false;
+    struct sockaddr_storage sa = {0};
+    socklen_t slen = 0;
+    uint16_t port = 5062;
+    if (fam == AF_INET) {
+        struct sockaddr_in *a = (struct sockaddr_in *)&sa;
+        a->sin_family = AF_INET;
+        a->sin_port = htons(port);
+        if (inet_pton(AF_INET, local, &a->sin_addr) != 1) goto fail;
+        slen = sizeof *a;
+    } else {
+        struct sockaddr_in6 *a = (struct sockaddr_in6 *)&sa;
+        a->sin6_family = AF_INET6;
+        a->sin6_port = htons(port);
+        if (inet_pton(AF_INET6, local, &a->sin6_addr) != 1) goto fail;
+        slen = sizeof *a;
+    }
+    if (bind(sip_tr_fd, (struct sockaddr *)&sa, slen) != 0) goto fail;
+
+    struct ims_sip_tr_cfg cfg = {
+        .impu = NULL, .impi = NULL,
+        .pcscf = pcscf, .local_ip = local,
+        .port = port, .pcscf_port = 5060,
+        .sec_offer = "ipsec-3gpp;alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;mod=trans;spi-c=4096;spi-s=4097;port-c=5062;port-s=5064",
+    };
+    /* Private/public identity: use the IMSI-derived IMPI when available. */
+    char impu_buf[160] = {0}, impi_buf[160] = {0};
+    if (g.ims.identity.ready && g.ims.identity.impi[0]) {
+        snprintf(impi_buf, sizeof impi_buf, "%s", g.ims.identity.impi);
+        if (g.ims.identity.impu[0])
+            snprintf(impu_buf, sizeof impu_buf, "%s", g.ims.identity.impu);
+        else
+            snprintf(impu_buf, sizeof impu_buf, "sip:%s", g.ims.identity.impi);
+        cfg.impi = impi_buf;
+        cfg.impu = impu_buf;
+    }
+    if (!cfg.impu || !cfg.impi) {
+        /* No identity yet: leave the transport closed; tick re-opens when the
+         * USIM identity is ready. */
+        close(sip_tr_fd); sip_tr_fd = -1;
+        return false;
+    }
+
+    struct ims_sip_tr_io io = { .send = sip_tr_send_cb, .recv = NULL };
+    if (!ims_sip_tr_open(&g.sip_tr, &cfg, &io, NULL)) { close(sip_tr_fd); sip_tr_fd = -1; return false; }
+    g.sip_tr_open = true;
+    return true;
+
+fail:
+    close(sip_tr_fd); sip_tr_fd = -1;
+    return false;
+}
+
+/* Close the native SIP transport (bearer loss / stop). */
+static void sip_tr_close(void)
+{
+    if (g.sip_tr_open) { ims_sip_tr_close(&g.sip_tr); g.sip_tr_open = false; }
+    if (sip_tr_fd >= 0) { close(sip_tr_fd); sip_tr_fd = -1; }
+}
+
+/* Tick the native SIP transport: open when P-CSCF+identity are ready, start
+ * registration, then advance the FSM. Registers only on an authoritative 200. */
+static void sip_tr_tick(uint64_t now)
+{
+    if (iil_pdn_active(&g.iil_pdn)) {
+        if (!g.sip_tr_open) {
+            if (sip_tr_open_from_iil(&g.iil_pdn)) diag("iil_sip_tr_open", NULL);
+        }
+        if (g.sip_tr_open) {
+            enum ims_sip_tr_phase before = g.sip_tr.phase;
+            if (before == IMS_SIP_TR_IDLE) (void)ims_sip_tr_start(&g.sip_tr);
+            enum ims_sip_tr_phase after = ims_sip_tr_tick(&g.sip_tr, now, true);
+            if (after != before)
+                diagf("iil_sip_tr_phase", "\"phase\":\"%s\"",
+                      ims_sip_tr_phase_name(after));
+        }
+    } else {
+        if (g.sip_tr_open) { sip_tr_close(); diag("iil_sip_tr_close", NULL); }
+    }
+}
+
 /*
  * Decode the REAL modem responses that gate the data-session FSM, and record
  * their results into g.dsc. Returns DS_FEEDBACK_OK / DS_FEEDBACK_FAIL for the
@@ -2181,6 +2322,9 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
     }
     /* IIL AKA relay timeout handling (drop stale challenge). */
     iil_auth_tick(&g.iil_auth, now_ms());
+
+    /* Native SIP/IMS transport + registration FSM (opens on IIL P-CSCF+IP). */
+    sip_tr_tick(now_ms());
 
     call_service_tick(&g.calls,now_ms(),g.cp_online,g.write_enabled && g.fmt.present && g.sim_ready_seen);
 
@@ -3131,6 +3275,9 @@ int main(int argc, char **argv)
     ims_service_close(&g.ims);
     ims_pdn_close(&g.ims_pdn);
     ims_init_close(&g.ims_init);
+    iil_pdn_close(&g.iil_pdn);
+    iil_auth_close(&g.iil_auth);
+    sip_tr_close();
     ep_close(&g.fmt);
     ep_close(&g.rfs);
     (void)r;
