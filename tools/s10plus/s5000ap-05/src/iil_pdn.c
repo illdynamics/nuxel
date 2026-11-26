@@ -108,7 +108,7 @@ enum iil_pdn_phase iil_pdn_tick(struct iil_pdn *p, uint64_t now_ms, bool online)
             if (p->phase == IIL_PDN_PROVISION) {
                 built = iil_tx_ims_set_pdn_info(&f, IIL_PDN_E911_PROV_APN, empty, NULL);
             } else if (p->phase == IIL_PDN_DEFINE) {
-                built = iil_tx_define_pdp(&f, IIL_PDN_APN, 3 /*IPV6*/, 1 /*EUTRAN AccessNetworkType*/);
+                built = iil_tx_define_pdp(&f, IIL_PDN_APN, 3 /*IPV6*/, 0 /*char field: emulation-verified vendor value (buf[8])*/);
             } else {
                 built = iil_tx_set_pdp_context(&f, p->cid, IIL_PDN_APN);
             }

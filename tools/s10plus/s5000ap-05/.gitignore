@@ -42,3 +42,6 @@ test_oes_cert
 /test_iil_pdn
 /test_iil_auth
 /test_ims_sip_tr
+/test_ims_init
+/test_ims_pdn
+/test_ims_service
