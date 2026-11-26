@@ -39,6 +39,7 @@
 #include "ims_iil.h"
 #include "ims_iil_rx.h"
 #include "iil_pdn.h"
+#include "iil_auth.h"
 #include "ims_init.h"
 #include "call_service.h"
 #include "cellular_link.h"
@@ -156,6 +157,7 @@ struct radiod_ctx {
     bool ims_apn_present; /* ims APN string present in profile list (diag only) */
     struct iil_pdn iil_pdn;      /* IIL (IpcProtocol41Iil) IMS PDN driver */
     bool iil_pdn_armed;          /* opt-in IIL IMS PDN drive (--arm-data-path) */
+    struct iil_auth iil_auth;    /* IIL IMS AKA relay (IsimAuth -> USIM -> ImsAuthResp) */
     uid_t control_uid, bridge_uid;
     sd_bus *data_bus;
     bool     data_path_armed;   /* explicit opt-in (flag / D-Bus) */
@@ -574,6 +576,17 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
     sms_service_receive(&g.sms,f);
     call_service_receive(&g.calls,f);
     ims_service_receive(&g.ims,f);
+    /* IIL AKA relay: correlate the solicited SEC 5/9 USIM AKA result (type=2)
+     * and forward RES/AUTS to the modem via IpcTxImsAuthResp. Secret material
+     * (RES/CK/IK) is never logged. */
+    if (g.iil_auth.pending && f->cmd_type == IPC41_TYPE_RESPONSE &&
+        f->ack_seq == g.iil_auth.last_usim_seq &&
+        f->main_cmd == IPC41_MAIN_SEC && f->sub_cmd == 9) {
+        struct fmt_rx_usim_auth r;
+        if (fmt_rx_usim_auth(f->payload, f->payload_len, &r)) {
+            (void)iil_auth_usim_result(&g.iil_auth, &r, now_ms());
+        }
+    }
 
     /* --- IIL (IpcProtocol41Iil) receive path ---
      * The stock IMS bearer/auth/registration/SMS events arrive on the IIL
@@ -607,9 +620,14 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
             break;
         }
         case IIL_SUB_ISIM_AUTH: {
-            /* AKA challenge relayed by the modem; RAND/AUTN never logged here.
-             * The SIP backend consumes this via a challenge queue (P5). */
-            diag("iil_isim_auth", "\"plen\":0");
+            uint8_t rnd[16], autn[16];
+            if (iil_rx_isim_auth(&ev, rnd, autn) &&
+                iil_auth_challenge(&g.iil_auth, rnd, autn, now_ms())) {
+                diag("iil_isim_auth_relay", NULL);
+            } else {
+                diag("iil_isim_auth_drop", NULL);
+            }
+            memset(rnd, 0, sizeof rnd); memset(autn, 0, sizeof autn);
             break;
         }
         case IIL_SUB_REGISTRATION: {
@@ -1166,6 +1184,20 @@ static bool iil_pdn_write(const struct iil_frame *f, uint8_t *seq, void *user)
     (void)user;
     *seq = g.next_seq;   /* radiod_write_iil writes this shared seq */
     return g.cp_online && radiod_write_iil(f);
+}
+
+static bool iil_auth_iil_write(const struct iil_frame *f, uint8_t *seq, void *user)
+{
+    (void)user;
+    *seq = g.next_seq;
+    return g.cp_online && radiod_write_iil(f);
+}
+/* The AKA relay reuses the ordinary FMT write path for the USIM request. */
+static bool iil_auth_usim_write(const struct fmt_tx_frame *f, uint8_t *seq, void *user)
+{
+    (void)user;
+    *seq = g.next_seq;
+    return g.cp_online && radiod_write_fmt(f);
 }
 
 /*
@@ -2058,6 +2090,9 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
             diag("iil_pdn_active", NULL);
         }
     }
+    /* IIL AKA relay timeout handling (drop stale challenge). */
+    iil_auth_tick(&g.iil_auth, now_ms());
+
     call_service_tick(&g.calls,now_ms(),g.cp_online,g.write_enabled && g.fmt.present && g.sim_ready_seen);
 
     /* Read-only status refresh uses the same serialized transport, only while
@@ -2954,6 +2989,7 @@ int main(int argc, char **argv)
     ims_service_open(&g.ims,ims_write,ims_state_diag,NULL);
     ims_pdn_open(&g.ims_pdn,ims_pdn_write,NULL);
     iil_pdn_open(&g.iil_pdn,iil_pdn_write,NULL);
+    iil_auth_open(&g.iil_auth,iil_auth_iil_write,iil_auth_usim_write,NULL);
     ims_init_open(&g.ims_init,ims_write,NULL);
     g.ims_pdn_armed = false;
     {
