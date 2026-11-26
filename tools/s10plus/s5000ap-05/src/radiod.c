@@ -744,7 +744,9 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
           f->sub_cmd == IPC41_GPRS_CURRENT_SESSION_DATA_CTR ||
           f->sub_cmd == IPC41_GPRS_CALL_STATUS)) ||
         (f->main_cmd == IPC41_MAIN_GEN) ||
-        f->main_cmd == IPC41_MAIN_DISP) {
+        f->main_cmd == IPC41_MAIN_DISP ||
+        f->main_cmd == IPC41_MAIN_IMS ||
+        (f->main_cmd == IPC41_MAIN_MISC && f->sub_cmd == 82)) {
         char hex[256];
         unsigned k, n = 0;
         for (k = 0; k < f->payload_len && k < 32; k++)
