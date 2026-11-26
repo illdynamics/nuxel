@@ -528,3 +528,51 @@ bool fmt_tx_set_device_capa(struct fmt_tx_frame *f, uint8_t pref1, uint8_t pref2
     return fmt_tx_raw(f, 10u /*MISC*/, 45u /*SET_DEVICE_CAPA*/, 3u /*notification*/,
                       p, sizeof p);
 }
+
+/* ---- MISC IMS SDM (Service Domain Manager) settings ----
+ *
+ * Wire contract recovered from Ipc41PacketBuilder (libsec-ril 60889dd7):
+ *   main=10 (MISC), type=3 (notification).
+ *   sub=26 SdmImsSmsFmtSet   payload[0] = SmsOverIpFormat byte
+ *   sub=27 SdmImsSmsOverIPSet payload[0] = enable byte
+ *   sub=28 SdmImsDomainSet     payload = domain string (bounded)
+ *   sub=32 SdmImsModeSet       payload[0] = mode byte
+ *   sub=34 SdmPcscfSet         payload = P-CSCF string (bounded)
+ * Every builder observed writes 8-byte frames for the 1-byte payloads and
+ * bounded variable payloads otherwise. */
+
+bool fmt_tx_sdm_ims_sms_fmt(struct fmt_tx_frame *f, uint8_t fmt)
+{
+    return fmt_tx_raw(f, 10u /*MISC*/, 26u /*SDM_IMS_SMS_FMT*/, 3u,
+                      &fmt, 1u);
+}
+
+bool fmt_tx_sdm_ims_sms_over_ip(struct fmt_tx_frame *f, uint8_t enable)
+{
+    return fmt_tx_raw(f, 10u /*MISC*/, 27u /*SDM_IMS_SMS_OVER_IP*/, 3u,
+                      &enable, 1u);
+}
+
+bool fmt_tx_sdm_ims_domain(struct fmt_tx_frame *f, const char *domain)
+{
+    if (!f || !domain) return false;
+    size_t n = strlen(domain);
+    if (n == 0 || n > 255u) return false;
+    return fmt_tx_raw(f, 10u /*MISC*/, 28u /*SDM_IMS_DOMAIN*/, 3u,
+                      (const uint8_t *)domain, n);
+}
+
+bool fmt_tx_sdm_ims_mode(struct fmt_tx_frame *f, uint8_t mode)
+{
+    return fmt_tx_raw(f, 10u /*MISC*/, 32u /*SDM_IMS_MODE*/, 3u,
+                      &mode, 1u);
+}
+
+bool fmt_tx_sdm_pcscf(struct fmt_tx_frame *f, const char *pcscf)
+{
+    if (!f || !pcscf) return false;
+    size_t n = strlen(pcscf);
+    if (n == 0 || n > 255u) return false;
+    return fmt_tx_raw(f, 10u /*MISC*/, 34u /*SDM_PCSCF*/, 3u,
+                      (const uint8_t *)pcscf, n);
+}

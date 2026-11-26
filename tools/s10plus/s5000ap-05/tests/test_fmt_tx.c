@@ -131,6 +131,23 @@ int main(void)
     CHECK(!fmt_tx_raw(&f, 13, 3, 3, NULL, 3));
     CHECK(!fmt_tx_raw(&f, 13, 3, 3, raw, FMT_TX_MAX_FRAME));
     CHECK(!fmt_tx_raw(NULL, 13, 3, 3, raw, 3));
+    /* MISC IMS SDM (Service Domain Manager) settings — recovered from
+     * Ipc41PacketBuilder dispatch (SdmImsMode/SmsFmt/SmsOverIP/Domain/Pcscf). */
+    const uint8_t sdm_mode[] = {8,0,0,0,10,32,3,1};
+    CHECK(fmt_tx_sdm_ims_mode(&f, FMT_TX_SDM_IMS_MODE_ON)); VECTOR(sdm_mode);
+    const uint8_t sdm_fmt[] = {8,0,0,0,10,26,3,0};
+    CHECK(fmt_tx_sdm_ims_sms_fmt(&f, 0)); VECTOR(sdm_fmt);
+    const uint8_t sdm_oip[] = {8,0,0,0,10,27,3,1};
+    CHECK(fmt_tx_sdm_ims_sms_over_ip(&f, 1)); VECTOR(sdm_oip);
+    const uint8_t sdm_dom[] = {29,0,0,0,10,28,3,'i','m','s','.','m','n','c','0','0','8','.','m','c','c','2','0','4','.','g','p','r','s'};
+    CHECK(fmt_tx_sdm_ims_domain(&f, "ims.mnc008.mcc204.gprs")); VECTOR(sdm_dom);
+    const uint8_t sdm_pcscf[] = {8,0,0,0,10,34,3,'x'};
+    CHECK(fmt_tx_sdm_pcscf(&f, "x")); VECTOR(sdm_pcscf);
+    CHECK(!fmt_tx_sdm_ims_domain(&f, NULL));
+    CHECK(!fmt_tx_sdm_ims_domain(&f, ""));
+    CHECK(!fmt_tx_sdm_pcscf(&f, NULL));
+    CHECK(!fmt_tx_sdm_pcscf(&f, ""));
+
     printf("FMT vendor golden vectors: %s (%d failures)\n", failures ? "FAIL" : "PASS", failures);
     return failures ? 1 : 0;
 }

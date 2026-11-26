@@ -243,3 +243,31 @@ bool fmt_tx_get_device_capa(struct fmt_tx_frame *f);
 
 /* IpcTxSetDeviceCapa: main=10 (MISC), sub=45, type=3, payload=[pref1, pref2]. */
 bool fmt_tx_set_device_capa(struct fmt_tx_frame *f, uint8_t pref1, uint8_t pref2);
+
+/* ---- MISC IMS SDM (Service Domain Manager) settings (main=10) ----
+ *
+ * Recovered from Ipc41PacketBuilder / IpcTxSetImsSdmSettings (@0x32f0c0)
+ * dispatch in libsec-ril 60889dd7. These arm the modem's IMS stack with the
+ * supported SMS-over-IP format and IMS domain BEFORE registration is driven.
+ * Each is a 1-or-more byte MISC notification; the modem acknowledges via the
+ * ordinary GEN (main=128) response. No values are guessed; only documented
+ * vendor wire bytes are emitted. */
+
+/* IMS mode (sub=32): 0 = off, 1 = IMS enabled. */
+#define FMT_TX_SDM_IMS_MODE_OFF 0u
+#define FMT_TX_SDM_IMS_MODE_ON  1u
+
+/* SmsOverIpFormat (sub=26, 1 byte) — used for the SMS-over-IP format. */
+bool fmt_tx_sdm_ims_sms_fmt(struct fmt_tx_frame *f, uint8_t fmt);
+
+/* SMS-over-IP enable (sub=27, 1 byte): 0 = off, 1 = SMS-over-IP enabled. */
+bool fmt_tx_sdm_ims_sms_over_ip(struct fmt_tx_frame *f, uint8_t enable);
+
+/* IMS domain (sub=28, variable): the SIP/IMS domain FQDN. */
+bool fmt_tx_sdm_ims_domain(struct fmt_tx_frame *f, const char *domain);
+
+/* IMS mode (sub=32, 1 byte). */
+bool fmt_tx_sdm_ims_mode(struct fmt_tx_frame *f, uint8_t mode);
+
+/* P-CSCF (sub=34, variable): the P-CSCF FQDN/address. */
+bool fmt_tx_sdm_pcscf(struct fmt_tx_frame *f, const char *pcscf);
