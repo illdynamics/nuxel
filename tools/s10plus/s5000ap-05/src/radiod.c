@@ -1318,6 +1318,32 @@ static void radiod_sip_param_from_pcscf(const struct iil_pdn *p)
     memset(proxy, 0, sizeof proxy);
 }
 
+/* Fire IpcTxSetSipParam from the FMT IMS PDN (ims_pdn) discovered P-CSCF.
+ * Mirror of radiod_sip_param_from_pcscf for the Round 07 verified FMT bearer.
+ * The modem's internal IMS SIP stack is what actually registers; the AP-side
+ * native socket cannot bind the modem-internal IMS bearer IP, so the correct
+ * surface is IpcTxSetSipParam (main=3 CDMA_DATA sub=19) with the recovered
+ * P-CSCF + IMSI-derived IMPI. Never fabricate; never log the identity. */
+static bool radiod_sip_param_from_fmt_pcscf(const struct ims_pdn *p)
+{
+    if (!p || !p->pcscf_ready || !p->ip.ipv6_valid || p->ip.pcscf6_count == 0) return false;
+    if (!g.sim_ready_seen || !g.ims.identity.ready) return false;
+    char proxy[64] = {0};
+    inet_ntop(AF_INET6, p->ip.pcscf6[0], proxy, sizeof proxy);
+    if (!proxy[0]) return false;
+    bool sent = false;
+    struct fmt_tx_frame f;
+    if (fmt_tx_set_sip_param(&f, proxy, g.ims.identity.impi, "",
+                             FMT_TX_AUTH_NONE, FMT_TX_PROTO_IPV6)) {
+        if (g.cp_online && radiod_write_fmt(&f)) {
+            diag("fmt_sip_param", NULL);  /* P-CSCF is not secret; never log it */
+            sent = true;
+        }
+    }
+    memset(proxy, 0, sizeof proxy);
+    return sent;
+}
+
 
 /* ------------------------------------------------------------------ */
 /* native SIP transport (ims_sip_tr) integration                       */
@@ -1426,6 +1452,78 @@ fail:
     return false;
 }
 
+/* Open the native SIP transport from the FMT IMS PDN (ims_pdn) IPv6/P-CSCF
+ * (the Round 07 verified FMT path). This is the mirror of sip_tr_open_from_iil
+ * for the FMT bearer that now reaches ims_pdn_active() with a real CID-2
+ * GPRS_IP_CONFIGURATION (2 P-CSCF). The FMT ip is carried in fmt_rx_ip.pcscf6. */
+static bool sip_tr_open_from_ims_pdn(const struct ims_pdn *p)
+{
+    if (!p || !p->ip_ready || !p->pcscf_ready) return false;
+    int fam = 0;
+    char pcscf[64] = {0}, local[64] = {0};
+    if (p->ip.ipv6_valid && p->ip.pcscf6_count > 0) {
+        fam = AF_INET6;
+        inet_ntop(AF_INET6, p->ip.pcscf6[0], pcscf, sizeof pcscf);
+        inet_ntop(AF_INET6, p->ip.ipv6, local, sizeof local);
+    } else if (p->ip.ipv4_valid && p->ip.pcscf4_count > 0) {
+        fam = AF_INET;
+        inet_ntop(AF_INET, p->ip.pcscf4[0], pcscf, sizeof pcscf);
+        inet_ntop(AF_INET, p->ip.ipv4, local, sizeof local);
+    }
+    if (fam == 0 || !pcscf[0] || !local[0]) {
+        diagf("fmt_sip_tr_noFam", "fam=%d ipv4=%d v6=%d pcscf4=%u pcscf6=%u",
+              fam, p->ip.ipv4_valid, p->ip.ipv6_valid, p->ip.pcscf4_count, p->ip.pcscf6_count);
+        return false;
+    }
+
+    if (sip_tr_fd >= 0) { close(sip_tr_fd); sip_tr_fd = -1; }
+    sip_tr_fd = socket(fam, SOCK_DGRAM | SOCK_CLOEXEC | SOCK_NONBLOCK, 0);
+    if (sip_tr_fd < 0) return false;
+    uint16_t port = 5062;
+    if (fam == AF_INET) {
+        struct sockaddr_in sa = {0};
+        sa.sin_family = AF_INET;
+        sa.sin_port = htons(port);
+        if (inet_pton(AF_INET, local, &sa.sin_addr) != 1) goto fail2;
+        if (bind(sip_tr_fd, (struct sockaddr *)&sa, sizeof sa) != 0) goto fail2;
+    } else {
+        struct sockaddr_in6 sa = {0};
+        sa.sin6_family = AF_INET6;
+        sa.sin6_port = htons(port);
+        if (inet_pton(AF_INET6, local, &sa.sin6_addr) != 1) goto fail2;
+        if (bind(sip_tr_fd, (struct sockaddr *)&sa, sizeof sa) != 0) goto fail2;
+    }
+
+    struct ims_sip_tr_cfg cfg = {
+        .impu = NULL, .impi = NULL,
+        .pcscf = pcscf, .local_ip = local,
+        .port = port, .pcscf_port = 5060,
+        .sec_offer = "ipsec-3gpp;alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;mod=trans;spi-c=4096;spi-s=4097;port-c=5062;port-s=5064",
+    };
+    char impu_buf[160] = {0}, impi_buf[160] = {0};
+    if (g.ims.identity.ready && g.ims.identity.impi[0]) {
+        snprintf(impi_buf, sizeof impi_buf, "%s", g.ims.identity.impi);
+        if (g.ims.identity.impu[0])
+            snprintf(impu_buf, sizeof impu_buf, "%s", g.ims.identity.impu);
+        else
+            snprintf(impu_buf, sizeof impu_buf, "sip:%s", g.ims.identity.impi);
+        cfg.impi = impi_buf;
+        cfg.impu = impu_buf;
+    }
+    if (!cfg.impu || !cfg.impi) {
+        close(sip_tr_fd); sip_tr_fd = -1;
+        return false;
+    }
+    struct ims_sip_tr_io io = { .send = sip_tr_send_cb, .recv = NULL };
+    if (!ims_sip_tr_open(&g.sip_tr, &cfg, &io, NULL)) { close(sip_tr_fd); sip_tr_fd = -1; return false; }
+    g.sip_tr_open = true;
+    return true;
+
+fail2:
+    close(sip_tr_fd); sip_tr_fd = -1;
+    return false;
+}
+
 /* Close the native SIP transport (bearer loss / stop). */
 static void sip_tr_close(void)
 {
@@ -1508,9 +1606,21 @@ static void sip_tr_usim_challenge(uint64_t now)
  * authoritative 200. */
 static void sip_tr_tick(uint64_t now)
 {
-    if (iil_pdn_active(&g.iil_pdn)) {
+    /* The native SIP transport is driven from EITHER the IIL PDN or the FMT
+     * IMS PDN, whichever establishes a usable CID-2 bearer with IP + P-CSCF.
+     * The FMT path (Round 07 verified) now reaches ims_pdn_active() with a
+     * real GPRS_IP_CONFIGURATION (2 P-CSCF); previously only the IIL path was
+     * wired here, so a working FMT bearer never opened SIP. */
+    bool iil_a = iil_pdn_active(&g.iil_pdn);
+    bool fmt_a = ims_pdn_active(&g.ims_pdn);
+    bool bearer = iil_a || fmt_a;
+    if (bearer) {
         if (!g.sip_tr_open) {
-            if (sip_tr_open_from_iil(&g.iil_pdn)) diag("iil_sip_tr_open", NULL);
+            if (iil_pdn_active(&g.iil_pdn)) {
+                if (sip_tr_open_from_iil(&g.iil_pdn)) diag("iil_sip_tr_open", NULL);
+            } else if (sip_tr_open_from_ims_pdn(&g.ims_pdn)) {
+                diag("fmt_sip_tr_open", NULL);
+            }
         }
         if (g.sip_tr_open) {
             enum ims_sip_tr_phase before = g.sip_tr.phase;
@@ -1532,7 +1642,7 @@ static void sip_tr_tick(uint64_t now)
                 ims_service_native_registered(&g.ims, reg);
         }
     } else {
-        if (g.sip_tr_open) { sip_tr_close(); diag("iil_sip_tr_close", NULL); }
+        if (g.sip_tr_open) { sip_tr_close(); diag("sip_tr_close", NULL); }
         /* Bearer loss invalidates any prior native registration. */
         if (g.ims.modem_confirmed_registered)
             ims_service_native_registered(&g.ims, false);
@@ -2405,7 +2515,14 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
             diag("ims_pdn_active", NULL);
         } else if (!ims_pdn_active(&g.ims_pdn)) {
             g.ims_pdn_up = false;
+            g.sip_param_sent = false;  /* re-arm on the next bearer epoch */
         }
+        /* Configure the modem's internal IMS SIP stack (IpcTxSetSipParam)
+         * with the recovered IPv6 P-CSCF + IMSI-derived IMPI once the bearer
+         * is up AND the USIM identity is available. Retried every tick until
+         * sent (identity readiness can lag the bearer by a few seconds). */
+        if (g.ims_pdn_up && !g.sip_param_sent && g.ims.identity.ready)
+            g.sip_param_sent = radiod_sip_param_from_fmt_pcscf(&g.ims_pdn);
     }
     /* IIL IMS APN PDN drive: recovered IpcProtocol41Iil Define/Activate for
      * the isolated CID-2 IMS bearer. Runs only when armed (--arm-data-path).
