@@ -46,6 +46,7 @@
 #include "cellular_link.h"
 #include "mobile_data.h"
 #include "ims_sip_tr.h"
+#include "ims_sip.h"   /* ims_base64_decode for the 401 AKA nonce (RAND||AUTN) */
 #define MOBILE_PREFERENCE "/var/lib/nuxel-radio/mobile-data"
 
 #include <arpa/inet.h>
@@ -166,6 +167,12 @@ struct radiod_ctx {
     bool sip_param_sent;        /* SetSipParam fired once per P-CSCF discovery */
     struct ims_sip_tr sip_tr;   /* native SIP/IMS transport + registration FSM */
     bool sip_tr_open;           /* transport opened (P-CSCF + local IP known) */
+    /* Native SIP 401 AKAv1-MD5 -> USIM AKA bridge state. When the SIP FSM
+     * enters CHALLENGED, the 401 nonce is base64(RAND||AUTN); radiod decodes
+     * it, submits the USIM AKA (SEC 5/9), and passes RES back via
+     * ims_sip_tr_auth(). RES/RAND/AUTN are never logged. */
+    bool sip_auth_pending;      /* USIM AKA in flight for the SIP 401 challenge */
+    uint8_t sip_auth_last_seq;  /* SEC 5/9 request seq to correlate the result */
     uid_t control_uid, bridge_uid;
     sd_bus *data_bus;
     bool     data_path_armed;   /* explicit opt-in (flag / D-Bus) */
@@ -594,6 +601,29 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
         struct fmt_rx_usim_auth r;
         if (fmt_rx_usim_auth(f->payload, f->payload_len, &r)) {
             (void)iil_auth_usim_result(&g.iil_auth, &r, now_ms());
+        }
+    }
+
+    /* Native SIP 401 AKA bridge: correlate the solicited SEC 5/9 USIM AKA
+     * result to the SIP transport's outstanding challenge and hand RES to
+     * ims_sip_tr_auth() so the authenticated REGISTER is sent. RES is never
+     * logged; CK/IK are not forwarded here. */
+    if (g.sip_auth_pending && f->cmd_type == IPC41_TYPE_RESPONSE &&
+        f->ack_seq == g.sip_auth_last_seq &&
+        f->main_cmd == IPC41_MAIN_SEC && f->sub_cmd == 9) {
+        struct fmt_rx_usim_auth r;
+        if (fmt_rx_usim_auth(f->payload, f->payload_len, &r) &&
+            r.authenticated && r.res && r.res_len >= 4 && r.res_len <= 16) {
+            g.sip_auth_pending = false;
+            if (ims_sip_tr_auth(&g.sip_tr, r.res, r.res_len))
+                diag("iil_sip_tr_auth_res", NULL);
+            else
+                diag("iil_sip_tr_auth_res_drop", NULL);
+        } else {
+            /* Auth failure or malformed result: drop the stale transaction so
+             * a fresh 401 can drive a new USIM AKA on the next REGISTER. */
+            g.sip_auth_pending = false;
+            diag("iil_sip_tr_auth_fail", NULL);
         }
     }
 
@@ -1401,6 +1431,9 @@ static void sip_tr_close(void)
 {
     if (g.sip_tr_open) { ims_sip_tr_close(&g.sip_tr); g.sip_tr_open = false; }
     if (sip_tr_fd >= 0) { close(sip_tr_fd); sip_tr_fd = -1; }
+    /* A bearer loss invalidates any in-flight SIP AKA challenge. */
+    g.sip_auth_pending = false;
+    g.sip_auth_last_seq = 0;
 }
 
 /* Drain any queued SIP response datagram(s) off the IMS bearer socket and
@@ -1426,6 +1459,50 @@ static void sip_tr_recv(void)
     }
 }
 
+/* Bridge a native SIP 401 AKAv1-MD5 challenge to the legitimate USIM AKA.
+ * The 401 nonce is base64(RAND||AUTN) (RFC 3310). Decode it, submit the
+ * SEC 5/9 USIM 3G AKA, and remember the request seq so the solicited result
+ * can be correlated back to ims_sip_tr_auth() in dispatch_fmt. Secret
+ * material is stack-scoped and wiped; never logged. */
+static void sip_tr_usim_challenge(uint64_t now)
+{
+    (void)now;
+    if (g.sip_auth_pending) return;               /* one outstanding AKA */
+    if (g.sip_tr.phase != IMS_SIP_TR_CHALLENGED) return;
+    if (g.sip_tr.res_b64[0]) return;              /* RES already stored; awaiting authenticated REGISTER */
+    /* t->nonce holds base64(RAND||AUTN), 44 chars + NUL. Decode to 32 bytes. */
+    uint8_t raw[32];
+    size_t raw_len = 0;
+    if (!ims_base64_decode(g.sip_tr.nonce, strlen(g.sip_tr.nonce),
+                           raw, sizeof raw, &raw_len) || raw_len != 32) {
+        diag("iil_sip_tr_auth_nonce_bad", NULL);
+        return;
+    }
+    uint8_t rnd[16], autn[16];
+    memcpy(rnd, raw, 16);
+    memcpy(autn, raw + 16, 16);
+
+    struct fmt_tx_frame f;
+    if (!fmt_tx_usim_auth(&f, rnd, autn)) {
+        memset(rnd, 0, sizeof rnd); memset(autn, 0, sizeof autn);
+        memset(raw, 0, sizeof raw);
+        return;
+    }
+    uint8_t seq = g.next_seq;   /* capture BEFORE write (radiod_write_fmt increments) */
+    /* Serialize through the same FMT write path the IIL auth relay uses. */
+    if (!g.cp_online || !g.write_enabled || !g.fmt.present ||
+        !radiod_write_fmt(&f)) {
+        diag("iil_sip_tr_usim_tx_refused", NULL);
+        g.sip_auth_pending = false;
+        g.sip_auth_last_seq = 0;
+    } else {
+        g.sip_auth_last_seq = seq;
+        g.sip_auth_pending = true;
+    }
+    memset(rnd, 0, sizeof rnd); memset(autn, 0, sizeof autn);
+    memset(raw, 0, sizeof raw);
+}
+
 /* Tick the native SIP transport: open when P-CSCF+identity are ready, drain
  * replies, start registration, then advance the FSM. Registers only on an
  * authoritative 200. */
@@ -1439,6 +1516,11 @@ static void sip_tr_tick(uint64_t now)
             enum ims_sip_tr_phase before = g.sip_tr.phase;
             sip_tr_recv();   /* read 401/200 replies before advancing the FSM */
             if (before == IMS_SIP_TR_IDLE) (void)ims_sip_tr_start(&g.sip_tr);
+            /* A 401 sets CHALLENGED; drive the USIM AKA so an authenticated
+             * REGISTER can be sent. (Only fires once per challenge.) */
+            if (g.sip_tr.phase == IMS_SIP_TR_CHALLENGED &&
+                !g.sip_auth_pending)
+                sip_tr_usim_challenge(now);
             enum ims_sip_tr_phase after = ims_sip_tr_tick(&g.sip_tr, now, true);
             if (after != before)
                 diagf("iil_sip_tr_phase", "\"phase\":\"%s\"",
