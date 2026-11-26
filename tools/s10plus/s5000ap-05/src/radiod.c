@@ -35,6 +35,7 @@
 #include "oes_cert.h"
 #include "sms_service.h"
 #include "ims_service.h"
+#include "ims_pdn.h"
 #include "call_service.h"
 #include "cellular_link.h"
 #include "mobile_data.h"
@@ -144,7 +145,9 @@ struct radiod_ctx {
     struct sms_service sms;
     struct call_service calls;
     struct ims_service ims;
-    bool ims_pdn_up;   /* ims APN PDN actually established (carrier/gate) */
+    struct ims_pdn ims_pdn;
+    bool ims_pdn_armed; /* opt-in IMS APN PDN drive */
+    bool ims_pdn_up;     /* ims APN PDN actually established (carrier/gate) */
     uid_t control_uid, bridge_uid;
     sd_bus *data_bus;
     bool     data_path_armed;   /* explicit opt-in (flag / D-Bus) */
@@ -449,6 +452,13 @@ static bool ims_write(const struct fmt_tx_frame *f,uint8_t *sequence,void *user)
     return g.cp_online && radiod_write_fmt(f);
 }
 
+static bool ims_pdn_write(const struct fmt_tx_frame *f,uint8_t *sequence,void *user)
+{
+    (void)user;
+    *sequence=g.next_seq;
+    return g.cp_online && radiod_write_fmt(f);
+}
+
 static void ims_state_diag(const char *state,const char *reason,void *user)
 {
     (void)user;
@@ -577,6 +587,13 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
         struct fmt_rx_gen gen;
         if (fmt_rx_gen(f->payload, f->payload_len, &gen))
             ims_service_gen_result(&g.ims, gen.result, f->ack_seq);
+    }
+    /* Correlate GEN result to the IMS PDN drive (distinct CID). */
+    if (f->main_cmd == IPC41_MAIN_GEN && f->cmd_type == IPC41_TYPE_RESPONSE &&
+        f->payload_len == 5 && f->ack_seq == g.ims_pdn.last_write_seq) {
+        struct fmt_rx_gen gen;
+        if (fmt_rx_gen(f->payload, f->payload_len, &gen))
+            ims_pdn_gen_result(&g.ims_pdn, gen.result, f->ack_seq);
     }
     mobile_stop_receive(&g.mobile_stop,f);
     if (f->main_cmd == 13 && f->sub_cmd == 1 && f->cmd_type == 2) {
@@ -1796,6 +1813,17 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
     ims_service_tick(&g.ims,now_ms(),
         g.cp_online && g.sim_ready_seen && g.write_enabled && g.fmt.present,
         g.ims_pdn_up);
+    /* Opt-in IMS APN PDN drive (second, isolated context). Off unless armed. */
+    if (g.ims_pdn_armed) {
+        ims_pdn_tick(&g.ims_pdn, now_ms(),
+            g.cp_online && g.sim_ready_seen && g.write_enabled && g.fmt.present);
+        if (ims_pdn_active(&g.ims_pdn) && !g.ims_pdn_up) {
+            g.ims_pdn_up = true;
+            diag("ims_pdn_active", NULL);
+        } else if (!ims_pdn_active(&g.ims_pdn)) {
+            /* Profile-scan detection still applies (authoritative APN list). */
+        }
+    }
     call_service_tick(&g.calls,now_ms(),g.cp_online,g.write_enabled && g.fmt.present && g.sim_ready_seen);
 
     /* Read-only status refresh uses the same serialized transport, only while
@@ -2664,6 +2692,13 @@ int main(int argc, char **argv)
     else sms_service_set_result_diag(&g.sms,sms_result_diag);
     call_service_init(&g.calls,sms_write,call_notify,NULL);
     ims_service_open(&g.ims,ims_write,ims_state_diag,NULL);
+    ims_pdn_open(&g.ims_pdn,ims_pdn_write,NULL);
+    g.ims_pdn_armed = false;
+    {
+        const char *imens = getenv("NUXEL_IMS_PDN");
+        g.ims_pdn_armed = imens && (!strcasecmp(imens,"1") || !strcasecmp(imens,"on") ||
+                                    !strcasecmp(imens,"true") || !strcasecmp(imens,"yes"));
+    }
 
     if (setup_event() < 0) { diag("event_setup_failed", NULL); return 1; }
 
@@ -2694,6 +2729,7 @@ int main(int argc, char **argv)
     diag("shutdown", NULL);
     sms_service_close(&g.sms);
     ims_service_close(&g.ims);
+    ims_pdn_close(&g.ims_pdn);
     ep_close(&g.fmt);
     ep_close(&g.rfs);
     (void)r;
