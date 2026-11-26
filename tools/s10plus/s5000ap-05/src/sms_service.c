@@ -55,7 +55,7 @@ static void uncertain(struct sms_service *s)
 void sms_service_close(struct sms_service *s)
 { if(s) { uncertain(s);sms_store_close(&s->store); } }
 
-void sms_service_tick(struct sms_service *s,uint64_t now,bool online,bool sim_ready,bool registered,bool writable)
+void sms_service_tick(struct sms_service *s,uint64_t now,bool online,bool sim_ready,bool cs_registered,bool ims_registered,bool writable)
 {
     if (!s || !s->store.db) return;
     if (!online || !sim_ready) {
@@ -78,15 +78,24 @@ void sms_service_tick(struct sms_service *s,uint64_t now,bool online,bool sim_re
         if (fmt_sms_get_smsc(&f)) (void)s->write(&f,&sequence,s->user);
         return;
     }
-    if (s->active || s->blocked || !s->ready_ack || s->ready_rejected || !s->smsc_len || !registered || !sms_store_next(&s->store,&s->job)) return;
+    s->ims_registered = ims_registered;
+    /* Transport selection: prefer CS when genuinely registered; otherwise use IMS
+     * only when the modem has confirmed IMS registration. Never fabricate either.
+     * IMS SMS domain wire value 8 (SmsManager::DoImsSendIms -> IpcModem::SendSms
+     * w3=8), CS domain wire 0 (ConvertDomainToIPC(GetDomain=2)). */
+    uint8_t domain_wire;
+    if (cs_registered) domain_wire = 0u;
+    else if (ims_registered) domain_wire = 8u;
+    else return; /* neither transport genuinely available */
+    s->selected_domain = domain_wire;
+
+    if (s->active || s->blocked || !s->ready_ack || s->ready_rejected || !s->smsc_len || !sms_store_next(&s->store,&s->job)) return;
     uint8_t pdu[SMS_MAX_PDU];size_t n=s->smsc_len+s->job.pdu.len;
     if (n>sizeof pdu) {
         (void)sms_store_fail(&s->store,s->job.id,s->job.part,-3,false);notify(s,s->job.id,false);return;
     }
     memcpy(pdu,s->smsc,s->smsc_len);memcpy(pdu+s->smsc_len,s->job.pdu.data,s->job.pdu.len);
-    /* DomainSelector::GetDomain=2 (CS); ConvertDomainToIPC(2)=0.
-     * No IMS transport is silently substituted. */
-    if (!fmt_sms_send(&f,s->job.part<s->job.total,0,pdu,n)) return;
+    if (!fmt_sms_send(&f,s->job.part<s->job.total,domain_wire,pdu,n)) return;
     if (!sms_store_sending(&s->store,s->job.id,s->job.part)) { s->store_errors++;s->blocked=true;return; }
     s->active=true;s->deadline_ms=now+120000;
     if (!s->write(&f,&s->sequence,s->user)) uncertain(s);

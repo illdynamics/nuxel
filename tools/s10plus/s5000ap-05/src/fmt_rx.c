@@ -187,3 +187,26 @@ bool fmt_rx_ip(const uint8_t *p, size_t n, struct fmt_rx_ip *out)
     *out = v;
     return true;
 }
+
+/* IMS registration-state notification: accept a bounded payload and interpret
+ * the status byte conservatively. We only mark registered when the modem's
+ * status byte is 1 (registered). No local fabrication. */
+bool fmt_rx_ims_state(const uint8_t *p, size_t n, struct fmt_rx_ims_state *out)
+{
+    if (!p || !out || n < 2) return false;
+    out->status = p[0];
+    out->network_type = (n >= 3) ? p[1] : 0;
+    out->rat = (n >= 3) ? p[2] : 0;
+    out->registered = (out->status == 1);
+    return true;
+}
+
+/* SEC_IMS_AUTH SIM AKA challenge. The modem drives UICC auth; the AP merely
+ * relays the opaque challenge payload. Bounded and never persisted/logged. */
+bool fmt_rx_ims_auth(const uint8_t *p, size_t n, struct fmt_rx_ims_auth *out)
+{
+    if (!p || !out || !n) return false;
+    out->data = p;
+    out->len = n;
+    return true;
+}

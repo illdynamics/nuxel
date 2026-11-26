@@ -35,11 +35,17 @@ struct sms_service {
     uint64_t next_setup_ms,deadline_ms;
     struct sms_job job;
     unsigned received,decode_errors,store_errors,ack_errors,unmatched;
+    /* Transport selection (round 06): CS is wire domain 0; IMS SMS is domain 8
+     * (recovered from SmsManager::DoImsSendIms passing w3=8 to IpcModem::SendSms).
+     * `ims_registered` reflects the modem-confirmed IMS registration (never a
+     * local guess). When set and CS is unavailable, outbound SMS uses IMS. */
+    bool ims_registered;
+    uint8_t selected_domain;
 };
 bool sms_service_open(struct sms_service *s,const char *path,sms_write_fn write,sms_notify_fn notify,void *user);
 void sms_service_set_result_diag(struct sms_service *s,sms_result_fn fn);
 void sms_service_close(struct sms_service *s);
-void sms_service_tick(struct sms_service *s,uint64_t now,bool online,bool sim_ready,bool registered,bool writable);
+void sms_service_tick(struct sms_service *s,uint64_t now,bool online,bool sim_ready,bool cs_registered,bool ims_registered,bool writable);
 void sms_service_receive(struct sms_service *s,const struct nuxel_sipc_fmt *frame);
 /* Resolve one unresolved outbound message without resending it. Re-derives the
  * blocked flag from the remaining store contents. */

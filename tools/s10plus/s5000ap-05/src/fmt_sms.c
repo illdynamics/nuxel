@@ -5,7 +5,10 @@
 bool fmt_sms_send(struct fmt_tx_frame *f, bool more, uint8_t domain_wire,
                   const uint8_t *pdu, size_t len)
 {
-    if (!pdu || !len || len > 255 || domain_wire > 3) return false;
+    /* Domain wire: 0/1/2/3 = CS paths (ConvertDomainToIPC), 8 = IMS SMS
+     * (SmsManager::DoImsSendIms -> IpcModem::SendSms w3=8). Never emit other
+     * values. */
+    if (!pdu || !len || len > 255 || (domain_wire > 3 && domain_wire != 8)) return false;
     uint8_t *p = fmt_tx_begin(f, 4, 1, 1, 4+len);
     if (!p) return false;
     p[0] = 2; p[1] = more ? 2 : 1; p[2] = domain_wire; p[3] = (uint8_t)len;

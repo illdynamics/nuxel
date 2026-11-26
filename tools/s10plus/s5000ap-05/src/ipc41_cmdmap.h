@@ -268,7 +268,7 @@ static inline const char *ipc41_main_name(uint8_t main) {
     }
 }
 
-#endif /* NUXEL_IPC41_CMDMAP_H */
+ /* NUXEL_IPC41_CMDMAP_H */
 
 /*
  * NOTE on main_cmd values above:
@@ -323,3 +323,37 @@ enum ipc41_ims_subcmd {
     IPC41_IMS_REQ_DEREGISTRATION = 7,
     IPC41_IMS_REQ_SET_REG_STATE = 8,
 };
+
+/* =========================================================================
+ * IMS (main=22) sub-command family — COMPLETE recovery (round 06).
+ *
+ * Verified against libsec-ril.so 60889dd7 via aarch64 disassembly:
+ *   IpcProtocol41::GetSubCommandName jump-table for main=22 yields these
+ *   names in order. sub_cmd 8 = REQ_SET_REG_STATE (IpcTxImsReqSetRegState
+ *   @0x34d230, 6-byte payload, layout fully decoded in fmt_tx.c).
+ *
+ * The AP drives the modem-resident IMS stack. The modem performs the SIP
+ * REGISTER and SIM AKA internally; the AP (a) requests registration via
+ * IpcTxImsReqSetRegState, (b) relays IMS AKA via SEC(main=5) sub=9
+ * SEC_IMS_AUTH and IpcTxImsAuthResp(main=22 sub=6), and (c) observes the
+ * actual state via IpcRxImsModeChange notifications.
+ *
+ * SAFETY: fail-closed. radiod only emits these after the dedicated reviewed
+ * implementation (ims_service) drives bounded, state-correlated requests.
+ */
+
+/* QMIIMS (main=64) — separate Qualcomm-style IMS transport. Names only. */
+#define IPC41_QMIIMS_UNUSED 0u
+
+/* ImsRegStatus enum values (recovered from ImsRegState ctor semantics and
+ * ModemProxy::SetImsRegState signature; these are the values the AP reports
+ * to the modem, NOT the modem's confirmed registration state). */
+#define IMS_REG_STATUS_NONE        0u
+#define IMS_REG_STATUS_REGISTERED  1u
+#define IMS_REG_STATUS_DEREGISTER  2u  /* request deregistration */
+#define IMS_REG_STATUS_NOT_REG     3u
+
+/* NetworkType wire values for IpcTxImsReqSetRegState payload[2]. */
+#define IMS_NETWORK_TYPE_LTE       14u
+#define IMS_NETWORK_TYPE_UNKNOWN   0u
+#endif

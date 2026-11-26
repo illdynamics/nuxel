@@ -434,3 +434,47 @@ bool fmt_tx_get_preferred_net_type(struct fmt_tx_frame *f)
     /* IpcTxNetGetPreferredNetType @0x335ed8, complete vendor frame 7 bytes. */
     return fmt_tx_raw(f, MAIN_NET, 10u, FMT_TX_TYPE_REQUEST, NULL, 0);
 }
+
+/*
+ * IMS (main=22) serialization — modem-resident IMS stack drive.
+ *
+ * IpcTxImsReqSetRegState (IpcProtocol41::IpcTxImsReqSetRegState @0x34d230):
+ * 8-byte header + 6-byte payload (total_len=13). Recovered wire layout:
+ *   hdr: total_len=13, msg_seq=0, ack_seq=0, main=0x16(22), sub=0x08, type=3
+ *   payload[0] = ImsRegStatus   (arg1)
+ *   payload[1] = request flag   (arg2, int)
+ *   payload[2] = NetworkType    (arg3)
+ *   payload[3] = EcmpState      (arg4)
+ *   payload[4] = EpdgAvailState (derived from RadioTechnology via jump tbl)
+ *   payload[5] = RadioTechnology(arg7)
+ */
+bool fmt_tx_ims_set_reg_state(struct fmt_tx_frame *f, uint8_t reg_status,
+                              uint8_t network_type, uint8_t rat)
+{
+    if (!f || reg_status > FMT_TX_IMS_REGSTATUS_DEREG) return false;
+    uint8_t p[6] = {0};
+    p[0] = reg_status;
+    p[1] = (reg_status == FMT_TX_IMS_REGSTATUS_REGISTERED) ? 1u : 0u;
+    p[2] = network_type;
+    p[3] = 0u; /* EcmpState: no CSFB/ECMP override */
+    /* EpdgAvailableState: 0 = EPDG not available on LTE (plain VoLTE path). */
+    p[4] = 0u;
+    p[5] = rat;
+    return fmt_tx_raw(f, 22u /*IMS*/, 8u /*REQ_SET_REG_STATE*/,
+                      FMT_TX_TYPE_NOTIFICATION, p, sizeof p);
+}
+
+/* IpcTxImsAuthResp (main=22 sub=6). Opaque SIM AKA response relay; the modem
+ * requested it via SEC_IMS_AUTH. Never persist or log `data`. */
+bool fmt_tx_ims_auth_resp(struct fmt_tx_frame *f, const uint8_t *data, size_t len)
+{
+    if (!f || (len && !data) || len > 255) return false;
+    return fmt_tx_raw(f, 22u /*IMS*/, 6u /*AUTH_RESP*/,
+                      FMT_TX_TYPE_NOTIFICATION, data, len);
+}
+
+bool fmt_tx_ims_deregistration(struct fmt_tx_frame *f)
+{
+    return fmt_tx_raw(f, 22u /*IMS*/, 7u /*REQ_DEREGISTRATION*/,
+                      FMT_TX_TYPE_NOTIFICATION, NULL, 0);
+}

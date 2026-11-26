@@ -192,4 +192,36 @@ bool fmt_tx_get_preferred_net_type(struct fmt_tx_frame *f);
 #define FMT_TX_PDP_TYPE_LEGACY 3u
 #define FMT_TX_PDP_TYPE_DEFAULT FMT_TX_PDP_TYPE_FULL
 
-#endif /* NUXEL_FMT_TX_H */
+ /* NUXEL_FMT_TX_H */
+
+/* ---- IMS (main=22) command serializers (AP -> CP, modem-resident stack) ---- */
+
+/* ImsRegStatus values the AP reports to the modem for registration drive. */
+#define FMT_TX_IMS_REGSTATUS_NONE    0u
+#define FMT_TX_IMS_REGSTATUS_REGISTERED 1u
+#define FMT_TX_IMS_REGSTATUS_DEREG   2u
+
+/* IpcTxImsReqSetRegState (main=22 sub=8, type=3, 6-byte payload).
+ * VERIFIED byte layout (round 06, from IpcProtocol41::IpcTxImsReqSetRegState
+ * @0x34d230 full disassembly):
+ *   payload[0] = ImsRegStatus
+ *   payload[1] = registration request flag (int arg2; 0/1)
+ *   payload[2] = NetworkType
+ *   payload[3] = EcmpState
+ *   payload[4] = EpdgAvailableState (derived from RadioTechnology)
+ *   payload[5] = RadioTechnology (int arg7)
+ * The AP requests registration by asserting ImsRegStatus != NONE; the modem
+ * autonomously performs the SIP REGISTER + AKA and reports the final state.
+ * RadioTechnology uses the Android RADIO_TECH enum (LTE = 14).
+ */
+bool fmt_tx_ims_set_reg_state(struct fmt_tx_frame *f, uint8_t reg_status,
+                              uint8_t network_type, uint8_t rat);
+
+/* IpcTxImsAuthResp (main=22 sub=6). Forward a SIM AKA response to the modem.
+ * `data`/`len` are the opaque AKA response the modem requested; no secret is
+ * persisted or logged. */
+bool fmt_tx_ims_auth_resp(struct fmt_tx_frame *f, const uint8_t *data, size_t len);
+
+/* IpcTxImsReqDeregistration (main=22 sub=7). */
+bool fmt_tx_ims_deregistration(struct fmt_tx_frame *f);
+#endif

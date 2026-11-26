@@ -34,6 +34,7 @@
 #include "efs_nv.h"
 #include "oes_cert.h"
 #include "sms_service.h"
+#include "ims_service.h"
 #include "call_service.h"
 #include "cellular_link.h"
 #include "mobile_data.h"
@@ -142,6 +143,8 @@ struct radiod_ctx {
     unsigned oes_requests;
     struct sms_service sms;
     struct call_service calls;
+    struct ims_service ims;
+    bool ims_pdn_up;   /* ims APN PDN actually established (carrier/gate) */
     uid_t control_uid, bridge_uid;
     sd_bus *data_bus;
     bool     data_path_armed;   /* explicit opt-in (flag / D-Bus) */
@@ -439,6 +442,21 @@ static bool sms_write(const struct fmt_tx_frame *f,uint8_t *sequence,void *user)
     return g.cp_online && radiod_write_fmt(f);
 }
 
+static bool ims_write(const struct fmt_tx_frame *f,uint8_t *sequence,void *user)
+{
+    (void)user;
+    *sequence=g.next_seq;
+    return g.cp_online && radiod_write_fmt(f);
+}
+
+static void ims_state_diag(const char *state,const char *reason,void *user)
+{
+    (void)user;
+    diagf("ims_state","\"state\":\"%s\",\"reason\":\"%s\"",
+          state ? state : "", reason ? reason : "");
+    emit_state_changed("ImsState", state ? state : "");
+}
+
 static int sms_desktop_done(sd_bus_message *m,void *user,sd_bus_error *error)
 {
     (void)user;(void)error;
@@ -536,12 +554,45 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
     resolve_pending(f);
     sms_service_receive(&g.sms,f);
     call_service_receive(&g.calls,f);
+    /* IMS (main=22) control plane: reflect authoritative modem state. */
+    if (f->main_cmd == IPC41_MAIN_IMS) {
+        /* IpcRxImsModeChange / registration notification (sub=1..3, type=3). */
+        if (f->cmd_type == IPC41_TYPE_NOTIFICATION && f->payload_len >= 1) {
+            struct fmt_rx_ims_state st;
+            if (fmt_rx_ims_state(f->payload, f->payload_len, &st)) {
+                ims_service_notify_state(&g.ims, &st);
+            }
+        }
+    }
+    /* SEC_IMS_AUTH (main=5 sub=9): SIM AKA challenge relay. Never log. */
+    if (f->main_cmd == IPC41_MAIN_SEC && f->sub_cmd == IPC41_SEC_IMS_AUTH &&
+        f->payload_len) {
+        struct fmt_rx_ims_auth a;
+        if (fmt_rx_ims_auth(f->payload, f->payload_len, &a))
+            ims_service_auth_challenge(&g.ims, &a);
+    }
+    /* Correlate a GEN result to the active IMS write (fail-closed). */
+    if (f->main_cmd == IPC41_MAIN_GEN && f->cmd_type == IPC41_TYPE_RESPONSE &&
+        f->payload_len == 5 && f->ack_seq == g.ims.last_write_seq) {
+        struct fmt_rx_gen gen;
+        if (fmt_rx_gen(f->payload, f->payload_len, &gen))
+            ims_service_gen_result(&g.ims, gen.result, f->ack_seq);
+    }
     mobile_stop_receive(&g.mobile_stop,f);
     if (f->main_cmd == 13 && f->sub_cmd == 1 && f->cmd_type == 2) {
         struct fmt_rx_pdp_profiles profiles;
         if (fmt_rx_pdp_profiles(f->payload,f->payload_len,&profiles)) {
             g.profiles = profiles; g.profiles_received = true;
-            diagf("pdp_definitions", "\"count\":%u", profiles.count);
+            /* Detect the ims APN PDN. A dedicated ims APN profile present in
+             * the live profile definitions is evidence of an IMS PDN, NOT a
+             * substitute for modem-confirmed IMS registration. */
+            g.ims_pdn_up = false;
+            for (unsigned i = 0; i < profiles.count; i++)
+                if (!memcmp(profiles.profile[i].apn, "ims", 3) &&
+                    profiles.profile[i].apn[3] == '\0')
+                    g.ims_pdn_up = true;
+            diagf("pdp_definitions", "\"count\":%u,\"ims_pdn\":%s",
+                  profiles.count, g.ims_pdn_up ? "true" : "false");
         } else diagf("pdp_definitions_invalid", "\"length\":%u", f->payload_len);
     }
     /* Reply only to the CP's actual startup request. Transfer the existing
@@ -1739,7 +1790,12 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
     data_session_tick(now_ms());
     sms_service_tick(&g.sms,now_ms(),g.cp_online,g.sim_ready_seen,
         sms_cs_registered(),
+        ims_service_registered(&g.ims),
         g.write_enabled && g.fmt.present);
+    /* Drive the native IMS registration controller (bounded, fail-closed). */
+    ims_service_tick(&g.ims,now_ms(),
+        g.cp_online && g.sim_ready_seen && g.write_enabled && g.fmt.present,
+        g.ims_pdn_up);
     call_service_tick(&g.calls,now_ms(),g.cp_online,g.write_enabled && g.fmt.present && g.sim_ready_seen);
 
     /* Read-only status refresh uses the same serialized transport, only while
@@ -2020,8 +2076,11 @@ static int method_get_capabilities(sd_bus_message *m, void *u, sd_bus_error *e)
     sd_bus_message_open_container(reply, 'a', "{ss}");
     const char *lte = (g.dsc.phase == DS_ACTIVE) ? "active" :
                       (g.data_path_armed ? "pending" : "unsupported");
+    const char *ims = ims_service_registered(&g.ims) ? "registered" :
+                       (g.ims.phase == IMS_FAILED ? "failed" :
+                        (g.ims_pdn_up ? "attempting" : "unsupported"));
     const char *keys[] = {"lte_data","sms","voice","ims","volte"};
-    const char *vals[] = {lte, g.sms.store.db ? "implemented-unverified" : "unavailable", "call-control-only", "false", "false"};
+    const char *vals[] = {lte, g.sms.store.db ? (ims_service_registered(&g.ims) ? "ready" : "cs-only") : "unavailable", "call-control-only", ims, ims_service_registered(&g.ims) ? "false" : "false"};
     for (unsigned i = 0; i < 5; i++) {
         sd_bus_message_append(reply, "{ss}", keys[i], vals[i]);
     }
@@ -2604,6 +2663,7 @@ int main(int argc, char **argv)
     if (!sms_service_open(&g.sms,sms_path,sms_write,sms_notify,NULL)) diag("sms_storage_unavailable",NULL);
     else sms_service_set_result_diag(&g.sms,sms_result_diag);
     call_service_init(&g.calls,sms_write,call_notify,NULL);
+    ims_service_open(&g.ims,ims_write,ims_state_diag,NULL);
 
     if (setup_event() < 0) { diag("event_setup_failed", NULL); return 1; }
 
@@ -2633,6 +2693,7 @@ int main(int argc, char **argv)
     int r = sd_event_loop(g.loop);
     diag("shutdown", NULL);
     sms_service_close(&g.sms);
+    ims_service_close(&g.ims);
     ep_close(&g.fmt);
     ep_close(&g.rfs);
     (void)r;
