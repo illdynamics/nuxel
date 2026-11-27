@@ -45,6 +45,19 @@ int main(void)
     chk(!ims_msisdn_decode(zero, sizeof zero, out, sizeof out), "reject zero digits");
     chk(!ims_msisdn_decode(ef, 1, out, sizeof out), "reject truncated EF");
 
+    /* Protected runtime subscriber-config parsing (synthetic, never real). */
+    char conf[64];
+    chk(ims_msisdn_parse_conf("MSISDN=31600000000", conf, sizeof conf),
+        "conf valid parse");
+    chk(strcmp(conf, "31600000000") == 0, "conf expected value");
+    chk(!ims_msisdn_parse_conf("MSISDN=", conf, sizeof conf), "conf empty");
+    chk(!ims_msisdn_parse_conf("MSISDN=+316", conf, sizeof conf), "conf plus rejected");
+    chk(!ims_msisdn_parse_conf("MSISDN=31a45", conf, sizeof conf), "conf non-digit");
+    chk(!ims_msisdn_parse_conf("MSISDN=1234567890123456", conf, sizeof conf), "conf too long");
+    chk(!ims_msisdn_parse_conf("MSISDN =3164", conf, sizeof conf), "conf wrong key");
+    chk(!ims_msisdn_parse_conf("3100", conf, sizeof conf), "conf missing key");
+    chk(!ims_msisdn_parse_conf(NULL, conf, sizeof conf), "conf null line");
+
     /* IMPU rejects an empty / non-digit / too-long input. */
     chk(!ims_msisdn_impu("", "d", out, sizeof out), "impu empty");
     chk(!ims_msisdn_impu("12a45", "d", out, sizeof out), "impu non-digit");

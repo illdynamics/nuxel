@@ -38,3 +38,10 @@ bool ims_msisdn_decode(const uint8_t *ef, size_t ef_len,
 bool ims_msisdn_impu(const char *digits, const char *domain,
                      char *out, size_t cap);
 #endif
+
+/* Parse a protected subscriber-config line of the form "MSISDN=<digits>"
+ * (trailing newline already stripped by the caller). Validates the value as
+ * E.164 digits only and copies it out without the '+' (same contract as
+ * ims_msisdn_decode output). Pure, host-testable, never logs. Returns false
+ * on any malformed short/long/non-digit value and leaves out empty. */
+bool ims_msisdn_parse_conf(const char *line, char *out, size_t cap);

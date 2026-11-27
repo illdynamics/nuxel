@@ -61,3 +61,19 @@ bool ims_msisdn_impu(const char *digits, const char *domain,
     *p = 0;
     return true;
 }
+
+bool ims_msisdn_parse_conf(const char *line, char *out, size_t cap)
+{
+    if (!out || cap == 0) return false;
+    out[0] = 0;
+    if (!line) return false;
+    if (strncmp(line, "MSISDN=", 7) != 0) return false;
+    const char *v = line + 7;
+    size_t n = strlen(v);
+    if (n == 0 || n > IMS_MSISDN_MAX_DIGITS) return false;
+    for (size_t i = 0; i < n; i++)
+        if (v[i] < '0' || v[i] > '9') return false;
+    if (n + 1 > cap) return false;
+    memcpy(out, v, n + 1);
+    return true;
+}

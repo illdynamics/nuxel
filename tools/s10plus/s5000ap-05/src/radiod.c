@@ -250,6 +250,22 @@ static int read_text_file(const char *path, char *out, size_t cap)
     return 0;
 }
 
+#define SUBSCRIBER_CONF "/var/lib/nuxel/subscriber.conf"
+/* Protected runtime subscriber configuration. The owner supplies the SIM's
+ * own MSISDN here (never committed to Git): the single key `MSISDN=<digits>`.
+ * The file must be mode 0600 (owner-only). The value is validated as E.164
+ * digits only and is NEVER emitted/logged; only the resulting IMPU validity is
+ * surfaced via the existing msisdn_impu_valid flag. Returns false on absence
+ * or malformed content without logging the value. */
+static bool subscriber_msisdn_load(char *digits, size_t cap)
+{
+    if (!digits || cap < 2) return false;
+    digits[0] = 0;
+    char buf[64] = {0};
+    if (read_text_file(SUBSCRIBER_CONF, buf, sizeof buf) != 0) return false;
+    return ims_msisdn_parse_conf(buf, digits, cap);
+}
+
 static int ioctl_status(int *out_code)
 {
     int fd = open(BOOT_NODE, O_RDONLY | O_NONBLOCK | O_CLOEXEC | O_NOCTTY);
@@ -905,6 +921,22 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
         if (!strcmp(g.home_plmn,"20408") && f->payload_len>1)
             ims_identity_from_usim(&g.ims.identity,f->payload+1,f->payload_len-1,2);
         else ims_identity_clear(&g.ims.identity);
+        /* Protected runtime subscriber configuration: if the owner supplied the
+         * SIM's own MSISDN in SUBSCRIBER_CONF, derive the MSISDN public identity
+         * (TS 23.003 13.3). The value itself is never logged; only validity is
+         * surfaced. The IMSI-derived IMPI is unchanged (AKA digest username). */
+        if (g.ims.identity.ready) {
+            char msisdn[IMS_MSISDN_MAX_DIGITS + 1] = {0};
+            if (subscriber_msisdn_load(msisdn, sizeof msisdn) &&
+                ims_identity_prefer_msisdn(&g.ims.identity, msisdn)) {
+                /* MSISDN-derived IMPU adopted for presentation. */
+            } else {
+                g.ims.identity.msisdn_impu_valid = false;
+                g.ims.identity.msisdn_impu[0] = 0;
+            }
+            /* Never retain the MSISDN beyond this block. */
+            explicit_bzero(msisdn, sizeof msisdn);
+        }
         diagf("ims_usim_identity", "\"ready\":%s",g.ims.identity.ready ? "true" : "false");
     }
     if (f->main_cmd == 10 && f->sub_cmd == 1 && f->cmd_type == IPC41_TYPE_RESPONSE &&
@@ -1815,20 +1847,30 @@ static void sip_tr_tick(uint64_t now)
     /* Round 19 (verified live on libsec-ril.so EFUJ2): the CP does NOT run a
      * SIP registrar client and does NOT initiate IMS AKA autonomously -- it
      * only *relays* AKA if an AP IMS service asks (IIL sub 17) and merely
-     * records the AP's SetRegState claim (FMT 22/8). Our unauthenticated,
-     * IMSI-derived REGISTERs are answered 480+Retry-After (no 401), so sending
-     * them only re-probes the carrier with an IMPU we cannot authenticate.
-     * ETHICS GATE: do not transmit a REGISTER whose IMPI we cannot verify by a
-     * genuine 401/AKA exchange. NUXEL_IMS_ALLOW_UNAUTH_REGISTER=1 re-enables the
-     * probe for an owner-verified IMS provisioning environment. */
+     * records the AP's SetRegState claim (FMT 22/8). The IMSI-derived IMPU is
+     * answered 480+Retry-After (no 401). The MSISDN-derived IMPU (now supplied
+     * by the owner) is the standards-mandated public identity; pairing it with
+     * the IMSI-derived IMPI yields a legitimate REGISTER that the P-CSCF should
+     * answer with a genuine 401/AKA challenge. TX is permitted when that
+     * verified identity pair is present; the legacy unauth probe stays opt-in. */
     static const char *allow_unauth = NULL;
     if (!allow_unauth) allow_unauth = getenv("NUXEL_IMS_ALLOW_UNAUTH_REGISTER");
     /* The IMS bearer (CID2) + rmnet1 iface/route MUST stay applied so the
      * SIP transport and P-CSCF remain physically available even while REGISTER
-     * TX is held (the ethics gate below only suppresses the REGISTER itself,
+     * TX is held (the identity gate below only suppresses the REGISTER itself,
      * never the bearer). */
     bool bearer = iil_pdn_active(&g.iil_pdn) || ims_pdn_active(&g.ims_pdn);
-    bool reg_allowed = allow_unauth && *allow_unauth == '1';
+    /* REGISTER TX gate: a genuine REGISTER is permitted only when the public
+     * identity is a verified MSISDN-derived IMPU (the standards-mandated
+     * default for a USIM-only subscription, supplied by the owner via the
+     * protected subscriber config) paired with the IMSI-derived IMPI. The
+     * legacy unauthenticated IMSI-derived IMPU probe remains opt-in-only via
+     * NUXEL_IMS_ALLOW_UNAUTH_REGISTER=1 and is never the default. */
+    bool identity_verified = g.ims.identity.msisdn_impu_valid &&
+                             g.ims.identity.msisdn_impu[0] &&
+                             g.ims.identity.impi[0];
+    bool reg_allowed = identity_verified ||
+                       (allow_unauth && *allow_unauth == '1');
     if (bearer) {
         if (!g.sip_tr_open) {
             if (iil_pdn_active(&g.iil_pdn)) {

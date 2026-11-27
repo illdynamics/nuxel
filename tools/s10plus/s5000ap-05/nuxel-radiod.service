@@ -47,6 +47,8 @@ DeviceAllow=/dev/umts_boot0 r
 DevicePolicy=closed
 # We must read kernel modem/sim sysfs for truthful state.
 ReadOnlyPaths=/sys/devices/platform/10000.mif_pdata
+# Protected runtime subscriber config (MSISDN), owner-only mode 0600.
+ReadOnlyPaths=/var/lib/nuxel
 
 [Install]
 WantedBy=multi-user.target
