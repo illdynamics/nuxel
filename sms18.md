@@ -3,9 +3,12 @@
 Status: **NOT** complete. No IMS registration, no SMS submission.
 Message ID 4 remains `queued`, error 0, NOT transmitted. Messages 1–3 untouched.
 
-## Deployed binary
-- `/usr/libexec/nuxel/nuxel-radiod` sha256 `851e133e692fda350fa48143bc6fbf718a9ee089475c6d6f3f8537a7649b9282`
-  (retry-wait + header-mask diagnostic build; superseded after the phase-name fix below).
+## Deployed binary (== git HEAD 2663a0b8 + phase-name fix)
+- `/usr/libexec/nuxel/nuxel-radiod` sha256 `5416254f9f82180a63e47e9193879a659d74daa8274ba61e1a6d61bf69755548`
+  (retry-wait observable: a 480 leaves the FSM in `retry-wait`, not instant fail).
+- Rollbacks created this round (newest first):
+  - `/var/lib/nuxel/radio-install.round18-reg-*`
+  - `/var/lib/nuxel/radio-install.round18-diag-1795772081`
 - Rollbacks created this round:
   - `/var/lib/nuxel/radio-install.round18-diag-1795772081` (pre-round-18)
   - `/var/lib/nuxel/radio-install.round18-reg-*` (pre REGISTER-fix)
@@ -65,9 +68,21 @@ Message ID 4 remains `queued`, error 0, NOT transmitted. Messages 1–3 untouche
   OPEN CHANNEL attempts (GEN 0x8001) — the exact OPEN CHANNEL payload byte
   offsets must be re-derived before EF_IMPU can be read.
 
+## UICC channel breakthrough (round 18)
+- Vendor `IpcProtocol41Iil::IpcTxOpenUiccChannel` wire decoded from rodata
+  @0x142048: FMT `main=5 sub=6 type=2`, payload `01 00 70 00` (card/type 0x01,
+  aid-len 0x00). Sent live: **accepted**, reply `05 06 02 00 02 6e 00`
+  (status 0, channel 0x6e). Previous `0x8001` was a wrong payload.
+- `IpcTxTransmitEcccccbhPci` (main=6 sub=5 type=2) wire:
+  payload = `[aid_len_p2][aid_p4][file_id u16][p1][p2][p3][data...]`; the
+  APDU is allocated from the *source* length, not transmitted length.
+  Remaining local step: pin the exact transmit length field so the CP stops
+  returning 0x8001, then SELECT/READ EF_DOMAIN(6F03), EF_IMPI(6F04),
+  EF_IMPU(6F02) read-only and compare with the IMSI-derived IMPU.
+
 ## Exact next concrete operations
-1. Re-derive IpcTxOpenUiccChannel payload (AID/aid-len/type byte offsets);
-   read ISIM EF_DOMAIN (6F03), EF_IMPI (6F04), EF_IMPU (6F02) read-only.
+1. Fix TRANSMIT APDU length/command per the read handler (0x3429c8); read
+   ISIM EF_DOMAIN, EF_IMPI, EF_IMPU read-only using channel 0x6e.
 2. If EF_IMPU/domain differ from the derived IMSI IMPU, use them for REGISTER
    and re-test. If identical, the 480 is a carrier/P-CSCF service decision for
    this AP-originating registration.
