@@ -25,7 +25,8 @@ static void wipe(void *p, size_t n)
 }
 
 bool ims_sip_tr_open(struct ims_sip_tr *t, const struct ims_sip_tr_cfg *cfg,
-                     const struct ims_sip_tr_io *io, void *user)
+                     const struct ims_sip_tr_io *io, void *user,
+                     const struct ims_sip_tr *prev)
 {
     if (!t || !cfg || !cfg->impu || !cfg->impi || !cfg->pcscf || !cfg->local_ip)
         return false;
@@ -51,6 +52,16 @@ bool ims_sip_tr_open(struct ims_sip_tr *t, const struct ims_sip_tr_cfg *cfg,
     t->user = user;
     t->phase = IMS_SIP_TR_IDLE;
     t->cseq = 1;
+    /* Carry over a network-imposed hold so re-opening the bearer/socket does
+     * NOT bypass a registrar Retry-After (the hold is absolute monotonic ms,
+     * so it remains valid across the re-open). RES/digest material is never
+     * carried: a new challenge is re-issued by the network. */
+    if (prev) {
+        t->next_action_ms = prev->next_action_ms;
+        t->retry_waits = prev->retry_waits;
+        t->retry_after_s = prev->retry_after_s;
+        if (t->next_action_ms) t->phase = IMS_SIP_TR_RETRY_WAIT;
+    }
     return true;
 }
 
@@ -141,6 +152,8 @@ static bool send_register(struct ims_sip_tr *t, bool auth)
 bool ims_sip_tr_start(struct ims_sip_tr *t)
 {
     if (!t || t->phase != IMS_SIP_TR_IDLE) return false;
+    /* A carried-over hold must still be respected: never send early. */
+    if (t->next_action_ms) return false;
     if (!send_register(t, false)) return false;
     t->phase = IMS_SIP_TR_REGISTER_SENT;
     t->attempt = 0;
@@ -260,6 +273,7 @@ void ims_sip_tr_feed(struct ims_sip_tr *t, const uint8_t *msg, size_t len)
         } else if (code >= 200 && code < 300) {
             t->phase = IMS_SIP_TR_REGISTERED;
             t->retry_waits = 0;
+            t->next_action_ms = 0;
         } else if (code == 480 || code == 503) {
             /* "Temporarily Unavailable" from the registrar (typically with
              * Retry-After). This is a service-unavailability response, NOT a
@@ -268,6 +282,7 @@ void ims_sip_tr_feed(struct ims_sip_tr *t, const uint8_t *msg, size_t len)
             t->retry_after_s = retry_after_seconds(msg, len);
             if (t->retry_after_s == 0) t->retry_after_s = 180u;
             t->deadline_ms = 0;   /* tick schedules from now */
+            t->next_action_ms = 0; /* tick fills the ABSOLUTE hold */
             t->phase = IMS_SIP_TR_RETRY_WAIT;
         } else if (code == 403 || code == 404 || code == 500) {
             t->phase = IMS_SIP_TR_FAILED;
@@ -353,6 +368,13 @@ enum ims_sip_tr_phase ims_sip_tr_tick(struct ims_sip_tr *t, uint64_t now_ms, boo
         t->deadline_ms = 0;
         return t->phase;
     }
+    /* A carried-over network hold gates any outbound REGISTER while we are in
+     * a pre-send state (e.g. after a re-open). RETRY_WAIT is handled by its own
+     * deadline below, which also carries the retry counter. */
+    if (t->next_action_ms && t->phase != IMS_SIP_TR_RETRY_WAIT) {
+        if (now_ms < t->next_action_ms) return t->phase;
+        t->next_action_ms = 0;   /* hold elapsed: a fresh REGISTER is permitted */
+    }
     switch (t->phase) {
     case IMS_SIP_TR_IDLE:
         /* A registered state falls back to idle only when explicitly
@@ -383,13 +405,21 @@ enum ims_sip_tr_phase ims_sip_tr_tick(struct ims_sip_tr *t, uint64_t now_ms, boo
         }
         break;
     case IMS_SIP_TR_RETRY_WAIT:
-        if (!t->deadline_ms)
-            t->deadline_ms = now_ms + (uint64_t)t->retry_after_s * 1000u;
+        if (!t->deadline_ms) {
+            /* A re-open carries the absolute hold in place of the relative
+             * deadline; adopt it so the remaining wait is not extended. */
+            uint64_t base = t->next_action_ms ? t->next_action_ms
+                                              : now_ms + (uint64_t)t->retry_after_s * 1000u;
+            t->deadline_ms = base;
+            t->next_action_ms = base;
+        }
         if (now_ms >= t->deadline_ms) {
             if (t->retry_waits >= 8u) { t->phase = IMS_SIP_TR_FAILED; break; }
             t->retry_waits++;
             t->attempt = 0;
             t->deadline_ms = 0;
+            /* Hold already cleared by the top-of-tick hold check; send. */
+            t->next_action_ms = 0;
             if (!send_register(t, false)) { t->phase = IMS_SIP_TR_FAILED; break; }
             t->phase = IMS_SIP_TR_REGISTER_SENT;
         }

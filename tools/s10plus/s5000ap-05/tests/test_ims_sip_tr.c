@@ -35,7 +35,7 @@ int main(void)
     };
     struct ims_sip_tr_io io = { .send = fake_send, .recv = NULL };
     struct ims_sip_tr t;
-    assert(ims_sip_tr_open(&t, &cfg, &io, NULL));
+    assert(ims_sip_tr_open(&t, &cfg, &io, NULL, NULL));
     assert(t.phase == IMS_SIP_TR_IDLE);
     assert(!ims_sip_tr_registered(&t));
 
@@ -100,7 +100,7 @@ int main(void)
             .pcscf="2001:db8::1", .local_ip="2001:db8::2",
             .port=5062, .pcscf_port=5060, .sec_offer=NULL };
         const struct ims_sip_tr_io io = { .send=fake_send, .recv=NULL };
-        assert(ims_sip_tr_open(&t2, &cfg, &io, NULL));
+        assert(ims_sip_tr_open(&t2, &cfg, &io, NULL, NULL));
         assert(ims_sip_tr_start(&t2));
         static const char e480[] =
             "SIP/2.0 480 Temporarily Unavailable\r\n"
@@ -119,6 +119,43 @@ int main(void)
         { char cb[sizeof captured + 1]; memcpy(cb, captured, captured_len); cb[captured_len] = 0;
           assert(strstr(cb, "REGISTER sip:") != NULL); }
         ims_sip_tr_close(&t2);
+    }
+
+
+    /* 8. Re-opening the transport (socket/bearer change) must NOT bypass a
+     * registrar Retry-After: the absolute hold is carried into the new FSM. */
+    {
+        struct ims_sip_tr a, b;
+        struct ims_sip_tr_cfg cfg = {
+            .impu="sip:u@ims.mnc008.mcc204.3gppnetwork.org",
+            .impi="u@ims.mnc008.mcc204.3gppnetwork.org",
+            .pcscf="2001:db8::1", .local_ip="2001:db8::2",
+            .port=5062, .pcscf_port=5060, .sec_offer=NULL };
+        const struct ims_sip_tr_io io = { .send=fake_send, .recv=NULL };
+        assert(ims_sip_tr_open(&a, &cfg, &io, NULL, NULL));
+        assert(ims_sip_tr_start(&a));
+        static const char e480[] =
+            "SIP/2.0 480 Temporarily Unavailable\r\n"
+            "Via: SIP/2.0/UDP [2001:db8::2]:5062;branch=z9hG4bKx\r\n"
+            "Retry-After: 30\r\nContent-Length: 0\r\n\r\n";
+        ims_sip_tr_feed(&a, (const uint8_t *)e480, sizeof e480 - 1);
+        assert(a.phase == IMS_SIP_TR_RETRY_WAIT);
+        assert(ims_sip_tr_tick(&a, 1000, true) == IMS_SIP_TR_RETRY_WAIT);
+        assert(a.next_action_ms == 1000 + 30000);
+        /* Re-open into a fresh FSM, carrying the hold. */
+        assert(ims_sip_tr_open(&b, &cfg, &io, NULL, &a));
+        assert(b.next_action_ms == 1000 + 30000);
+        assert(b.phase == IMS_SIP_TR_RETRY_WAIT);
+        /* Before the hold elapses: start refuses; tick sends nothing. */
+        reset_capture();
+        assert(!ims_sip_tr_start(&b));
+        assert(ims_sip_tr_tick(&b, 1000 + 29000, true) == IMS_SIP_TR_RETRY_WAIT);
+        assert(!send_called);
+        /* After it elapses: a fresh REGISTER is permitted again. */
+        assert(ims_sip_tr_tick(&b, 1000 + 30001, true) == IMS_SIP_TR_REGISTER_SENT);
+        assert(send_called);
+        ims_sip_tr_close(&b);
+        ims_sip_tr_close(&a);
     }
 
     ims_sip_tr_close(&t);

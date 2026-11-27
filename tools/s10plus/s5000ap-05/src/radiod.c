@@ -1561,7 +1561,7 @@ static bool sip_tr_open_from_iil(const struct iil_pdn *p)
     }
 
     struct ims_sip_tr_io io = { .send = sip_tr_send_cb, .recv = NULL };
-    if (!ims_sip_tr_open(&g.sip_tr, &cfg, &io, NULL)) { close(sip_tr_fd); sip_tr_fd = -1; return false; }
+    if (!ims_sip_tr_open(&g.sip_tr, &cfg, &io, NULL, &g.sip_tr)) { close(sip_tr_fd); sip_tr_fd = -1; return false; }
     g.sip_tr_open = true;
     return true;
 
@@ -1638,7 +1638,7 @@ static bool sip_tr_open_from_ims_pdn(const struct ims_pdn *p)
         return false;
     }
     struct ims_sip_tr_io io = { .send = sip_tr_send_cb, .recv = NULL };
-    if (!ims_sip_tr_open(&g.sip_tr, &cfg, &io, NULL)) { close(sip_tr_fd); sip_tr_fd = -1; return false; }
+    if (!ims_sip_tr_open(&g.sip_tr, &cfg, &io, NULL, &g.sip_tr)) { close(sip_tr_fd); sip_tr_fd = -1; return false; }
     g.sip_tr_open = true;
     return true;
 
@@ -1786,8 +1786,19 @@ static void sip_tr_tick(uint64_t now)
      * The FMT path (Round 07 verified) now reaches ims_pdn_active() with a
      * real GPRS_IP_CONFIGURATION (2 P-CSCF); previously only the IIL path was
      * wired here, so a working FMT bearer never opened SIP. */
-    bool iil_a = iil_pdn_active(&g.iil_pdn);
-    bool fmt_a = ims_pdn_active(&g.ims_pdn);
+    /* Round 19 (verified live on libsec-ril.so EFUJ2): the CP does NOT run a
+     * SIP registrar client and does NOT initiate IMS AKA autonomously -- it
+     * only *relays* AKA if an AP IMS service asks (IIL sub 17) and merely
+     * records the AP's SetRegState claim (FMT 22/8). Our unauthenticated,
+     * IMSI-derived REGISTERs are answered 480+Retry-After (no 401), so sending
+     * them only re-probes the carrier with an IMPU we cannot authenticate.
+     * ETHICS GATE: do not transmit a REGISTER whose IMPI we cannot verify by a
+     * genuine 401/AKA exchange. NUXEL_IMS_ALLOW_UNAUTH_REGISTER=1 re-enables the
+     * probe for an owner-verified IMS provisioning environment. */
+    static const char *allow_unauth = NULL;
+    if (!allow_unauth) allow_unauth = getenv("NUXEL_IMS_ALLOW_UNAUTH_REGISTER");
+    bool iil_a = (allow_unauth && *allow_unauth == '1') && iil_pdn_active(&g.iil_pdn);
+    bool fmt_a = (allow_unauth && *allow_unauth == '1') && ims_pdn_active(&g.ims_pdn);
     bool bearer = iil_a || fmt_a;
     if (bearer) {
         if (!g.sip_tr_open) {

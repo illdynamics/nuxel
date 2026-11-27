@@ -97,7 +97,9 @@ struct ims_sip_tr {
     uint8_t attempt;
     uint64_t deadline_ms;
     /* Retry-After (seconds) from a 480/503; used to schedule the next
-     * REGISTER instead of a fixed retry. Capped to keep the loop bounded. */
+     * REGISTER instead of a fixed retry. Capped to keep the loop bounded.
+     * SECONDS OF THE LAST NETWORK RETRY-AFTER; 0 = none. A per-SIM hold is
+     * additionally derived from this so it survives libc/FSM state resets. */
     uint32_t retry_after_s;
     uint8_t  retry_waits;       /* consecutive Retry-After waits (bounded) */
 
@@ -106,6 +108,11 @@ struct ims_sip_tr {
     char qop[16], alg[24], cnonce[24];
     char res_b64[64];                  /* base64(RES) from the USIM AKA; wiped after auth */
     uint32_t cseq;
+    /* Absolute monotonic time (ms) of the NEXT permitted REGISTER attempt.
+     * Carried across a transport re-open so the registrar's Retry-After is
+     * honored even when the bearer/socket is re-established mid-backoff.
+     * 0 = no hold. Never reset to 0 by a re-open. */
+    uint64_t next_action_ms;
 
     /* Outbound message scratch (REGISTER/MESSAGE); never logged in full. */
     unsigned char scratch[IMS_SIP_TR_MAX_MSG];
@@ -113,9 +120,17 @@ struct ims_sip_tr {
 };
 
 /* Open/O init a transport FSM. `io.send`/`io.recv` may be NULL for offline
- * build-only use; they are required for a live exchange. */
+ * build-only use; they are required for a live exchange.
+ *
+ * `prev` (optional) is the PREVIOUS FSM instance the caller is about to
+ * destroy (typically when re-opening the UDP socket). When supplied, the
+ * network-imposed backoff deadline (next_action_ms) and the consecutive
+ * Retry-After wait counter are CARRIED OVER, so a socket re-open can never be
+ * used to bypass a registrar's Retry-After. All identity/digest material
+ * except RES (never carried; it is per-challenge) is re-read from `cfg`. */
 bool ims_sip_tr_open(struct ims_sip_tr *t, const struct ims_sip_tr_cfg *cfg,
-                     const struct ims_sip_tr_io *io, void *user);
+                     const struct ims_sip_tr_io *io, void *user,
+                     const struct ims_sip_tr *prev);
 void ims_sip_tr_close(struct ims_sip_tr *t);
 
 /* Advance the FSM. `now_ms` monotonic. `ready` = transport up (socket bound,
