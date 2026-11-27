@@ -42,7 +42,20 @@ int main(void)
     CHECK(sms_service_open(&s,":memory:",write_frame,changed,&m));
     sms_service_set_result_diag(&s,diag);
     sms_service_tick(&s,100,true,true,true,false,true);CHECK(m.last.sub_cmd==7 && s.ready_sent);
-    const uint8_t ack[]={4,7,3,0,0x80};receive(&s,128,1,2,s.ready_sequence,ack,sizeof ack);CHECK(s.ready_ack);
+    const uint8_t drdy[]={0};receive(&s,4,7,3,0,drdy,1);CHECK(s.ready_ack && !s.ready_rejected);
+    /* A non-zero device-ready status byte is a rejection, not readiness. */
+    { struct sms_service rs; struct mock rm={.service=&rs};
+      CHECK(sms_service_open(&rs,":memory:",write_frame,changed,&rm));
+      sms_service_tick(&rs,100,true,true,true,false,true);CHECK(rs.ready_sent);
+      const uint8_t badready[]={1};receive(&rs,4,7,3,0,badready,1);
+      CHECK(!rs.ready_ack && rs.ready_rejected);
+      /* A GEN echo (n==5) for 4/7/3 must NOT be treated as a device-ready ack. */
+      struct sms_service gs; struct mock gm={.service=&gs};
+      CHECK(sms_service_open(&gs,":memory:",write_frame,changed,&gm));
+      sms_service_tick(&gs,100,true,true,true,false,true);
+      const uint8_t genecho[]={4,7,3,0,0x80};receive(&gs,128,1,2,0,genecho,5);
+      CHECK(!gs.ready_ack && !gs.ready_rejected);
+      sms_service_close(&gs); sms_service_close(&rs); }
     sms_service_tick(&s,1100,true,true,true,false,true);CHECK(m.last.sub_cmd==10);
     const uint8_t smsc[]={0};receive(&s,4,10,2,0,smsc,1);CHECK(s.smsc_len==1);
     uint32_t id;CHECK(sms_store_queue(&s.store,"+12345678901","hello",&id));
@@ -150,7 +163,7 @@ int main(void)
         CHECK(sms_service_open(&is,":memory:",write_frame,changed,&im));
         sms_service_set_ims_submit(&is,ims_submit);
         sms_service_tick(&is,100,true,true,false,false,true);
-        const uint8_t ackc[]={4,7,3,0,0x80};receive(&is,128,1,2,is.ready_sequence,ackc,sizeof ackc);
+        const uint8_t drdyc[]={0};receive(&is,4,7,3,0,drdyc,1);
         /* Intentionally NO SMSC readback: CS readiness must not depend on it. */
         uint32_t iid;CHECK(sms_store_queue(&is.store,"+12345678901","ims hello",&iid));
 
@@ -198,7 +211,7 @@ int main(void)
         CHECK(sms_service_open(&is3,":memory:",write_frame,changed,&im3));
         sms_service_set_ims_submit(&is3,ims_submit);
         sms_service_tick(&is3,100,true,true,false,false,true);
-        receive(&is3,128,1,2,is3.ready_sequence,ackc,sizeof ackc);
+        receive(&is3,4,7,3,0,drdyc,1);
         is3.ims_registered_native=true; im3.ims_ok=true;
         uint32_t iid3;CHECK(sms_store_queue(&is3.store,"+12345678901","ims timeout",&iid3));
         sms_service_tick(&is3,300,true,true,false,true,true);CHECK(is3.active && is3.ims_await_ack);
@@ -214,7 +227,7 @@ int main(void)
         CHECK(sms_service_open(&is2,":memory:",write_frame,changed,&im2));
         sms_service_set_ims_submit(&is2,ims_submit);
         sms_service_tick(&is2,100,true,true,false,false,true);
-        receive(&is2,128,1,2,is2.ready_sequence,ackc,sizeof ackc);
+        receive(&is2,4,7,3,0,drdyc,1);
         is2.ims_registered_native=true; im2.ims_ok=false;
         uint32_t iid2;CHECK(sms_store_queue(&is2.store,"+12345678901","ims refuse",&iid2));
         sms_service_tick(&is2,200,true,true,false,true,true);

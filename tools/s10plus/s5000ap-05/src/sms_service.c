@@ -164,11 +164,17 @@ void sms_service_receive(struct sms_service *s,const struct nuxel_sipc_fmt *f)
     if (!s || !s->store.db || !f) return;
     const uint8_t *p=f->payload;size_t n=f->payload_len;
     if (n && !p) { s->decode_errors++;return; }
+    /* SMS device-ready response (main=4 sub=7 type=3), a single raw status
+     * byte (IpcProtocol41::IpcRxSms dispatch on the header status; Ready has
+     * no GEN echo). 0 = ready; any other value = rejected. */
+    if (f->main_cmd==4 && f->sub_cmd==7 && f->cmd_type==3 && n==1 && s->ready_sent) {
+        bool ok = p[0]==0;
+        s->ready_ack=ok;s->ready_rejected=!ok;
+        return;
+    }
     if (f->main_cmd==128 && f->cmd_type==2 && n==5 && p[0]==4) {
         unsigned result=p[3]|((unsigned)p[4]<<8);
-        if (p[1]==7 && p[2]==3 && s->ready_sent && f->ack_seq==s->ready_sequence) {
-            s->ready_ack=result==0x8000;s->ready_rejected=result!=0x8000;
-        } else if (p[1]==1 && p[2]==1 && s->active && f->ack_seq==s->sequence && result!=0x8000) {
+        if (p[1]==1 && p[2]==1 && s->active && f->ack_seq==s->sequence && result!=0x8000) {
             if (!sms_store_fail(&s->store,s->job.id,s->job.part,(int)result,false)) { s->store_errors++;s->blocked=true; }
             s->active=false;notify(s,s->job.id,false);
         }
