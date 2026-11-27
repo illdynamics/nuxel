@@ -112,6 +112,26 @@ size_t ims_sip_register_build_ex(char *out, size_t cap, const char *impu,
                                       port, sec_offer, imei, NULL);
 }
 
+/* TS 24.229 5.1.1.2.1: a USIM-only UE with no provisioned IMPU derives a
+ * *temporary* public identity from the IMSI. A temporary identity is NOT a
+ * confirmed public identity, so the UE MUST NOT assert it in a
+ * P-Preferred-Identity header (which would claim a preferred identity the
+ * subscriber is not provisioned to use). Detect it by its all-digit userpart
+ * (an IMSI); a real provisioned IMPU is a named userpart or a sip:+<MSISDN>
+ * or tel: URI. */
+static bool impu_is_temporary(const char *impu_uri)
+{
+    if (!impu_uri) return false;
+    const char *s = (strncmp(impu_uri, "sip:", 4) == 0) ? impu_uri + 4 : impu_uri;
+    const char *at = strchr(s, '@');
+    if (!at || at == s) return true;   /* no userpart => nothing to assert */
+    size_t n = (size_t)(at - s);
+    if (n == 0) return true;
+    for (size_t i = 0; i < n; i++)
+        if (s[i] < '0' || s[i] > '9') return false;   /* named/MSISDN/tel */
+    return true;   /* all digits => IMSI-derived temporary identity */
+}
+
 static size_t ims_sip_register_build_core(char *out, size_t cap,
                                           const char *impu, const char *impi,
                                           const char *pcscf, const char *local_ip,
@@ -291,9 +311,14 @@ static size_t ims_sip_register_build_core(char *out, size_t cap,
         if (!addf(&r,"Require: sec-agree\r\n")) return 0;
         if (!addf(&r,"Proxy-Require: sec-agree\r\n")) return 0;
     }
-    /* P-Preferred-Identity: control the *public* identity presented, separate
-     * from the private IMPI used for digest. This is the UE-selected IMPU. */
-    if (!addf(&r,"P-Preferred-Identity: <%s>\r\n", impu_uri)) return 0;
+    /* P-Preferred-Identity: assert a preferred public identity ONLY when the
+     * UE actually has a provisioned one. A IMSI-derived temporary identity
+     * (USIM-only, no ISIM) is NOT asserted here: the network assigns the
+     * real IMPU via P-Associated-URI in the 200 OK (TS 24.229 5.1.1.2.1).
+     * Asserting an unprovisioned temporary IMPU can cause the P-CSCF/registrar
+     * to answer 480 instead of issuing the 401 AKA challenge. */
+    if (!impu_is_temporary(impu_uri) &&
+        !addf(&r,"P-Preferred-Identity: <%s>\r\n", impu_uri)) return 0;
     if (!addf(&r,"Supported: path, outbound, 100rel\r\n")) return 0;
     if (!addf(&r,"Allow: REGISTER, MESSAGE, OPTIONS\r\n")) return 0;
     if (!addf(&r,"Content-Length: 0\r\n\r\n")) return 0;

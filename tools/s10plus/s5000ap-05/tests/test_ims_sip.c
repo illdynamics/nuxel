@@ -40,6 +40,22 @@ int main(void)
     assert(strstr(buf,"utran-cell-id-3gpp") == NULL);
     assert(strstr(buf,"utran-cell-id-3gpp=00000000") == NULL);
 
+    /* TS 24.229 5.1.1.2.1: a USIM-only UE derives a TEMPORARY public identity
+     * from the IMSI (all-digit userpart). It MUST NOT assert that temporary
+     * identity in P-Preferred-Identity (the network assigns the real IMPU via
+     * P-Associated-URI). Regression: numeric userpart -> P-Preferred-Identity
+     * omitted; named userpart ("user") -> still present. */
+    {
+        n=ims_sip_register_build(buf,sizeof buf,
+            "sip:204080121840266@ims.mnc008.mcc204.3gppnetwork.org",
+            "204080121840266@ims.mnc008.mcc204.3gppnetwork.org",
+            "2001:db8::1","2001:db8::2",5062,
+            "alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;mod=trans;spi-c=4096;spi-s=4097;port-c=5062;port-s=5064");
+        assert(n>0);
+        assert(strstr(buf,"From: <sip:204080121840266@ims.mnc008.mcc204.3gppnetwork.org>"));
+        assert(strstr(buf,"P-Preferred-Identity") == NULL);
+    }
+
     /* Security-first REGISTER (TS 33.203 7.1): REQUIRE sec-agree ONLY when a
      * complete ipsec-3gpp offer is present (some P-CSCFs 480 a plaintext
      * initial REGISTER). The default path above MUST stay Require-free. */
