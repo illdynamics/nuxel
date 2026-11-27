@@ -35,6 +35,7 @@
 #include "oes_cert.h"
 #include "sms_service.h"
 #include "ims_service.h"
+#include "ims_msisdn.h"
 #include "ims_pdn.h"
 #include "ims_iil.h"
 #include "ims_iil_rx.h"
@@ -938,6 +939,10 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
             explicit_bzero(msisdn, sizeof msisdn);
         }
         diagf("ims_usim_identity", "\"ready\":%s",g.ims.identity.ready ? "true" : "false");
+        /* Privacy-safe: surface whether the MSISDN-derived public identity was
+         * adopted, WITHOUT the value. This is the decisive evidence that the
+         * owner-supplied subscriber config was read and validated. */
+        diagf("ims_msisdn_impu", "\"adopted\":%s",g.ims.identity.msisdn_impu_valid ? "true" : "false");
     }
     if (f->main_cmd == 10 && f->sub_cmd == 1 && f->cmd_type == IPC41_TYPE_RESPONSE &&
         fmt_rx_baseband(f->payload, f->payload_len, g.baseband))
