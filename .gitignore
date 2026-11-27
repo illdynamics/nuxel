@@ -214,3 +214,6 @@ SAMFW.COM_SM-G975F_TNL_G975FXXS9DTK9_fac/**
 /tools/s10plus/s5000ap-05/test_iil_pdn
 /tools/s10plus/s5000ap-05/test_ims_iil_rx
 /tools/s10plus/s5000ap-05/test_iil_auth
+
+# Round-24 offline vendor emulation harness (.tmp-emu/) — synthetic only
+.tmp-emu/
