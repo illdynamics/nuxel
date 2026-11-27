@@ -54,6 +54,43 @@ int main(void)
     for (size_t n = 0; n < 5; n++) assert(!fmt_rx_gen(success, n, &r));
     assert(!fmt_rx_gen(NULL, 5, &r));
 
+    /* SEC_SIMAPPS_INFO (main=5 sub=15): live EFUJ2 payload from the USIM-only
+     * subscription. One application, AID prefix A0000000871002 (USIM), no
+     * ISIM. The trailing per-app bytes are ignored. */
+    const uint8_t simapps[] = {
+        0x01, 0x00, 0x10, 0xa0,0x00,0x00,0x00,0x87,0x10,0x02,0xff,0x31,0xf0,0x01,
+        0x89,0x08,0x06,0x00,0x00,0x00, 0x03,0x05,0x05,0x0a,0x0a};
+    struct fmt_rx_sim_apps apps;
+    assert(fmt_rx_sim_apps(simapps, sizeof simapps, &apps));
+    assert(apps.count == 1 && apps.usim == 1 && apps.isim == 0 && apps.csim == 0);
+    /* Any truncation that cuts into the AID must fail; the parser ignores
+     * trailing per-application bytes, so lengths >= the first AID end parse. */
+    for (size_t k = 0; k < 19; k++) assert(!fmt_rx_sim_apps(simapps, k, &apps));
+    assert(fmt_rx_sim_apps(simapps, 19, &apps) && apps.usim == 1);
+    assert(!fmt_rx_sim_apps(NULL, sizeof simapps, &apps));
+    /* Synthetic ISIM-only and USIM+ISIM inventories (no subscriber data). */
+    const uint8_t isim_only[] = {
+        0x01, 0x00, 0x10, 0xa0,0x00,0x00,0x00,0x87,0x10,0x04,0x00,0x00,0x00,0x00,
+        0x00,0x00,0x00,0x00,0x00,0x00};
+    assert(fmt_rx_sim_apps(isim_only, sizeof isim_only, &apps));
+    assert(apps.count == 1 && apps.isim == 1 && apps.usim == 0);
+    /* Build programmatically to keep the two AIDs exactly 16 bytes each. */
+    uint8_t both_ok[37]; size_t bo = 0;
+    both_ok[bo++] = 0x02;
+    both_ok[bo++] = 0x00; both_ok[bo++] = 0x10;
+    memcpy(both_ok + bo, (const uint8_t[16]){0xa0,0,0,0,0x87,0x10,0x02,0,0,0,0,0,0,0,0,0}, 16); bo += 16;
+    both_ok[bo++] = 0x01; both_ok[bo++] = 0x10;
+    memcpy(both_ok + bo, (const uint8_t[16]){0xa0,0,0,0,0x87,0x10,0x04,0,0,0,0,0,0,0,0,0}, 16); bo += 16;
+    assert(bo == sizeof both_ok);
+    assert(fmt_rx_sim_apps(both_ok, sizeof both_ok, &apps));
+    assert(apps.count == 2 && apps.usim == 1 && apps.isim == 1);
+    (void)0;
+    /* Zero applications and an over-long count are rejected. */
+    const uint8_t zero[] = {0x00};
+    assert(!fmt_rx_sim_apps(zero, sizeof zero, &apps));
+    const uint8_t many[] = {0x11};
+    assert(!fmt_rx_sim_apps(many, sizeof many, &apps));
+
     struct data_session_ctx c;
     ds_reset(&c, "internet", 1); c.phase = DS_SET_DATA_PROFILE;
     assert(ds_gen_response(&c, success, 5) == DS_GEN_IGNORE);

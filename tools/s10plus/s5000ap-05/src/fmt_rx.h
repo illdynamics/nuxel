@@ -71,6 +71,20 @@ struct fmt_rx_usim_auth {
 };
 bool fmt_rx_usim_auth(const uint8_t *p, size_t n, struct fmt_rx_usim_auth *out);
 
+/* SEC_SIMAPPS_INFO (main=5 sub=15) response: numberOfApps(1) followed by
+ * numberOfApps entries of {slot(1), aid_len(1), aid[aid_len]}. Each trailing
+ * remainder is ignored. Classifies applications by the 7-byte 3GPP AID
+ * prefix (TS 31.101 / 31.103): USIM A0000000871002, ISIM A0000000871004,
+ * CSIM A0000000871003. Bounded; never copies the full AID or any subscriber
+ * field. */
+struct fmt_rx_sim_apps {
+    uint8_t count;      /* applications parsed (== numberOfApps) */
+    uint8_t usim;       /* count of USIM AIDs */
+    uint8_t isim;       /* count of ISIM AIDs */
+    uint8_t csim;       /* count of CSIM AIDs */
+};
+bool fmt_rx_sim_apps(const uint8_t *p, size_t n, struct fmt_rx_sim_apps *out);
+
 /* ---- IMS (main=22) receive-side decode ---- */
 
 #endif

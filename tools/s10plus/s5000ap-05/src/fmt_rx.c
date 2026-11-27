@@ -231,3 +231,34 @@ bool fmt_rx_usim_auth(const uint8_t *p, size_t n, struct fmt_rx_usim_auth *out)
     }
     *out=v; return true;
 }
+
+/* SEC_SIMAPPS_INFO decode. Live EFUJ2 payload (redacted of subscriber data,
+ * only the application inventory is used):
+ *   numberOfApps, then per app {slot, aid_len, aid[aid_len]}, trailing bytes.
+ * The 7-byte 3GPP AID prefixes identify the application type. We never copy
+ * the full AID out; only counts are reported. */
+static const uint8_t k_aid_usim[7] = {0xA0,0x00,0x00,0x00,0x87,0x10,0x02};
+static const uint8_t k_aid_csim[7] = {0xA0,0x00,0x00,0x00,0x87,0x10,0x03};
+static const uint8_t k_aid_isim[7] = {0xA0,0x00,0x00,0x00,0x87,0x10,0x04};
+
+bool fmt_rx_sim_apps(const uint8_t *p, size_t n, struct fmt_rx_sim_apps *out)
+{
+    if (!p || !out || n < 1) return false;
+    uint8_t count = p[0];
+    if (count == 0 || count > 16) return false;
+    struct fmt_rx_sim_apps v = {0};
+    size_t off = 1;
+    for (uint8_t i = 0; i < count; i++) {
+        if (off + 2 > n) return false;
+        uint8_t alen = p[off + 1];
+        if (alen < 7 || off + 2 + (size_t)alen > n) return false;
+        const uint8_t *aid = p + off + 2;
+        if (!memcmp(aid, k_aid_usim, 7)) v.usim++;
+        else if (!memcmp(aid, k_aid_csim, 7)) v.csim++;
+        else if (!memcmp(aid, k_aid_isim, 7)) v.isim++;
+        off += 2 + (size_t)alen;
+    }
+    v.count = count;
+    *out = v;
+    return true;
+}

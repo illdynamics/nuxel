@@ -963,6 +963,18 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
           ch, f->main_cmd, f->sub_cmd, f->cmd_type, f->payload_len,
           subname ? subname : "UNKNOWN", ipc41_main_name(f->main_cmd),f->msg_seq,f->ack_seq);
 
+    /* SEC_SIMAPPS_INFO: authoritative, identifier-free application inventory.
+     * Classify USIM/ISIM/CSIM by 3GPP AID prefix. Never logs the full AID. */
+    if (f->main_cmd == IPC41_MAIN_SEC && f->sub_cmd == IPC41_SEC_SIMAPPS_INFO &&
+        (f->cmd_type == IPC41_TYPE_RESPONSE || f->cmd_type == IPC41_TYPE_NOTIFICATION)) {
+        struct fmt_rx_sim_apps apps;
+        if (fmt_rx_sim_apps(f->payload, f->payload_len, &apps))
+            diagf("sim_apps", "\"count\":%u,\"usim\":%u,\"isim\":%u,\"csim\":%u",
+                  apps.count, apps.usim, apps.isim, apps.csim);
+        else
+            diag("sim_apps_invalid", NULL);
+    }
+
     /* REDACTED-SAFE payload diagnostics: dump hex ONLY for state-enum
      * messages that carry no subscriber/device identifier (no IMSI/ICCID/
      * IMEI/MSISDN). SEC_PIN_STATUS, SEC_SIM_ICC_TYPE, NET_REGIST,
@@ -2773,9 +2785,10 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
         case 7: built = fmt_tx_get_baseband_version(&q); break;
         case 8: built = fmt_call_voice_registration(&q); break;
         case 9: built = fmt_tx_get_pdp_definitions(&q); break;
+        case 10: built = fmt_tx_get_sim_apps_info(&q); break;
         }
         if (built && radiod_write_fmt(&q)) {
-            g.status_query = (g.status_query + 1) % 10;
+            g.status_query = (g.status_query + 1) % 11;
             g.status_next_ms = now_ms() + (g.status_query ? 1000 : 60000);
         } else g.status_next_ms = now_ms() + 5000;
     }
