@@ -57,8 +57,17 @@ static void drive_to_done(struct ims_init *i)
     ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq+1);
     assert(i->phase == IMS_INIT_WAIT_ACK);
     ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq);
+    /* Capability ACK satisfies the registration gate and now arms SMS-over-IP
+     * (SMS_FMT, SMS_OIP) BEFORE the VoLTE-state report. */
+    assert(ims_init_done(i));
+    assert(i->phase == IMS_INIT_SEND_SMS_FMT);
+    assert(ims_init_tick(i, 3, true) == IMS_INIT_WAIT_SMS_FMT);   /* writes SMS_FMT */
+    ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq);
+    assert(i->phase == IMS_INIT_SEND_SMS_OIP);
+    assert(ims_init_tick(i, 4, true) == IMS_INIT_WAIT_SMS_OIP);   /* writes SMS_OIP */
+    ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq);
     assert(i->phase == IMS_INIT_SEND_VOLTE_STATE);
-    assert(ims_init_tick(i, 3, true) == IMS_INIT_WAIT_VOLTE_STATE);
+    assert(ims_init_tick(i, 5, true) == IMS_INIT_WAIT_VOLTE_STATE);
     ims_init_gen_result(i, FMT_RX_GEN_OK, last_seq);
     assert(ims_init_done(i));
     assert(i->phase == IMS_INIT_DONE);
@@ -76,7 +85,8 @@ int main(void)
 
     writes = 0;
     drive_to_done(&i);
-    assert(writes == 3); /* Get, Set, truthful VoLTE not-ready */
+    /* Get, Set, SMS_FMT, SMS_OIP, truthful VoLTE not-ready. */
+    assert(writes == 5);
 
     ims_init_close(&i);
 
@@ -92,10 +102,17 @@ int main(void)
     assert(!ims_init_done(&i2));
     assert(i2.phase == IMS_INIT_SEND_CAPA);
 
-    ims_init_tick(&i2, 3, true);
+    ims_init_tick(&i2, 3, true);                /* re-write Set -> WAIT_ACK */
+    assert(i2.phase == IMS_INIT_WAIT_ACK);
     ims_init_gen_result(&i2, FMT_RX_GEN_OK, last_seq);
-    assert(ims_init_done(&i2) && i2.phase == IMS_INIT_SEND_VOLTE_STATE);
-    ims_init_tick(&i2, 4, true);
+    assert(ims_init_done(&i2) && i2.phase == IMS_INIT_SEND_SMS_FMT);
+    ims_init_tick(&i2, 4, true);                /* -> WAIT_SMS_FMT (write SMS_FMT) */
+    ims_init_gen_result(&i2, FMT_RX_GEN_OK, last_seq);
+    assert(i2.phase == IMS_INIT_SEND_SMS_OIP);
+    ims_init_tick(&i2, 5, true);                /* -> WAIT_SMS_OIP (write SMS_OIP) */
+    ims_init_gen_result(&i2, FMT_RX_GEN_OK, last_seq);
+    assert(i2.phase == IMS_INIT_SEND_VOLTE_STATE);
+    ims_init_tick(&i2, 6, true);
     ims_init_gen_result(&i2, FMT_RX_GEN_OK, last_seq);
     assert(i2.phase == IMS_INIT_DONE);
     ims_init_close(&i2);

@@ -76,8 +76,8 @@ size_t ims_sip_register_build(char *out, size_t cap, const char *impu,
                               const char *local_ip, uint16_t port,
                               const char *sec_offer)
 {
-    return ims_sip_register_build_ex(out, cap, impu, impi, pcscf, local_ip,
-                                     port, sec_offer, NULL);
+    return ims_sip_register_build_ex2(out, cap, impu, impi, pcscf, local_ip,
+                                      port, sec_offer, NULL, NULL);
 }
 
 /* RFC 5626 +sip.instance IMEI URN: "urn:gsma:imei:<8>-<6>-<1>". The AP only
@@ -104,6 +104,16 @@ size_t ims_sip_register_build_ex(char *out, size_t cap, const char *impu,
                                  const char *impi, const char *pcscf,
                                  const char *local_ip, uint16_t port,
                                  const char *sec_offer, const char *imei)
+{
+    return ims_sip_register_build_ex2(out, cap, impu, impi, pcscf, local_ip,
+                                      port, sec_offer, imei, NULL);
+}
+
+size_t ims_sip_register_build_ex2(char *out, size_t cap, const char *impu,
+                                  const char *impi, const char *pcscf,
+                                  const char *local_ip, uint16_t port,
+                                  const char *sec_offer, const char *imei,
+                                  const char *cell_id)
 {
     if (!out || !impu || !impi || !pcscf || !local_ip) return 0;
     /* Accept impu with or without the "sip:" scheme; derive (a) the full SIP
@@ -158,8 +168,26 @@ size_t ims_sip_register_build_ex(char *out, size_t cap, const char *impu,
      * points at the same P-CSCF caused the CP/P-CSCF to reject the request.
      * (Live: with a direct R-URI-to-domain REGISTER the P-CSCF responded 480
      *  "user unavailable" for an unknown IMPU instead of 403.) */
-    /* Netherlands LTE (KPN) is FDD, not TDD. A wrong access type is rejected. */
-    if (!addf(&r,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD;utran-cell-id-3gpp=00000000\r\n")) return 0;
+    /* Netherlands LTE (KPN) is FDD, not TDD. The utran-cell-id-3gpp parameter
+     * is emitted ONLY when a REAL serving-cell identity is available. It is
+     * OMITTED (not fabricated) otherwise: TS 24.229 7.2A.4 / RFC 3455 4.1
+     * allow the parameter to be absent, and a bogus all-zero ECI is a
+     * interoperability hazard. This CP's IPC41 serving-network frame carries
+     * no ECI (the real one is behind the OEM-socket GetLteCellInfo), so in
+     * production this is normally omitted. */
+    bool cell_ok = cell_id && *cell_id;
+    if (cell_ok) {
+        for (const char *q = cell_id; *q; q++)
+            if (!((*q >= '0' && *q <= '9') || (*q >= 'a' && *q <= 'f') ||
+                  (*q >= 'A' && *q <= 'F'))) { cell_ok = false; break; }
+        if (cell_ok && strlen(cell_id) > 16) cell_ok = false;
+    }
+    if (cell_ok) {
+        if (!addf(&r,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD;utran-cell-id-3gpp=%s\r\n",
+                  cell_id)) return 0;
+    } else {
+        if (!addf(&r,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD\r\n")) return 0;
+    }
     /* TS 33.203 7.1 / TS 24.229 5.1.2A: the first REGISTER in an IMS access
      * network carries an ipsec-3gpp Security-Client offer and the
      * Require/Proxy-Require: sec-agree headers so the P-CSCF returns the
@@ -309,16 +337,65 @@ size_t ims_sip_message_build(char *out, size_t cap, const char *impu, const char
                              const void *body, size_t body_len)
 {
     if (!out || !impu || !to || !from || !body) return 0;
+    /* Legacy signature: no home domain / local IP available. Delegate to the
+     * standards builder with the recipient used verbatim and the IMPU host as
+     * the home domain so a bare number still yields a valid R-URI. */
+    const char *dom = from ? strchr(from, '@') : NULL;
+    char home[128] = {0};
+    if (dom) snprintf(home, sizeof home, "%s", dom + 1);
+    return ims_sip_message_build_ex(out, cap, impu, home, to, NULL, 0,
+                                    route_uri, tag, body, body_len);
+}
+
+size_t ims_sip_message_build_ex(char *out, size_t cap,
+                                const char *impu, const char *home_domain,
+                                const char *to, const char *local_ip,
+                                uint16_t local_port, const char *route_uri,
+                                uint16_t tag, const void *body, size_t body_len)
+{
+    if (!out || !impu || !to || !body || body_len == 0) return 0;
+    /* Request-URI: a supplied sip:/tel: URI is used verbatim. A bare number is
+     * encoded as "sip:<digits>@<home_domain>" (KPN terminates via the IMS
+     * domain); a "+" prefix is preserved. */
+    char ruri[256];
+    if (!strncmp(to, "sip:", 4) || !strncmp(to, "tel:", 4))
+        snprintf(ruri, sizeof ruri, "%s", to);
+    else {
+        const char *host = (home_domain && *home_domain) ? home_domain : "localhost";
+        snprintf(ruri, sizeof ruri, "sip:%s@%s", to, host);
+    }
     struct buf b={out,cap,0};
-    if (!addf(&b,"MESSAGE sip:%s SIP/2.0\r\n", to)) return 0;
-    if (!addf(&b,"Via: SIP/2.0/UDP nuxel;branch=z9hG4bKmsg%u\r\n", (unsigned)tag)) return 0;
+    if (!addf(&b,"MESSAGE %s SIP/2.0\r\n", ruri)) return 0;
+    if (local_ip && *local_ip) {
+        if (strchr(local_ip, ':'))
+            { if (!addf(&b,"Via: SIP/2.0/UDP [%s]:%u;branch=z9hG4bKmsg%u\r\n",
+                        local_ip, (unsigned)local_port, (unsigned)tag)) return 0; }
+        else
+            { if (!addf(&b,"Via: SIP/2.0/UDP %s:%u;branch=z9hG4bKmsg%u\r\n",
+                        local_ip, (unsigned)local_port, (unsigned)tag)) return 0; }
+    } else {
+        if (!addf(&b,"Via: SIP/2.0/UDP ims;branch=z9hG4bKmsg%u\r\n", (unsigned)tag)) return 0;
+    }
     if (!addf(&b,"Max-Forwards: 70\r\n")) return 0;
-    if (!addf(&b,"From: <%s>\r\n", from)) return 0;
-    if (!addf(&b,"To: <%s>\r\n", to)) return 0;
+    /* From carries an originator tag; To has none (it is the callee). */
+    if (!addf(&b,"From: <%s>;tag=nuxel%u\r\n", impu, (unsigned)tag)) return 0;
+    if (!addf(&b,"To: <%s>\r\n", ruri)) return 0;
     if (!addf(&b,"Call-ID: nuxel-msg-%u\r\n", (unsigned)tag)) return 0;
     if (!addf(&b,"CSeq: 1 MESSAGE\r\n")) return 0;
-    if (route_uri && *route_uri) { if (!addf(&b,"Route: <%s;lr>\r\n", route_uri)) return 0; }
-    if (!addf(&b,"P-Asserted-Identity: <%s>\r\n", impu)) return 0;
+    /* Route: only a real sip:/tel: URI is used; a bare host is wrapped with an
+     * explicit scheme and the loose-route ;lr flag (RFC 3261 8.1.2). */
+    if (route_uri && *route_uri) {
+        if (!strncmp(route_uri, "sip:", 4) || !strncmp(route_uri, "tel:", 4)) {
+            if (strstr(route_uri, ";lr"))
+                { if (!addf(&b,"Route: <%s>\r\n", route_uri)) return 0; }
+            else
+                { if (!addf(&b,"Route: <%s;lr>\r\n", route_uri)) return 0; }
+        } else {
+            if (!addf(&b,"Route: <sip:%s;lr>\r\n", route_uri)) return 0;
+        }
+    }
+    /* UE-originated identity is P-Preferred-Identity, not P-Asserted. */
+    if (!addf(&b,"P-Preferred-Identity: <%s>\r\n", impu)) return 0;
     if (!addf(&b,"Content-Type: application/vnd.3gpp.sms\r\n")) return 0;
     if (!addf(&b,"Content-Length: %u\r\n\r\n", (unsigned)body_len)) return 0;
     if (!addn(&b,body,body_len)) return 0;

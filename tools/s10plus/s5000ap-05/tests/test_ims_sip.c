@@ -38,6 +38,31 @@ int main(void)
     assert(strstr(buf,"P-Preferred-Identity: <sip:user@ims.mnc008.mcc204.3gppnetwork.org>"));
     assert(strstr(buf,"Route:")==NULL);
     assert(strstr(buf,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD"));
+    /* No real cell id -> the utran-cell-id-3gpp parameter MUST be omitted,
+     * and the fabricated 00000000 placeholder must NEVER appear. */
+    assert(strstr(buf,"utran-cell-id-3gpp") == NULL);
+    assert(strstr(buf,"utran-cell-id-3gpp=00000000") == NULL);
+
+    /* A real ECI is emitted only when supplied via ex2. */
+    size_t cn=ims_sip_register_build_ex2(buf,sizeof buf,
+        "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
+        "user@ims.mnc008.mcc204.3gppnetwork.org",
+        "2001:db8::1","2001:db8::2",5062,NULL,NULL,"0a1b2c3");
+    assert(cn>0 && strstr(buf,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD;utran-cell-id-3gpp=0a1b2c3"));
+    /* A malformed / non-hex cell id is rejected -> parameter omitted, never
+     * echoed verbatim. */
+    cn=ims_sip_register_build_ex2(buf,sizeof buf,
+        "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
+        "user@ims.mnc008.mcc204.3gppnetwork.org",
+        "2001:db8::1","2001:db8::2",5062,NULL,NULL,"zz!!");
+    assert(cn>0 && strstr(buf,"utran-cell-id-3gpp") == NULL);
+    /* The all-zero cell id, even if passed, is not the fabricated form; it is
+     * only emitted when explicitly given (proving no code path injects it). */
+    cn=ims_sip_register_build_ex2(buf,sizeof buf,
+        "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
+        "user@ims.mnc008.mcc204.3gppnetwork.org",
+        "2001:db8::1","2001:db8::2",5062,NULL,NULL,NULL);
+    assert(cn>0 && strstr(buf,"utran-cell-id-3gpp=00000000") == NULL);
 
     /* _ex with a real 15-digit IMEI advertises a real device instance URN
      * (RFC 5626 <8>-<6>-<1> grouping); it is a device id, never a secret. */
@@ -86,6 +111,30 @@ int main(void)
         "2001:db8::1", 1, rp, rn);
     assert(mn>0 && strstr(buf,"Content-Type: application/vnd.3gpp.sms"));
     assert(strstr(buf,"MESSAGE sip:"));
+
+    /* Standards-compliant MESSAGE: real Via (bracketed IPv6 + port), From
+     * with tag, To without tag, P-Preferred-Identity (not P-Asserted), and a
+     * Route built from a bare P-CSCF host as "sip:<host>;lr". A bare MSISDN
+     * becomes a sip:<digits>@<home> R-URI. */
+    mn=ims_sip_message_build_ex(buf,sizeof buf,
+        "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
+        "ims.mnc008.mcc204.3gppnetwork.org",
+        "+31649353067","2001:db8::2",5062,"2001:db8::1",7,rp,rn);
+    assert(mn>0);
+    assert(strstr(buf,"MESSAGE sip:+31649353067@ims.mnc008.mcc204.3gppnetwork.org SIP/2.0")==buf);
+    assert(strstr(buf,"Via: SIP/2.0/UDP [2001:db8::2]:5062;branch="));
+    assert(strstr(buf,"From: <sip:user@ims.mnc008.mcc204.3gppnetwork.org>;tag=nuxel7"));
+    assert(strstr(buf,"To: <sip:+31649353067@ims.mnc008.mcc204.3gppnetwork.org>\r\n"));
+    assert(strstr(buf,"Route: <sip:2001:db8::1;lr>"));
+    assert(strstr(buf,"P-Preferred-Identity: <sip:user@ims.mnc008.mcc204.3gppnetwork.org>"));
+    assert(strstr(buf,"P-Asserted-Identity") == NULL);
+    /* A proper sip: route with ;lr is preserved; a sip: route without ;lr gets it. */
+    mn=ims_sip_message_build_ex(buf,sizeof buf,
+        "sip:user@d","d","sip:+31@d","2001:db8::2",5062,"sip:pcscf.example;lr",9,rp,rn);
+    assert(mn>0 && strstr(buf,"Route: <sip:pcscf.example;lr>\r\n"));
+    mn=ims_sip_message_build_ex(buf,sizeof buf,
+        "sip:user@d","d","sip:+31@d","2001:db8::2",5062,"sip:pcscf.example",9,rp,rn);
+    assert(mn>0 && strstr(buf,"Route: <sip:pcscf.example;lr>\r\n"));
 
     /* base64 round-trip of RAND||AUTN. */
     uint8_t randautn[32]; for (int i=0;i<32;i++) randautn[i]=(uint8_t)(i*7+1);

@@ -36,18 +36,21 @@ bool ims_sip_tr_open(struct ims_sip_tr *t, const struct ims_sip_tr_cfg *cfg,
         strlen(cfg->pcscf) >= IMS_SIP_TR_HOST_MAX ||
         strlen(cfg->local_ip) >= IMS_SIP_TR_HOST_MAX) return false;
     if (cfg->sec_offer && strlen(cfg->sec_offer) >= sizeof t->_sec_offer) return false;
+    if (cfg->cell_id && strlen(cfg->cell_id) >= sizeof t->_cell_id) return false;
     memset(t, 0, sizeof *t);
     snprintf(t->_impu, sizeof t->_impu, "%s", cfg->impu);
     snprintf(t->_impi, sizeof t->_impi, "%s", cfg->impi);
     snprintf(t->_pcscf, sizeof t->_pcscf, "%s", cfg->pcscf);
     snprintf(t->_local_ip, sizeof t->_local_ip, "%s", cfg->local_ip);
     if (cfg->sec_offer) snprintf(t->_sec_offer, sizeof t->_sec_offer, "%s", cfg->sec_offer);
+    if (cfg->cell_id && *cfg->cell_id) snprintf(t->_cell_id, sizeof t->_cell_id, "%s", cfg->cell_id);
     t->cfg = *cfg;
     t->cfg.impu = t->_impu;
     t->cfg.impi = t->_impi;
     t->cfg.pcscf = t->_pcscf;
     t->cfg.local_ip = t->_local_ip;
     t->cfg.sec_offer = cfg->sec_offer ? t->_sec_offer : NULL;
+    t->cfg.cell_id = (cfg->cell_id && *cfg->cell_id) ? t->_cell_id : NULL;
     if (io) t->io = *io;
     t->user = user;
     t->phase = IMS_SIP_TR_IDLE;
@@ -80,6 +83,7 @@ void ims_sip_tr_close(struct ims_sip_tr *t)
     wipe(t->_pcscf, sizeof t->_pcscf);
     wipe(t->_local_ip, sizeof t->_local_ip);
     wipe(t->_sec_offer, sizeof t->_sec_offer);
+    wipe(t->_cell_id, sizeof t->_cell_id);
     t->scratch_len = 0;
     t->phase = IMS_SIP_TR_IDLE;
 }
@@ -112,9 +116,9 @@ static bool send_register(struct ims_sip_tr *t, bool auth)
     /* Route the REGISTER at the P-CSCF but use the IMPU domain as the SIP URI
      * target. The codec builds "REGISTER sip:<impu>"; we then compute the
      * Authorization from the same fields. */
-    size_t n = ims_sip_register_build(out, sizeof out,
+    size_t n = ims_sip_register_build_ex2(out, sizeof out,
         t->cfg.impu, t->cfg.impi, t->cfg.pcscf, t->cfg.local_ip,
-        t->cfg.port, t->cfg.sec_offer);
+        t->cfg.port, t->cfg.sec_offer, NULL, t->cfg.cell_id);
     if (n == 0) return false;
     /* Insert Authorization before the trailing CRLF CRLF for authenticated
      * retry. The codec emits Content-Length: 0\r\n\r\n at the end; find it. */
@@ -400,9 +404,16 @@ bool ims_sip_tr_submit_sms(struct ims_sip_tr *t, const char *to,
     size_t rn = ims_rp_submit(rp, sizeof rp, rp_ref, smsc, sizeof smsc,
                               tpdu, tpdu_len);
     if (rn == 0) return false;
+    /* Home domain = the IMPU host (registration registrar/domain). */
+    const char *at = strchr(t->cfg.impu, '@');
+    char home[IMS_SIP_TR_HOST_MAX + 64] = {0};
+    if (at) snprintf(home, sizeof home, "%s", at + 1);
     char out[IMS_SIP_TR_MAX_MSG];
-    size_t n = ims_sip_message_build(out, sizeof out,
-        t->cfg.impu, to, t->cfg.impu, t->cfg.pcscf,
+    size_t n = ims_sip_message_build_ex(out, sizeof out,
+        t->cfg.impu, home, to, t->cfg.local_ip, t->cfg.port,
+        /* The P-CSCF is always the outbound proxy for IMS SMS; without a
+         * proper scheme it becomes "sip:<pcscf>;lr" (correct for an IP). */
+        t->cfg.pcscf,
         (uint16_t)(++t->cseq & 0xffff), rp, rn);
     wipe(rp, sizeof rp);
     if (n == 0) return false;

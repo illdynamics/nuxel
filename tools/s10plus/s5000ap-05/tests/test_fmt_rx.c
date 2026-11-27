@@ -192,6 +192,25 @@ int main(void)
     assert(fmt_rx_usim_auth(sync,sizeof sync,&auth) && !auth.authenticated && auth.auts_len==14);
     uint8_t reject[]={2,3};
     assert(fmt_rx_usim_auth(reject,sizeof reject,&auth) && !auth.authenticated && !auth.ck);
+    /* NET_SERVING_NETWORK (main=8 sub=3): live EFUJ2/KPN frame. Real PLMN is
+     * decoded; NO cell id is reported (this CP carries none in IPC41). */
+    static const uint8_t serv[] = {
+        0x05,0x02,0x21,'2','0','4','0','8',0x23,0x00,0x00,0x00,0x1f,0xf3,
+        0x76,0x00,0x6e,0x84,0xff,0x00,0x00,0xff,0x00,0x00,0x1d,0x01
+    };
+    struct fmt_rx_serving_network sn;
+    assert(fmt_rx_serving_network(serv, sizeof serv, &sn));
+    assert(sn.plmn_valid && !strcmp(sn.plmn, "20408"));
+    assert(!sn.cell_id_valid);
+    /* Truncated before the PLMN: still returns true but no plmn/cell id. */
+    assert(fmt_rx_serving_network(serv, 7, &sn) && !sn.plmn_valid && !sn.cell_id_valid);
+    /* Non-digit PLMN bytes: rejected (no plmn_valid). */
+    uint8_t bad[26]; memcpy(bad, serv, sizeof bad); bad[3]='X';
+    assert(fmt_rx_serving_network(bad, sizeof bad, &sn) && !sn.plmn_valid);
+    /* NULL / zero-length safety. */
+    assert(!fmt_rx_serving_network(NULL, 0, &sn));
+    assert(fmt_rx_serving_network(serv, 0, &sn) && !sn.plmn_valid);
+
     puts("FMT receive bounds, result correlation, RAT, PDP and IP: PASS");
     return 0;
 }

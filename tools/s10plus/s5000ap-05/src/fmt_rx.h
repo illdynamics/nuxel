@@ -27,6 +27,23 @@ struct fmt_rx_registration {
 /* IpcRxNetRegState @0x339818: reject cause is payload[10], not [3]. */
 bool fmt_rx_registration(const uint8_t *p, size_t n, struct fmt_rx_registration *out);
 
+/* NET_SERVING_NETWORK (main=8 sub=3), IpcRxNetServingNetwork @0x33a648.
+ * Bounded decode of the live EFUJ2/KPN frame. The frame carries a real PLMN
+ * (the service area identity) but NO 28-bit E-UTRAN cell id on this CP (the
+ * ECI lives behind the OEM-socket GetLteCellInfo @0x309978 opcode 0x1f54,
+ * which is NOT an IPC41 FMT command). Therefore `cell_id_valid` is reported
+ * FALSE and the caller MUST NOT fabricate a utran-cell-id-3gpp value.
+ *   payload[3..7] = ASCII PLMN "MCCMNC" (e.g. "20408")
+ * PLMN is validated all-digit before being copied; never returns a
+ * subscriber field. */
+struct fmt_rx_serving_network {
+    char    plmn[6];        /* "20408" or empty when not present/valid */
+    bool    plmn_valid;
+    bool    cell_id_valid;  /* false on this CP: no ECI in the IPC41 frame */
+};
+bool fmt_rx_serving_network(const uint8_t *p, size_t n,
+                            struct fmt_rx_serving_network *out);
+
 /* NET_REGIST's RAT is a Samsung wire enum, not the Android RadioTechnology. */
 uint8_t fmt_rx_rat(uint8_t wire);
 const char *fmt_rx_rat_name(uint8_t wire);

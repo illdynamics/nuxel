@@ -218,13 +218,17 @@ void ims_init_gen_result(struct ims_init *i, uint16_t result, uint8_t ack_seq)
     switch (i->phase) {
     case IMS_INIT_WAIT_ACK:
         /* Acknowledged capability configuration, not IMS registration. The
-         * old SDM probes were already rejected; do not repeat those probes. */
+         * registration gate (`done`) is satisfied here so a slow/absent SMS
+         * arming never blocks registration; the SMS-over-IP arming steps
+         * (SMS_FMT -> SMS_OIP -> VoLTE-state) then run to completion. This
+         * fixes the prior bug where done=true jumped straight to VOLTE_STATE
+         * and the SMS-over-IP format/enable SETs were NEVER transmitted. */
         if (result == FMT_RX_GEN_OK) {
             i->done = true;
             i->attempt = 0;
             i->phase_deadline_ms = 0;
             i->next_action_ms = 0;
-            i->phase = IMS_INIT_SEND_VOLTE_STATE;
+            i->phase = IMS_INIT_SEND_SMS_FMT;
         } else {
             i->done = false;
             i->phase_deadline_ms = 0;

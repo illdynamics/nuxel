@@ -78,6 +78,9 @@ struct ims_sip_tr_cfg {
     uint16_t    port;        /* local SIP client port */
     uint16_t    pcscf_port;  /* P-CSCF SIP server port (5060) */
     const char *sec_offer;   /* Security-Client ipsec-3gpp offer, or NULL */
+    const char *cell_id;     /* REAL serving ECI (hex) for utran-cell-id-3gpp,
+                              * or NULL when unavailable (parameter omitted;
+                              * never fabricated). */
 };
 
 struct ims_sip_tr {
@@ -88,6 +91,7 @@ struct ims_sip_tr {
     char _pcscf[IMS_SIP_TR_HOST_MAX];
     char _local_ip[IMS_SIP_TR_HOST_MAX];
     char _sec_offer[320];
+    char _cell_id[24];
 
     struct ims_sip_tr_cfg cfg;
     struct ims_sip_tr_io  io;

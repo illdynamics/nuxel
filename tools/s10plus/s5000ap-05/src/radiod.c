@@ -151,6 +151,9 @@ struct radiod_ctx {
     uint8_t sim_lock_type, sim_lock_key;
     bool sim_lock_valid;
     char home_plmn[6];
+    char serving_plmn[6];        /* real serving PLMN from NET 8/3 */
+    char serving_cell_id[24];    /* REAL ECI only; empty when unavailable */
+    bool serving_cell_valid;
     char baseband[33];
     bool radio_state_valid, radio_on;
     unsigned oes_requests;
@@ -895,6 +898,8 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
         struct fmt_rx_gen gen;
         if (fmt_rx_gen(f->payload,f->payload_len,&gen) && gen.type==3 &&
             ((g.ims_init.phase==IMS_INIT_WAIT_ACK && gen.main==10 && gen.sub==45) ||
+             (g.ims_init.phase==IMS_INIT_WAIT_SMS_FMT && gen.main==10 && gen.sub==26) ||
+             (g.ims_init.phase==IMS_INIT_WAIT_SMS_OIP && gen.main==10 && gen.sub==27) ||
              (g.ims_init.phase==IMS_INIT_WAIT_VOLTE_STATE && gen.main==8 && gen.sub==52)))
             ims_init_gen_result(&g.ims_init,gen.result,f->ack_seq);
     }
@@ -1697,6 +1702,8 @@ static bool sip_tr_open_from_iil(const struct iil_pdn *p)
          * grammar the P-CSCF parses (alg/ealg/prot/mod/spi/port) rather than
          * the earlier malformed single-token string. */
         .sec_offer = "alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;mod=trans;spi-c=4096;spi-s=4097;port-c=5062;port-s=5064",
+        /* Only a REAL serving ECI is passed; empty -> parameter omitted. */
+        .cell_id = g.serving_cell_valid && g.serving_cell_id[0] ? g.serving_cell_id : NULL,
     };
     /* Private/public identity: use the IMSI-derived IMPI when available. */
     char impu_buf[160] = {0}, impi_buf[160] = {0};
@@ -1790,6 +1797,8 @@ static bool sip_tr_open_from_ims_pdn_idx(const struct ims_pdn *p, unsigned idx)
          * grammar the P-CSCF parses (alg/ealg/prot/mod/spi/port) rather than
          * the earlier malformed single-token string. */
         .sec_offer = "alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;mod=trans;spi-c=4096;spi-s=4097;port-c=5062;port-s=5064",
+        /* Only a REAL serving ECI is passed; empty -> parameter omitted. */
+        .cell_id = g.serving_cell_valid && g.serving_cell_id[0] ? g.serving_cell_id : NULL,
     };
     char impu_buf[160] = {0}, impi_buf[160] = {0};
     if (g.ims.identity.ready && g.ims.identity.impi[0]) {
@@ -2252,6 +2261,25 @@ static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
             diagf("cellular_ip_parameters", "\"flags\":%u,\"mtu\":%u,\"ipv6_link_local\":%s",
                   ip.flags, ip.mtu, ip.ipv6_valid && ip.ipv6[0] == 0xfe &&
                   (ip.ipv6[1] & 0xc0) == 0x80 ? "true" : "false");
+        }
+        return DS_FEEDBACK_IGNORE;
+    }
+
+    /* ---- NET_SERVING_NETWORK (main=8 sub=3) ---- */
+    if (f->main_cmd == IPC41_MAIN_NET && f->sub_cmd == IPC41_NET_SERVING_NETWORK &&
+        (f->cmd_type == IPC41_TYPE_RESPONSE || f->cmd_type == IPC41_TYPE_NOTIFICATION)) {
+        struct fmt_rx_serving_network sn;
+        if (fmt_rx_serving_network(f->payload, f->payload_len, &sn)) {
+            if (sn.plmn_valid) {
+                snprintf(g.serving_plmn, sizeof g.serving_plmn, "%s", sn.plmn);
+                diagf("serving_network", "\"plmn\":\"%s\",\"cell_id_available\":%s",
+                      g.serving_plmn, sn.cell_id_valid ? "true" : "false");
+            }
+            /* This CP does not carry an ECI in the IPC41 frame; keep the real
+             * cell id empty so P-Access-Network-Info omits (never fabricates)
+             * utran-cell-id-3gpp. */
+            g.serving_cell_valid = sn.cell_id_valid;
+            if (!sn.cell_id_valid) g.serving_cell_id[0] = 0;
         }
         return DS_FEEDBACK_IGNORE;
     }

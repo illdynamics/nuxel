@@ -44,6 +44,15 @@ size_t ims_sip_register_build_ex(char *out, size_t cap,
                                  const char *pcscf, const char *local_ip,
                                  uint16_t port, const char *sec_offer,
                                  const char *imei);
+/* Full variant: `cell_id` is a REAL E-UTRAN cell identity (hex string) for the
+ * utran-cell-id-3gpp parameter, or NULL/"" when genuinely unavailable. When
+ * NULL the parameter is OMITTED entirely (TS 24.229 7.2A.4 / RFC 3455 4.1):
+ * a fabricated all-zero cell id must never be transmitted. */
+size_t ims_sip_register_build_ex2(char *out, size_t cap,
+                                  const char *impu, const char *impi,
+                                  const char *pcscf, const char *local_ip,
+                                  uint16_t port, const char *sec_offer,
+                                  const char *imei, const char *cell_id);
 /* Parse a 401/407 WWW-Authenticate challenge. Only AKAv1-MD5/AKAv2-MD5 and
  * qop=auth without integrity are accepted for IMS; MD5-only challenges are
  * rejected (IMS requires AKA). `nonce`/`realm`/`cnonce` are zero-terminated
@@ -71,6 +80,20 @@ size_t ims_sip_message_build(char *out, size_t cap,
                              const char *impu, const char *to,
                              const char *from, const char *route_uri,
                              uint16_t tag, const void *body, size_t body_len);
+/* Standards-compliant SIP MESSAGE builder (RFC 3261 / TS 24.341):
+ *   - request-URI: `to` as given when it is a "sip:"/"tel:" URI; otherwise a
+ *     raw E.164/MSISDN is encoded as "sip:<digits>@<home_domain>".
+ *   - Via: real "SIP/2.0/UDP [<local_ip>]:<local_port>".
+ *   - From with a tag + P-Preferred-Identity (UE-originated, NOT P-Asserted).
+ *   - To without a tag; Route only when `route_uri` is a proper sip:/tel: URI
+ *     with the ;lr flag (a bare host is wrapped as "sip:<host>;lr").
+ * `home_domain` is the IMPU's host (used only to form a bare-number R-URI).
+ * Returns bytes written, 0 on bounds error. Never logs the body. */
+size_t ims_sip_message_build_ex(char *out, size_t cap,
+                                const char *impu, const char *home_domain,
+                                const char *to, const char *local_ip,
+                                uint16_t local_port, const char *route_uri,
+                                uint16_t tag, const void *body, size_t body_len);
 /* Companion base64 helpers used by challenge/nonce framing. */
 size_t ims_base64_encode(const uint8_t *in, size_t in_len, char *out, size_t cap);
 bool   ims_base64_decode(const char *in, size_t in_len, uint8_t *out, size_t cap, size_t *out_len);

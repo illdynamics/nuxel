@@ -262,3 +262,34 @@ bool fmt_rx_sim_apps(const uint8_t *p, size_t n, struct fmt_rx_sim_apps *out)
     *out = v;
     return true;
 }
+
+/* NET_SERVING_NETWORK (main=8 sub=3). Bounded, evidence-based decode of the
+ * live EFUJ2/KPN frame:
+ *   05 02 21 "20408" ...        (RAT, state, 0x21, ASCII PLMN MCC+MNC)
+ * This CP answers the IPC41 GetServingNetwork with an Operator record only;
+ * it contains NO 28-bit E-UTRAN cell id (the real ECI is only reachable via
+ * the OEM-socket GetLteCellInfo opcode 0x1f54, not IPC41 FMT). We therefore
+ * never emit a cell id from here. The PLMN is copied only after an all-digit
+ * check; on any malformation the function returns false and copies nothing. */
+bool fmt_rx_serving_network(const uint8_t *p, size_t n,
+                            struct fmt_rx_serving_network *out)
+{
+    if (!p || !out) return false;
+    struct fmt_rx_serving_network v = {0};
+    /* Need at least the ASCII PLMN at [3..7]. */
+    if (n >= 8) {
+        const uint8_t *q = p + 3;
+        bool digs = (q[0] >= '0' && q[0] <= '9') && (q[1] >= '0' && q[1] <= '9') &&
+                    (q[2] >= '0' && q[2] <= '9') && (q[3] >= '0' && q[3] <= '9') &&
+                    (q[4] >= '0' && q[4] <= '9');
+        if (digs) {
+            memcpy(v.plmn, q, 5);
+            v.plmn[5] = 0;
+            v.plmn_valid = true;
+        }
+    }
+    /* No cell id is carried by this IPC41 frame on this CP. */
+    v.cell_id_valid = false;
+    *out = v;
+    return true;
+}
