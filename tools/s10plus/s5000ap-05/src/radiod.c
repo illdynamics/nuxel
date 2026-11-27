@@ -179,6 +179,21 @@ struct radiod_ctx {
     uint32_t cp_ims_report_count;   /* successful 22/8 and 22/7 sends */
     uint32_t cp_ims_report_fail;    /* refused writes */
     bool     cp_oneshot_done;       /* env-gated one-shot diagnostic fired */
+    /* Bounded CP IMS-registration report state (main=22 sub=8) for the
+     * modem-aligned NUXEL_IMS_REPORT_STATE path: SEND -> WAIT CP ACK (GEN or
+     * IIL) -> AUTO (also re-fires after a 480). In PROOF mode (default) the
+     * report is sent only on a genuine native SIP 200. */
+    enum { CP_REPORT_NONE=0, CP_REPORT_SENT, CP_REPORT_ACKED, CP_REPORT_FAILED }
+             cp_report_state;
+    uint64_t cp_report_deadline_ms;
+    uint8_t  cp_report_seq;
+    uint32_t cp_report_epoch;       /* increments on a successful non-2xx RX */
+    /* Env-gated one-shot: fire the CP's OWN IMS registration trigger
+     * (IcpProtocol41Iil IpcTxImsReqRegistrationE911, main=112 sub=8 type=1).
+     * This asks the modem's internal IMS stack to register (it will then ask
+     * us for USIM AKA, which the IIL AKA relay answers). Diagnostic only;
+     * never guessed, never repeated. */
+    bool     iil_reg_triggered;
     unsigned sip_pcscf_idx;     /* current P-CSCF index from the PCO list */
     unsigned sip_pcscf_tries;   /* consecutive 480s on the current P-CSCF */
     unsigned sip_pcscf_answered; /* bitmask: P-CSCF idx that sent ANY response */
@@ -216,11 +231,20 @@ static void begin_data_session(const char *apn);
 static int setup_session_bus(void);
 static void radiod_sip_param_from_pcscf(const struct iil_pdn *p);
 static void radiod_ims_iface_apply(const char *ims_ip, const char *pcscf);
-static void radiod_report_ims_reg_to_cp(bool registered);
+static bool radiod_report_ims_reg_to_cp(bool registered);
 /* Opt-in security-first initial REGISTER (TS 33.203 7.1). Off by default: the
  * Round-18 probe on this P-CSCF answered 400 to Require+Proxy-Require sec-agree,
  * so we never assert it unless explicitly requested. When requested, the build
  * fails closed to the default offer-less path if no Security-Client is present. */
+static bool ims_report_state_env(void)
+{
+    static int cached = -1;
+    if (cached < 0) {
+        const char *v = getenv("NUXEL_IMS_REPORT_STATE");
+        cached = (v && *v == '1') ? 1 : 0;
+    }
+    return cached == 1;
+}
 static bool ims_security_first_env(void)
 {
     static int cached = -1;
@@ -513,6 +537,7 @@ static void resolve_pending(const struct nuxel_sipc_fmt *f)
 }
 
 static bool radiod_write_fmt(const struct fmt_tx_frame *f);
+static bool radiod_write_fmt_seq(const struct fmt_tx_frame *f, uint8_t *seq);
 
 static bool sms_write(const struct fmt_tx_frame *f,uint8_t *sequence,void *user)
 {
@@ -852,6 +877,20 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
     /* Correlate GEN result to the IIL IMS PDN drive. The IIL GPRS builders
      * are acknowledged by the ordinary GEN channel with ack_seq == the shared
      * msg_seq we assigned. Only the active IIL phases await these acks. */
+    /* CP IMS-registration report GEN ack (main=22 sub=8/7). Correlate by the
+     * exact assigned sequence; mark ACKED in STATE mode so the first REGISTER
+     * and SMS dispatch gate can proceed. */
+    if (f->main_cmd == IPC41_MAIN_GEN && f->cmd_type == IPC41_TYPE_RESPONSE &&
+        g.cp_report_state == CP_REPORT_SENT && f->ack_seq == g.cp_report_seq) {
+        struct fmt_rx_gen gen;
+        if (fmt_rx_gen(f->payload, f->payload_len, &gen)) {
+            g.cp_report_state = (gen.result == FMT_RX_GEN_OK)
+                                    ? CP_REPORT_ACKED : CP_REPORT_FAILED;
+            g.cp_report_deadline_ms = 0;
+            diagf("cp_ims_reg_report_ack", "\"result\":%u", gen.result);
+        }
+        return;
+    }
     if (f->main_cmd == IPC41_MAIN_GEN && f->cmd_type == IPC41_TYPE_RESPONSE &&
         f->payload_len == 5 && f->ack_seq == g.iil_pdn.last_write_seq) {
         struct fmt_rx_gen gen;
@@ -1427,6 +1466,16 @@ static bool radiod_write_fmt(const struct fmt_tx_frame *f)
     return false;
 }
 
+
+/* Like radiod_write_fmt but returns the assigned message sequence so a caller
+ * can correlate the CP's GEN response (main=128 ack_seq). Writes only when the
+ * frame is otherwise acceptable (same capability gate). */
+static bool radiod_write_fmt_seq(const struct fmt_tx_frame *f, uint8_t *seq)
+{
+    if (!radiod_write_fmt(f)) return false;
+    if (seq) *seq = (uint8_t)((g.next_seq + 254u) % 255u); /* value used by radiod_write_fmt */
+    return true;
+}
 /* Write ONE serialized IIL frame (IpcProtocol41Iil) to /dev/umts_ipc0.
  * The IIL header differs from FMT only in bytes 2..3: a 16-bit msg_seq
  * (no ack_seq). main/sub/type sit at the same offsets, so the kernel
@@ -1509,28 +1558,32 @@ static bool ims_sdm_write(const struct fmt_tx_frame *f, uint8_t *seq, void *user
  * records what was last reported). Idempotent across ticks. Never fabricates
  * registration: it is only called from the native-200 transition in the
  * SIP transport tick. */
-static void radiod_report_ims_reg_to_cp(bool registered)
+static bool radiod_report_ims_reg_to_cp(bool registered)
 {
     int want = registered ? 1 : 0;
-    if (g.cp_ims_reported == want) return;
-    if (!g.cp_online || !g.write_enabled) return;
-    if (!g.sim_ready_seen) return;
+    if (g.cp_ims_reported == want) return true;
+    if (!g.cp_online || !g.write_enabled) return false;
+    if (!g.sim_ready_seen) return false;
     struct fmt_tx_frame f;
+    uint8_t seq = 0;
     bool sent = false;
     if (registered) {
         sent = fmt_tx_ims_set_reg_state(&f, FMT_TX_IMS_REGSTATUS_REGISTERED,
                                         IMS_NETWORK_TYPE_LTE,
                                         IMS_NETWORK_TYPE_LTE) &&
-               radiod_write_fmt(&f);
+               radiod_write_fmt_seq(&f, &seq);
     } else {
-        sent = fmt_tx_ims_deregistration(&f) && radiod_write_fmt(&f);
+        sent = fmt_tx_ims_deregistration(&f) && radiod_write_fmt_seq(&f, &seq);
     }
-    if (!sent) { g.cp_ims_report_fail++; return; } /* no runaway loop */
+    if (!sent) { g.cp_ims_report_fail++; return false; } /* no runaway loop */
     g.cp_ims_report_count++;
     g.cp_ims_reported = want;
+    g.cp_report_seq = seq;
+    g.cp_report_deadline_ms = 0;
     diagf("cp_ims_reg_report", "\"registered\":%s,\"wire\":\"%s\"",
           registered ? "true" : "false",
           registered ? "22/8" : "22/7");
+    return true;
 }
 
 /* Fire IpcTxSetSipParam (main=3 CDMA_DATA sub=19) with a discovered P-CSCF
@@ -2146,8 +2199,14 @@ static void sip_tr_tick(uint64_t now)
             enum ims_sip_tr_phase before = g.sip_tr.phase;
             sip_tr_recv();   /* read 401/200 replies before advancing the FSM */
             if (before == IMS_SIP_TR_IDLE) {
-                if (!ims_sip_tr_start(&g.sip_tr))
-                    diag("sip_tr_start_send_fail", NULL);
+                /* STATE mode: don't send the first REGISTER until the CP has
+                 * acknowledged our IMS_REGISTERED report (modem-aligned). */
+                bool can_first = !ims_report_state_env() ||
+                                 g.cp_report_state == CP_REPORT_ACKED;
+                if (can_first) {
+                    if (!ims_sip_tr_start(&g.sip_tr))
+                        diag("sip_tr_start_send_fail", NULL);
+                }
             }
             /* A 401 sets CHALLENGED; drive the USIM AKA so an authenticated
              * REGISTER can be sent. (Only fires once per challenge.) */
@@ -2174,6 +2233,15 @@ static void sip_tr_tick(uint64_t now)
                 g.sip_pcscf_answered |= (1u << (g.sip_pcscf_idx & 31));
             if (after == IMS_SIP_TR_RETRY_WAIT)
                 g.sip_pcscf_answered |= (1u << (g.sip_pcscf_idx & 31));
+            /* STATE mode: a 480/503 or a pure failure means the P-CSCF saw our
+             * REGISTER without a matching modem IMS state (or is otherwise
+             * unavailable). Re-issue the CP report (bounded) so the next
+             * REGISTER is sent only after the modem confirms its state. */
+            if (ims_report_state_env() &&
+                after == IMS_SIP_TR_RETRY_WAIT && before != IMS_SIP_TR_RETRY_WAIT) {
+                g.cp_report_state = CP_REPORT_NONE;
+                g.cp_report_deadline_ms = 0;
+            }
             if (after == IMS_SIP_TR_FAILED && before != IMS_SIP_TR_FAILED) {
                 unsigned total = g.ims_pdn.ip.pcscf4_count + g.ims_pdn.ip.pcscf6_count;
                 /* If the CURRENT node already answered (e.g. 480), it is the
@@ -2191,9 +2259,6 @@ static void sip_tr_tick(uint64_t now)
                     }
                 }
             }
-            /* Authoritative native SIP 200 OK -> IMS REGISTERED (never from a
-             * modem relay/ack). Drives the SMS-transport readiness gate. */
-            bool reg = ims_sip_tr_registered(&g.sip_tr);
             /* Bounded one-shot diagnostic (NUXEL_IMS_REPORT_ONESHOT=1): report
              * IMS REGISTERED to the CP 22/8 ONCE when a bearer/local-IP/P-CSCF
              * is available, independent of the network REGISTER result. This
@@ -2211,21 +2276,82 @@ static void sip_tr_tick(uint64_t now)
                           g.cp_ims_report_count, g.cp_ims_report_fail);
                 }
             }
-            if (reg != (g.ims.phase == IMS_REGISTERED)) {
-                ims_service_native_registered(&g.ims, reg);
-                /* Report the authoritative AP-side IMS registration state to
-                 * the CP (IpcTxImsReqSetRegState main=22 sub=8). Without this
-                 * the CP continues to inhibit SMS-over-IMS even after a real
-                 * SIP 200, because it has no knowledge of our AP registration.
-                 * Exactly one report per genuine transition (state-guarded);
-                 * deregistration uses the vendor's dedicated main=22 sub=7. */
-                radiod_report_ims_reg_to_cp(reg);
+            /* -- CP IMS-registration report (main=22 sub=8) -------------
+             * PROOF mode (default): only on a genuine native SIP 200.
+             * STATE mode (NUXEL_IMS_REPORT_STATE=1): modem-aligned — report
+             * IMS_REGISTERED and wait for the CP's GEN ack BEFORE the first
+             * REGISTER goes out, so the modem's IMS state and the P-CSCF see
+             * a consistent UE. Bounded (1 s retry x ~8 attempts, then wait
+             * for the next 480 to re-arm); never auto-retries a refused
+             * report indefinitely. */
+            bool report_state_env = ims_report_state_env();
+            if (report_state_env) {
+                if (g.cp_report_state == CP_REPORT_NONE ||
+                    g.cp_report_state == CP_REPORT_FAILED) {
+                    if (now >= g.cp_report_deadline_ms) {
+                        if (radiod_report_ims_reg_to_cp(true)) {
+                            g.cp_report_state = CP_REPORT_SENT;
+                            g.cp_report_deadline_ms = now + 8000;
+                        } else {
+                            g.cp_report_state = CP_REPORT_FAILED;
+                            g.cp_report_deadline_ms = now + 2000;
+                        }
+                    }
+                } else if (g.cp_report_state == CP_REPORT_SENT &&
+                           g.cp_report_deadline_ms && now >= g.cp_report_deadline_ms) {
+                    /* CP did not ack within 8 s: back off, then re-arm once. */
+                    g.cp_report_state = CP_REPORT_FAILED;
+                    g.cp_report_deadline_ms = now + 2000;
+                    diag("cp_ims_reg_report_timeout", NULL);
+                }
+            }
+            /* Bounded one-shot: ask the CP's own IMS stack to register. The
+             * modem will emit IIL IsimAuth (sub 17) which the IIL AKA relay
+             * answers with SEC 5/9 + IpcTxImsAuthResp (sub 2) — fully
+             * legitimate USIM authentication. This is an ADDITIONAL attempt
+             * alongside our AP-side REGISTER (stock phones run one IMS client;
+             * here the modem-internal stack is otherwise idle). Only fires
+             * when explicitly armed (NUXEL_IIL_IMS_REGISTER=1). */
+            if (!g.iil_reg_triggered) {
+                static const char *iilreg = NULL;
+                if (!iilreg) iilreg = getenv("NUXEL_IIL_IMS_REGISTER");
+                if (iilreg && *iilreg == '1') {
+                    g.iil_reg_triggered = true;
+                    /* main=112 sub=8 type=1, empty payload (same as the
+                     * vendor's registration trigger). */
+                    struct iil_frame rf;
+                    uint8_t *pp = iil_begin(&rf, IIL_MAIN_IIL, 8u, 1u, 0u);
+                    if (pp) {
+                        uint8_t sq = 0;
+                        if (iil_pdn_write(&rf, &sq, NULL))
+                            diagf("iil_ims_reg_trigger", "\"len\":%zu,\"seq\":%u",
+                                  rf.len, sq);
+                    }
+                }
+            }
+            bool cp_acked = (g.cp_report_state == CP_REPORT_ACKED);
+            bool reg = ims_sip_tr_registered(&g.sip_tr);
+            if (!report_state_env) {
+                if (reg != (g.ims.phase == IMS_REGISTERED)) {
+                    ims_service_native_registered(&g.ims, reg);
+                    radiod_report_ims_reg_to_cp(reg);
+                }
+            } else if (reg && g.ims.phase != IMS_REGISTERED) {
+                ims_service_native_registered(&g.ims, true);
             }
             if (reg) g.sip_pcscf_tries = 0;   /* locked onto a serving P-CSCF */
-            /* Authoritative native registration is the ONLY IMS-SMS gate; the
-             * modem's IIL relay is not proof. Drive it each tick so a genuine
-             * network 200 (and only that) enables the SIP MESSAGE transport. */
-            g.sms.ims_registered_native = reg;
+            /* IMS-SMS gate:
+             *  - PROOF mode: requires the authoritative native 200 (default).
+             *  - STATE mode: requires the CP to have ACKed our IMS_REGISTERED
+             *    report AND our REGISTER to have been transmitted (the modem
+             *    transport is then modem-known and warm). */
+            bool transport_ready = reg ||
+                (report_state_env && cp_acked &&
+                 (before == IMS_SIP_TR_REGISTER_SENT ||
+                  before == IMS_SIP_TR_SECURE_REGISTER_SENT ||
+                  before == IMS_SIP_TR_AUTH_SENT ||
+                  before == IMS_SIP_TR_REGISTERED));
+            g.sms.ims_registered_native = transport_ready;
         }
     } else {
         if (g.sip_tr_open) { sip_tr_close(); diag("sip_tr_close", NULL); }
