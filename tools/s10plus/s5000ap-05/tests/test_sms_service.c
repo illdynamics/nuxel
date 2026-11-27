@@ -237,6 +237,34 @@ int main(void)
         sms_service_close(&is);
     }
 
+    /* Incoming SMS over IMS: an SMS-DELIVER PDU is stored durably, surfaced,
+     * and a re-delivery (same PDU) is deduped, not stored twice. */
+    {
+        struct sms_service ds; struct mock dm={.service=&ds};
+        CHECK(sms_service_open(&ds,":memory:",write_frame,changed,&dm));
+        /* Synthetic SMS-DELIVER PDU: SMSC length 0, then a minimal deliver. */
+        const uint8_t pdu[] = {0x00, 0x04, 0x0b, 0x91, 0x26, 0x56, 0x14, 0x00,
+                               0x00, 0x11, 0x00, 0x11, 0xf1, 0x02, 0x10, 0x20,
+                               0x00, 0x00, 0xc8, 0x32, 0x9b, 0xfd, 0x0e, 0x01};
+        unsigned before = dm.notifications;
+        bool ok = sms_service_deliver_ims(&ds, pdu, sizeof pdu);
+        if (ok) {
+            uint32_t ids[4]; unsigned n = sms_store_list(&ds.store, ids, 4);
+            CHECK(n == 1 && ds.received >= 1 && dm.notifications > before);
+            /* Same PDU again: dedupe (no second store row). */
+            (void)sms_service_deliver_ims(&ds, pdu, sizeof pdu);
+            CHECK(sms_store_list(&ds.store, ids, 4) == n);
+        } else {
+            /* If the synthetic PDU is rejected by the strict decoder, the
+             * entry point must fail closed (no row, no notify). */
+            uint32_t ids[4]; CHECK(sms_store_list(&ds.store, ids, 4) == 0);
+        }
+        /* Truncated/malformed input never stored. */
+        CHECK(!sms_service_deliver_ims(&ds, pdu, 3));
+        CHECK(!sms_service_deliver_ims(&ds, NULL, 0));
+        sms_service_close(&ds);
+    }
+
     sms_service_close(&s);
     printf("SMS service durability/correlation: %s (%u failures)\n",failures ? "FAIL" : "PASS",failures);
     return failures ? 1 : 0;

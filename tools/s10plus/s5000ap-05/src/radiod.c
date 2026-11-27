@@ -38,6 +38,7 @@
 #include "ims_msisdn.h"
 #include "ims_pdn.h"
 #include "ims_iil.h"
+#include "ims_sms.h"
 #include "ims_iil_rx.h"
 #include "iil_pdn.h"
 #include "iil_auth.h"
@@ -874,9 +875,38 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
         };
         const uint8_t *rp = NULL; size_t rp_len = 0;
         if (iil_rx_sms_incoming(&ev, &rp, &rp_len)) {
-            /* IIL RP-DATA (3GPP RP PDU). Storage wiring for IMSSMS is a
-             * separate inbound task; here we only surface its arrival. */
-            diagf("iil_sms_incoming", "\"rp_len\":%u", (unsigned)rp_len);
+            /* IIL RP-DATA (3GPP RP PDU, TS 24.011). Decode the RP envelope to
+             * its embedded SMS-DELIVER TPDU and store it durably. A SMS-DELIVER
+             * carries the SMSC address in the TPDU's first byte region only
+             * for the CS path; on the IMS path the RP-Destination address is
+             * in the envelope, so we reconstruct the SMSC-prefixed PDU from
+             * the RP origin and TPDU (TS 24.341 6.6). Malformed/unrecognised
+             * frames are counted, never stored. No body/PII is logged. */
+            struct ims_rp irep;
+            if (ims_rp_decode(rp, rp_len, &irep) && irep.tpdu && irep.tpdu_len) {
+                uint8_t pdu[300]; size_t plen = 0; bool stored = false;
+                if (irep.origin && irep.origin_len) {
+                    /* TPDU preceded by an SMSC length+TOA+digits block. */
+                    if (irep.origin_len <= 12) {
+                        for (size_t k = 0; k < irep.origin_len && plen < sizeof pdu; k++)
+                            pdu[plen++] = irep.origin[k];
+                        for (size_t k = 0; k < irep.tpdu_len && plen < sizeof pdu; k++)
+                            pdu[plen++] = irep.tpdu[k];
+                    }
+                } else {
+                    /* No RP origin: prepend a zero-length SMSC field. */
+                    pdu[plen++] = 0x00;
+                    for (size_t k = 0; k < irep.tpdu_len && plen < sizeof pdu; k++)
+                        pdu[plen++] = irep.tpdu[k];
+                }
+                if (plen) stored = sms_service_deliver_ims(&g.sms, pdu, plen);
+                diagf("iil_sms_incoming", "\"rp_len\":%u,\"tpdu_len\":%zu,\"stored\":%s",
+                      (unsigned)rp_len, irep.tpdu_len, stored ? "true" : "false");
+                explicit_bzero(pdu, sizeof pdu);
+            } else {
+                diagf("iil_sms_incoming", "\"rp_len\":%u,\"stored\":false,\"decode_error\":true",
+                      (unsigned)rp_len);
+            }
         }
     }
     /* CP IMS mode changes are not registration notifications. The stock

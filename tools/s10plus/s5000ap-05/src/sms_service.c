@@ -223,6 +223,20 @@ bool sms_service_resolve(struct sms_service *s,uint32_t id,const char *outcome)
 
 bool sms_service_ims_pending(const struct sms_service *s)
 { return s && s->active && s->ims_await_ack; }
+bool sms_service_deliver_ims(struct sms_service *s, const uint8_t *pdu,
+                             size_t len)
+{
+    if (!s || !s->store.db || !pdu || len == 0) return false;
+    struct sms_decoded decoded;
+    if (sms_decode(pdu, len, &decoded) != SMS_CODEC_OK) { s->decode_errors++; return false; }
+    uint32_t id = 0; bool changed = false;
+    if (!sms_store_receive(&s->store, pdu, len, &decoded, &id, &changed)) {
+        s->store_errors++;
+        return false;
+    }
+    if (changed) { s->received++; s->blocked = sms_store_blocked(&s->store); notify(s, id, decoded.kind == SMS_DELIVER); }
+    return true;
+}
 
 /* Consume the SIP MESSAGE transaction result for the in-flight SMS-over-IMS
  * submission. This is deliberately separate from the CP FMT result

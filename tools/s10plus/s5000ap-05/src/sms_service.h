@@ -80,4 +80,13 @@ bool sms_service_ims_result(struct sms_service *s,bool accepted,int sip_code);
 /* True while a SIP MESSAGE has been sent but its transaction result has not
  * yet been observed (used to classify stray/late replies). */
 bool sms_service_ims_pending(const struct sms_service *s);
+
+/* Incoming SMS over IMS (TS 24.341): a decoded 3GPP RP-DATA whose embedded
+ * TPDU is a SMS-DELIVER. The caller extracts the SMSC-prefixed PDU from the
+ * RP envelope (ims_rp_decode) and hands it here. The TPDU is decoded, deduped
+ * (sms_store 'seen' on the raw PDU), stored durably, and the Messages
+ * notification fired, exactly like a CP-routed incoming SMS. Returns true only
+ * when the SMS was stored (or already known). No body/PII is logged. */
+bool sms_service_deliver_ims(struct sms_service *s, const uint8_t *pdu,
+                             size_t len);
 #endif
