@@ -76,6 +76,35 @@ size_t ims_sip_register_build(char *out, size_t cap, const char *impu,
                               const char *local_ip, uint16_t port,
                               const char *sec_offer)
 {
+    return ims_sip_register_build_ex(out, cap, impu, impi, pcscf, local_ip,
+                                     port, sec_offer, NULL);
+}
+
+/* RFC 5626 +sip.instance IMEI URN: "urn:gsma:imei:<8>-<6>-<1>". The AP only
+ * obtains a real IMEI when the modem reports it (SV); otherwise a syntactically
+ * valid all-zero URN is emitted (an IMS core treats an unprovisioned instance
+ * as an anonymous device — it cannot be used to bypass entitlement). */
+static size_t sip_instance_urn(const char *imei, char *out, size_t cap)
+{
+    int k;
+    if (imei && (strlen(imei) == 15)) {
+        bool digs = true;
+        for (int i = 0; i < 15; i++) if (imei[i] < '0' || imei[i] > '9') { digs = false; break; }
+        if (digs) {
+            k = snprintf(out, cap, "urn:gsma:imei:%.8s-%.6s-%c",
+                         imei, imei + 8, imei[14]);
+            return (k > 0 && (size_t)k < cap) ? (size_t)k : 0;
+        }
+    }
+    k = snprintf(out, cap, "urn:gsma:imei:00000000-000000-0");
+    return (k > 0 && (size_t)k < cap) ? (size_t)k : 0;
+}
+
+size_t ims_sip_register_build_ex(char *out, size_t cap, const char *impu,
+                                 const char *impi, const char *pcscf,
+                                 const char *local_ip, uint16_t port,
+                                 const char *sec_offer, const char *imei)
+{
     if (!out || !impu || !impi || !pcscf || !local_ip) return 0;
     /* Accept impu with or without the "sip:" scheme; derive (a) the full SIP
      * URI and (b) the registrar domain (the part after '@') for the R-URI.
@@ -101,6 +130,8 @@ size_t ims_sip_register_build(char *out, size_t cap, const char *impu,
     if (clen == 0 || clen >= sizeof cuser_buf) return 0;
     memcpy(cuser_buf, impi_n, clen); cuser_buf[clen] = 0;
     const char *cuser = cuser_buf;
+    char inst[32];
+    if (!sip_instance_urn(imei, inst, sizeof inst)) return 0;
     struct buf r={out,cap,0};
     if (!addf(&r,"REGISTER sip:%s SIP/2.0\r\n", ruri)) return 0;
     if (!addf(&r,"Via: SIP/2.0/UDP [%s]:%u;branch=z9hG4bKnuxel\r\n", local_ip, port)) return 0;
@@ -119,9 +150,9 @@ size_t ims_sip_register_build(char *out, size_t cap, const char *impu,
      * IMS communication service identifier for MMTEL. `transport=udp` names
      * the signaling to which the ipsec-3gpp Security-Client applies.
      * The local IP stays in the Via (the UE's real reachable address). */
-    if (!addf(&r,"Contact: <sip:%s@%s;transport=udp>;+sip.instance=\"<urn:gsma:imei:00000000-000000-0>\";"
+    if (!addf(&r,"Contact: <sip:%s@%s;transport=udp>;+sip.instance=\"<urn:uuid:%s>\";"
               "+g.3gpp.icsi-ref=\"urn%%3Aurn-7%%3A3gpp-service.ims.icsi.mmtel\";expires=600000\r\n",
-              cuser, ruri)) return 0;
+              cuser, ruri, inst)) return 0;
     /* The INVITE/REGISTER is sent directly to the P-CSCF address (outbound
      * proxy) on the transport; no Route header is needed and adding one that
      * points at the same P-CSCF caused the CP/P-CSCF to reject the request.
@@ -192,6 +223,35 @@ bool ims_sip_challenge_parse(const char *hdr, size_t n, char realm[64], char non
     /* cnonce: deterministic privacy-safe token (real impl uses RANDOM). */
     snprintf(cnonce,16,"%x",0x6e75786cU); /* "nuxel" */
     return true;
+}
+
+/* Copy the first Safety-Server "ipsec-3gpp" offer value (the whole header
+ * value is one offer list; we take the leading ipsec-3gpp token only). */
+bool ims_sip_security_server(const char *hdr, size_t hdr_len,
+                             char *out, size_t outcap)
+{
+    if (!hdr || !out || outcap == 0) return false;
+    out[0] = 0;
+    size_t i = 0;
+    while (i < hdr_len) {
+        while (i < hdr_len && (hdr[i] == ' ' || hdr[i] == '\t' || hdr[i] == ',')) i++;
+        if (hdr_len - i < 11 || strncmp(hdr + i, "ipsec-3gpp", 10) != 0) {
+            /* Not an ipsec-3gpp offer here; skip to the next comma. */
+            const char *c = memchr(hdr + i, ',', hdr_len - i);
+            if (!c) break;
+            i = (size_t)(c - hdr) + 1;
+            continue;
+        }
+        size_t j = i;
+        while (j < hdr_len && hdr[j] != ',') j++;
+        size_t len = j - i;
+        while (len && (hdr[i + len - 1] == ' ' || hdr[i + len - 1] == '\t')) len--;
+        if (len >= outcap) len = outcap - 1;
+        memcpy(out, hdr + i, len);
+        out[len] = 0;
+        return len > 0;
+    }
+    return false;
 }
 
 /* RFC 2617 digest = H( H(A1) : nonce : nc : cnonce : qop : H(A2) )

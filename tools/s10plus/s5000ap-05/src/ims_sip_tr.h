@@ -107,6 +107,11 @@ struct ims_sip_tr {
     char nonce[IMS_SIP_TR_NONCE_MAX];   /* base64(RAND||AUTN) from 401 */
     char qop[16], alg[24], cnonce[24];
     char res_b64[64];                  /* base64(RES) from the USIM AKA; wiped after auth */
+    /* Security-Server offer echoed by a 401/407 (RFC 3329); when set the
+     * authenticated REGISTER carries Security-Verify and the caller installs
+     * the matching IPsec SAs from CK/IK BEFORE that REGISTER is sent. */
+    char sec_server[320];
+    bool sec_server_valid;
     uint32_t cseq;
     /* Absolute monotonic time (ms) of the NEXT permitted REGISTER attempt.
      * Carried across a transport re-open so the registrar's Retry-After is
@@ -152,6 +157,16 @@ void ims_sip_tr_feed(struct ims_sip_tr *t, const uint8_t *msg, size_t len);
  * it and, on the next tick, sends the authenticated REGISTER. Returns false if
  * not in CHALLENGED or on an invalid length. Secret is zeroized after use. */
 bool ims_sip_tr_auth(struct ims_sip_tr *t, const uint8_t *res, size_t res_len);
+
+/* Snapshot the negotiated ipsec-3gpp parameters for installing IPsec SAs from
+ * the CK/IK the USIM AKA returned. `out_offer` receives the negotiated
+ * Security-Server offer string (the SAs must mirror the server's SPIs/ports),
+ * `local_ip`/`remote_ip`/`family` describe the P-CSCF leg. Returns false when
+ * no ipsec-3gpp Security-Server was advertised (network secures otherwise). */
+bool ims_sip_tr_security_params(const struct ims_sip_tr *t,
+                                char *out_offer, size_t offer_cap,
+                                char *local_ip, size_t lip_cap,
+                                char *remote_ip, size_t rip_cap, int *family);
 
 /* Initiate de-registration (REGISTER with expires=0). */
 bool ims_sip_tr_deregister(struct ims_sip_tr *t);

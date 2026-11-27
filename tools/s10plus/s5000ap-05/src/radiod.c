@@ -48,6 +48,7 @@
 #include "mobile_data.h"
 #include "ims_sip_tr.h"
 #include "ims_sip.h"   /* ims_base64_decode for the 401 AKA nonce (RAND||AUTN) */
+#include "ims_security.h" /* ipsec-3gpp SA install from USIM CK/IK */
 #define MOBILE_PREFERENCE "/var/lib/nuxel-radio/mobile-data"
 
 #include <arpa/inet.h>
@@ -174,6 +175,8 @@ struct radiod_ctx {
      * ims_sip_tr_auth(). RES/RAND/AUTN are never logged. */
     bool sip_auth_pending;      /* USIM AKA in flight for the SIP 401 challenge */
     uint8_t sip_auth_last_seq;  /* SEC 5/9 request seq to correlate the result */
+    struct ims_security sip_sec; /* ipsec-3gpp SAs from negotiated CK/IK */
+    bool sip_sec_installed;     /* true only after a complete SA install */
     uid_t control_uid, bridge_uid;
     sd_bus *data_bus;
     bool     data_path_armed;   /* explicit opt-in (flag / D-Bus) */
@@ -603,6 +606,53 @@ static void respond_oes_certificate(void)
     oes_cert_free(&cert);
 }
 
+/* Install the ipsec-3gpp SAs from the USIM AKA CK/IK BEFORE the authenticated
+ * REGISTER is sent, mirroring the SPIs/ports the P-CSCF advertised in
+ * Security-Server (RFC 3329 / TS 33.203 7.1). The SAs own the IMS-bearer UDP
+ * leg (the negotiated port-c/port-s), so they are installed only when the
+ * offer is a valid ipsec-3gpp set. CK/IK are session keys, never logged. */
+static bool sip_sec_install_from_aka(const struct fmt_rx_usim_auth *r)
+{
+    if (!r || !r->authenticated || !r->ck || !r->ik) return false;
+    char offer[320] = {0};
+    char local[64] = {0}, remote[64] = {0};
+    int fam = 0;
+    if (!ims_sip_tr_security_params(&g.sip_tr, offer, sizeof offer,
+                                    local, sizeof local, remote, sizeof remote,
+                                    &fam)) {
+        /* No ipsec-3gpp Security-Server: network secures the access leg
+         * differently. Do not invent SAs. */
+        diag("sip_sec_no_security_server", NULL);
+        return false;
+    }
+    struct ims_security_offer o;
+    if (!ims_security_parse(offer, &o)) {
+        diag("sip_sec_offer_unparsable", NULL);
+        explicit_bzero(offer, sizeof offer);
+        return false;
+    }
+    if (fam != AF_INET && fam != AF_INET6) { diag("sip_sec_bad_family", NULL); explicit_bzero(offer, sizeof offer); return false; }
+    memset(&g.sip_sec, 0, sizeof g.sip_sec);
+    g.sip_sec.local = o;
+    g.sip_sec.remote = o;
+    g.sip_sec.family = fam;
+    g.sip_sec.reqid = 0xC0DE0000u;
+    int rc = (fam == AF_INET6)
+        ? (inet_pton(AF_INET6, local, g.sip_sec.local_ip) == 1 &&
+           inet_pton(AF_INET6, remote, g.sip_sec.remote_ip) == 1)
+        : (inet_pton(AF_INET, local, g.sip_sec.local_ip) == 1 &&
+           inet_pton(AF_INET, remote, g.sip_sec.remote_ip) == 1);
+    explicit_bzero(offer, sizeof offer);
+    if (!rc) return false;
+    if (!ims_security_install(&g.sip_sec, r->ck, r->ik)) {
+        diag("sip_sec_install_failed", NULL);
+        return false;
+    }
+    g.sip_sec_installed = true;
+    diag("sip_sec_installed", NULL);
+    return true;
+}
+
 static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
 {
     const struct nuxel_fmt_observation *ob = find_fmt_obs(f->main_cmd, f->sub_cmd, f->cmd_type);
@@ -634,6 +684,11 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
         if (fmt_rx_usim_auth(f->payload, f->payload_len, &r) &&
             r.authenticated && r.res && r.res_len >= 4 && r.res_len <= 16) {
             g.sip_auth_pending = false;
+            /* Install ipsec-3gpp SAs from this AKA's CK/IK BEFORE the
+             * authenticated REGISTER goes out (TS 33.203 7.1). When the
+             * network advertised no Security-Server this is skipped and the
+             * REGISTER is sent on the (already secured) access leg. */
+            (void)sip_sec_install_from_aka(&r);
             if (ims_sip_tr_auth(&g.sip_tr, r.res, r.res_len))
                 diag("iil_sip_tr_auth_res", NULL);
             else
@@ -1724,9 +1779,11 @@ static void sip_tr_close(void)
 {
     if (g.sip_tr_open) { ims_sip_tr_close(&g.sip_tr); g.sip_tr_open = false; }
     if (sip_tr_fd >= 0) { close(sip_tr_fd); sip_tr_fd = -1; }
-    /* A bearer loss invalidates any in-flight SIP AKA challenge. */
+    /* A bearer loss invalidates any in-flight SIP AKA challenge AND any
+     * installed ipsec-3gpp SAs (they are bound to this signaling epoch). */
     g.sip_auth_pending = false;
     g.sip_auth_last_seq = 0;
+    if (g.sip_sec_installed) { ims_security_clear(&g.sip_sec); g.sip_sec_installed = false; }
 }
 
 /* Drain any queued SIP response datagram(s) off the IMS bearer socket and

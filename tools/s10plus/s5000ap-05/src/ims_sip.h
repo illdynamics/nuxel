@@ -35,6 +35,15 @@ size_t ims_sip_register_build(char *out, size_t cap,
                               const char *impu, const char *impi,
                               const char *pcscf, const char *local_ip,
                               uint16_t port, const char *sec_offer);
+/* Same as ims_sip_register_build but advertises a real device +sip.instance
+ * (RFC 5626) from a 15-digit IMEI when supplied/NUL-valid; otherwise a
+ * syntactically valid all-zero URN is used. The IMEI is a device identifier,
+ * never a secret; it is not logged. */
+size_t ims_sip_register_build_ex(char *out, size_t cap,
+                                 const char *impu, const char *impi,
+                                 const char *pcscf, const char *local_ip,
+                                 uint16_t port, const char *sec_offer,
+                                 const char *imei);
 /* Parse a 401/407 WWW-Authenticate challenge. Only AKAv1-MD5/AKAv2-MD5 and
  * qop=auth without integrity are accepted for IMS; MD5-only challenges are
  * rejected (IMS requires AKA). `nonce`/`realm`/`cnonce` are zero-terminated
@@ -46,6 +55,13 @@ bool ims_sip_challenge_parse(const char *hdr, size_t hdr_len,
 /* Build the Authorization header after the SIM returns RES. Returns bytes
  * written (including trailing CRLF) or 0 on bounds error. Takes ownership of
  * none of the buffers. */
+/* Optional Security-Server advertisement on a 401/407 (RFC 3329). When present
+ * in the challenge and `sec_server` is non-NULL, the first ipsec-3gpp offer
+ * is copied (bounded) so the UE can mirror it in a Security-Verify header and
+ * install the matching IPsec SAs. Returns false if absent. */
+bool ims_sip_security_server(const char *hdr, size_t hdr_len,
+                             char *out, size_t outcap);
+
 size_t ims_sip_authorization_build(char *out, size_t cap,
                                    const struct ims_sip_digest_params *p,
                                    bool is_aka);

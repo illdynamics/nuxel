@@ -24,7 +24,9 @@ int main(void)
      * (TS 24.229 7.2A). It must NOT be the malformed bracketed-IPv6 form. */
     assert(strstr(buf,"Contact: <sip:user@ims.mnc008.mcc204.3gppnetwork.org;transport=udp>"));
     assert(strstr(buf,"Contact: <sip:user@[2001:db8::2]") == NULL);
-    assert(strstr(buf,"+sip.instance=\"<urn:gsma:imei:"));
+    /* Without a real IMEI the codec must still emit a syntactically valid
+     * RFC 5626 +sip.instance URN (all-zero, anonymous device). */
+    assert(strstr(buf,"+sip.instance=\"<urn:uuid:urn:gsma:imei:00000000-000000-0>\""));
     assert(strstr(buf,"urn%3Aurn-7%3A3gpp-service.ims.icsi.mmtel"));
     assert(strstr(buf,"Security-Client: alg=")); /* RFC 3329 key=value token list */
     assert(strstr(buf,"Security-Client: alg=hmac-sha-1-96"));
@@ -36,6 +38,22 @@ int main(void)
     assert(strstr(buf,"P-Preferred-Identity: <sip:user@ims.mnc008.mcc204.3gppnetwork.org>"));
     assert(strstr(buf,"Route:")==NULL);
     assert(strstr(buf,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD"));
+
+    /* _ex with a real 15-digit IMEI advertises a real device instance URN
+     * (RFC 5626 <8>-<6>-<1> grouping); it is a device id, never a secret. */
+    size_t en=ims_sip_register_build_ex(buf,sizeof buf,
+        "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
+        "user@ims.mnc008.mcc204.3gppnetwork.org",
+        "2001:db8::1","2001:db8::2",5062,NULL,
+        "353234110123456");
+    assert(en>0 && en<sizeof buf);
+    assert(strstr(buf,"+sip.instance=\"<urn:uuid:urn:gsma:imei:35323411-012345-6>\""));
+    /* A non-numeric/over-length IMEI falls back to the all-zero URN. */
+    en=ims_sip_register_build_ex(buf,sizeof buf,
+        "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
+        "user@ims.mnc008.mcc204.3gppnetwork.org",
+        "2001:db8::1","2001:db8::2",5062,NULL,"not-an-imei");
+    assert(en>0 && strstr(buf,"urn:gsma:imei:00000000-000000-0"));
 
     char realm[64],nonce[128],qop[16],alg[24],cnonce[16];
     const char ch[]="WWW-Authenticate: Digest realm=\"ims.mnc008.mcc204.3gppnetwork.org\", nonce=\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\", algorithm=AKAv1-MD5, qop=\"auth\"";

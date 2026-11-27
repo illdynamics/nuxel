@@ -72,6 +72,8 @@ void ims_sip_tr_close(struct ims_sip_tr *t)
     wipe(t->res_b64, sizeof t->res_b64);
     wipe(t->qop, sizeof t->qop);
     wipe(t->cnonce, sizeof t->cnonce);
+    wipe(t->sec_server, sizeof t->sec_server);
+    t->sec_server_valid = false;
     wipe(t->scratch, sizeof t->scratch);
     wipe(t->_impu, sizeof t->_impu);
     wipe(t->_impi, sizeof t->_impi);
@@ -133,6 +135,14 @@ static bool send_register(struct ims_sip_tr *t, bool auth)
         char authhdr[IMS_SIP_TR_MAX_MSG];
         size_t alen = ims_sip_authorization_build(authhdr, sizeof authhdr, &d, true);
         if (alen == 0) return false;
+        /* RFC 3329 2.3: when the P-CSCF advertised ipsec-3gpp in Security-Server
+         * and we installed the matching SAs, the authenticated REGISTER must
+         * carry Security-Verify echoing the negotiated offer. */
+        if (t->sec_server_valid && t->sec_server[0]) {
+            int w = snprintf(authhdr + alen, sizeof authhdr - alen,
+                             "Security-Verify: %s\r\n", t->sec_server);
+            if (w > 0 && alen + (size_t)w < sizeof authhdr) alen += (size_t)w;
+        }
         /* authhdr already ends with \r\n; rebuild message = head + auth + tail. */
         if (head + alen + (mlen - head) > sizeof t->scratch) return false;
         memcpy(t->scratch, out, head);
@@ -232,6 +242,24 @@ static bool nonce_and_realm(struct ims_sip_tr *t, const uint8_t *msg, size_t len
     memcpy(t->qop, qop, sizeof t->qop);
     memcpy(t->alg, alg, sizeof t->alg);
     memcpy(t->cnonce, cnonce, sizeof t->cnonce);
+    /* RFC 3329: capture the P-CSCF's Security-Server ipsec-3gpp offer so the
+     * authenticated REGISTER can mirror it (Security-Verify) and the caller
+     * can install the matching SAs. Absent Security-Server is not fatal: the
+     * network may secure the access leg differently (e.g. TLS). */
+    size_t svlen = 0;
+    const uint8_t *sv = header(msg, len, "Security-Server", &svlen);
+    t->sec_server_valid = false;
+    t->sec_server[0] = 0;
+    if (sv && svlen) {
+        char svh[480];
+        if (svlen < sizeof svh) {
+            memcpy(svh, sv, svlen);
+            if (ims_sip_security_server(svh, svlen, t->sec_server,
+                                        sizeof t->sec_server) &&
+                t->sec_server[0])
+                t->sec_server_valid = true;
+        }
+    }
     /* The nonce for AKA is base64(RAND||AUTN). Decode to hand RAND/AUTN to the
      * legitimate USIM AKA path (iil_auth.c). We do NOT store the raw here. */
     return true;
@@ -305,6 +333,32 @@ bool ims_sip_tr_auth(struct ims_sip_tr *t, const uint8_t *res, size_t res_len)
     t->res_b64[blen] = 0;
     /* The authenticated REGISTER is sent on the next tick (so the caller can
      * also install IPsec from CK/IK first). */
+    return true;
+}
+
+bool ims_sip_tr_security_params(const struct ims_sip_tr *t,
+                                char *out_offer, size_t offer_cap,
+                                char *local_ip, size_t lip_cap,
+                                char *remote_ip, size_t rip_cap, int *family)
+{
+    if (!t || !t->sec_server_valid || !t->sec_server[0]) return false;
+    if (out_offer && offer_cap) {
+        size_t n = strlen(t->sec_server);
+        if (n >= offer_cap) n = offer_cap - 1;
+        memcpy(out_offer, t->sec_server, n);
+        out_offer[n] = 0;
+    }
+    if (local_ip && lip_cap) {
+        size_t n = strlen(t->cfg.local_ip);
+        if (n >= lip_cap) n = lip_cap - 1;
+        memcpy(local_ip, t->cfg.local_ip, n); local_ip[n] = 0;
+    }
+    if (remote_ip && rip_cap) {
+        size_t n = strlen(t->cfg.pcscf);
+        if (n >= rip_cap) n = rip_cap - 1;
+        memcpy(remote_ip, t->cfg.pcscf, n); remote_ip[n] = 0;
+    }
+    if (family) *family = strchr(t->cfg.pcscf, ':') ? 10 /*AF_INET6*/ : 2 /*AF_INET*/;
     return true;
 }
 

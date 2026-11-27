@@ -158,6 +158,46 @@ int main(void)
         ims_sip_tr_close(&a);
     }
 
+    /* 9. RFC 3329: a 401 carrying Security-Server must be captured and the
+     * authenticated REGISTER must echo it in Security-Verify so the P-CSCF
+     * can confirm the negotiated IPsec SAs. */
+    {
+        struct ims_sip_tr a;
+        struct ims_sip_tr_cfg cfg = {
+            .impu="sip:u@ims.mnc008.mcc204.3gppnetwork.org",
+            .impi="u@ims.mnc008.mcc204.3gppnetwork.org",
+            .pcscf="2001:db8::1", .local_ip="2001:db8::2",
+            .port=5062, .pcscf_port=5060,
+            .sec_offer="ipsec-3gpp;alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;mod=trans;spi-c=4096;spi-s=4097;port-c=5062;port-s=5064" };
+        const struct ims_sip_tr_io io = { .send=fake_send, .recv=NULL };
+        assert(ims_sip_tr_open(&a, &cfg, &io, NULL, NULL));
+        assert(ims_sip_tr_start(&a));
+        static const char c401[] =
+            "SIP/2.0 401 Unauthorized\r\n"
+            "WWW-Authenticate: Digest realm=\"ims.mnc008.mcc204.3gppnetwork.org\", "
+            "nonce=\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\", "
+            "algorithm=AKAv1-MD5, qop=\"auth\"\r\n"
+            "Security-Server: ipsec-3gpp;alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;"
+            "mod=trans;spi-c=5000;spi-s=5001;port-c=5064;port-s=5062\r\n"
+            "Content-Length: 0\r\n\r\n";
+        ims_sip_tr_feed(&a, (const uint8_t *)c401, sizeof c401 - 1);
+        assert(a.phase == IMS_SIP_TR_CHALLENGED);
+        char off[320], lip[64], rip[64]; int fam=0;
+        assert(ims_sip_tr_security_params(&a, off, sizeof off, lip, sizeof lip,
+                                          rip, sizeof rip, &fam));
+        assert(strstr(off, "spi-c=5000") && strstr(off, "ipsec-3gpp"));
+        assert(fam == 10 /*AF_INET6*/);
+        unsigned char res[8] = {9,8,7,6,5,4,3,2};
+        assert(ims_sip_tr_auth(&a, res, sizeof res));
+        reset_capture();
+        assert(ims_sip_tr_tick(&a, 1000, true) == IMS_SIP_TR_AUTH_SENT);
+        assert(send_called);
+        assert(memmem(captured, captured_len, "Security-Verify: ipsec-3gpp",
+                      strlen("Security-Verify: ipsec-3gpp")) != NULL);
+        assert(memmem(captured, captured_len, "spi-c=5000", 10) != NULL);
+        ims_sip_tr_close(&a);
+    }
+
     ims_sip_tr_close(&t);
     puts("IMS SIP transport FSM: PASS");
     return 0;
