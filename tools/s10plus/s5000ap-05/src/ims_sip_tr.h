@@ -72,6 +72,7 @@ struct ims_sip_tr_io {
  * are NOT stored here; the caller supplies base64(RES) only when building the
  * Authorization header and passes CK/IK to ims_security_install externally. */
 struct ims_sip_tr_cfg {
+    const char *instance;    /* persistent device UUID URN */
     const char *impu;        /* sip:public@... */
     const char *impi;        /* private identity username portion */
     const char *pcscf;       /* discovered P-CSCF host (literal IP or FQDN) */
@@ -96,6 +97,7 @@ struct ims_sip_tr_cfg {
 struct ims_sip_tr {
     /* Owned copies of the config strings (deep-copied on open) so the FSM can
      * outlive the caller's stack buffers. */
+    char _instance[64];
     char _impu[IMS_SIP_TR_ID_MAX];
     char _impi[IMS_SIP_TR_ID_MAX];
     char _pcscf[IMS_SIP_TR_HOST_MAX];

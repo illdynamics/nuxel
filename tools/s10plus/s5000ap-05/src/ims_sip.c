@@ -80,24 +80,22 @@ size_t ims_sip_register_build(char *out, size_t cap, const char *impu,
                                       port, sec_offer, NULL, NULL);
 }
 
-/* RFC 5626 +sip.instance IMEI URN: "urn:gsma:imei:<8>-<6>-<1>". The AP only
- * obtains a real IMEI when the modem reports it (SV); otherwise a syntactically
- * valid all-zero URN is emitted (an IMS core treats an unprovisioned instance
- * as an anonymous device — it cannot be used to bypass entitlement). */
-static size_t sip_instance_urn(const char *imei, char *out, size_t cap)
+/* Persistent UUID or actual IMEI only. Never invent an IMEI. */
+static size_t sip_instance_urn(const char *instance, char *out, size_t cap)
 {
-    int k;
-    if (imei && (strlen(imei) == 15)) {
-        bool digs = true;
-        for (int i = 0; i < 15; i++) if (imei[i] < '0' || imei[i] > '9') { digs = false; break; }
-        if (digs) {
-            k = snprintf(out, cap, "urn:gsma:imei:%.8s-%.6s-%c",
-                         imei, imei + 8, imei[14]);
-            return (k > 0 && (size_t)k < cap) ? (size_t)k : 0;
+    if (!instance || !*instance) { if(cap) out[0]=0; return 0; }
+    if (strlen(instance)==45 && !strncmp(instance,"urn:uuid:",9)) {
+        for (size_t i=9;i<45;i++) {
+            bool dash=i==17 || i==22 || i==27 || i==32;
+            if (dash ? instance[i]!='-' : !isxdigit((unsigned char)instance[i])) return 0;
         }
+        int n=snprintf(out,cap,"%s",instance);
+        return n>0 && (size_t)n<cap ? (size_t)n : 0;
     }
-    k = snprintf(out, cap, "urn:gsma:imei:00000000-000000-0");
-    return (k > 0 && (size_t)k < cap) ? (size_t)k : 0;
+    if (strlen(instance)!=15) return 0;
+    for (unsigned i=0;i<15;i++) if(instance[i]<'0' || instance[i]>'9') return 0;
+    int n=snprintf(out,cap,"urn:gsma:imei:%.8s-%.6s-0",instance,instance+8);
+    return n>0 && (size_t)n<cap ? (size_t)n : 0;
 }
 
 size_t ims_sip_register_build_ex(char *out, size_t cap, const char *impu,
@@ -220,8 +218,11 @@ static size_t ims_sip_register_build_core(char *out, size_t cap,
     if (clen == 0 || clen >= sizeof cuser_buf) return 0;
     memcpy(cuser_buf, impi_n, clen); cuser_buf[clen] = 0;
     const char *cuser = cuser_buf;
-    char inst[32];
-    if (!sip_instance_urn(imei, inst, sizeof inst)) return 0;
+    char inst[64]="", instance_param[96]="";
+    if (imei && *imei) {
+        if (!sip_instance_urn(imei,inst,sizeof inst)) return 0;
+        snprintf(instance_param,sizeof instance_param,";+sip.instance=\"<%s>\"",inst);
+    }
     struct buf r={out,cap,0};
     if (!addf(&r,"REGISTER sip:%s SIP/2.0\r\n", ruri)) return 0;
     if (!addf(&r,"Via: SIP/2.0/UDP [%s]:%u;branch=z9hG4bKnuxel\r\n", local_ip, port)) return 0;
@@ -230,78 +231,33 @@ static size_t ims_sip_register_build_core(char *out, size_t cap,
     if (!addf(&r,"To: <%s>\r\n", impu_uri)) return 0;
     if (!addf(&r,"Call-ID: nuxel-%x@%s\r\n", (unsigned)(uintptr_t)out, local_ip)) return 0;
     if (!addf(&r,"CSeq: 1 REGISTER\r\n")) return 0;
-    /* Contact MUST be a valid SIP URI. The previous form
-     * "sip:<user>@[<ipv6>]:<port>" is not a parseable SIP/SIPS URI once the
-     * bracketed IPv6 literal is present (RFC 3261 19.1.1 requires the host in
-     * a URI, no [] unless inside authority with an explicit scheme; the CP
-     * P-CSCF rejects malformed Contact). Use the IMPU domain as the URI host
-     * (a stock-observed form) with an explicit UDP transport, plus a
-     * syntactically valid +sip.instance URN (RFC 5626 4.1) and the
-     * IMS communication service identifier for MMTEL. `transport=udp` names
-     * the signaling to which the ipsec-3gpp Security-Client applies.
-     * The local IP stays in the Via (the UE's real reachable address). */
-    /* RFC 3261 19.1.1 permits a bracketed IPv6 host in a SIP URI authority
-     * ("sip:user@[2001:db8::1]:5062"). The Contact MUST be the UE's own
-     * reachable address (TS 24.229 5.1.1.2 / registrar reachability), so use
-     * the real local IMS IP + port. The previous IMPU-domain host made the
-     * Contact unreachable, which a reachability-checking registrar rejects. */
+    /* Reachable local contact; SMS capability, not unimplemented IMS voice. */
     if (strchr(local_ip, ':')) {
-        if (!addf(&r,"Contact: <sip:%s@[%s]:%u;transport=udp>;+sip.instance=\"<%s>\";"
-                  "+g.3gpp.icsi-ref=\"urn%%3Aurn-7%%3A3gpp-service.ims.icsi.mmtel\";expires=600000\r\n",
-                  cuser, local_ip, (unsigned)port, inst)) return 0;
+        if (!addf(&r,"Contact: <sip:%s@[%s]:%u;transport=udp>%s;+g.3gpp.smsip;expires=600\r\n",
+                  cuser,local_ip,(unsigned)port,instance_param)) return 0;
     } else {
-        if (!addf(&r,"Contact: <sip:%s@%s:%u;transport=udp>;+sip.instance=\"<%s>\";"
-                  "+g.3gpp.icsi-ref=\"urn%%3Aurn-7%%3A3gpp-service.ims.icsi.mmtel\";expires=600000\r\n",
-                  cuser, local_ip, (unsigned)port, inst)) return 0;
+        if (!addf(&r,"Contact: <sip:%s@%s:%u;transport=udp>%s;+g.3gpp.smsip;expires=600\r\n",
+                  cuser,local_ip,(unsigned)port,instance_param)) return 0;
     }
     /* The INVITE/REGISTER is sent directly to the P-CSCF address (outbound
      * proxy) on the transport; no Route header is needed and adding one that
      * points at the same P-CSCF caused the CP/P-CSCF to reject the request.
      * (Live: with a direct R-URI-to-domain REGISTER the P-CSCF responded 480
      *  "user unavailable" for an unknown IMPU instead of 403.) */
-    /* Netherlands LTE (KPN) is FDD, not TDD. The utran-cell-id-3gpp parameter
-     * is emitted ONLY when a REAL serving-cell identity is available. It is
-     * OMITTED (not fabricated) otherwise: TS 24.229 7.2A.4 / RFC 3455 4.1
-     * allow the parameter to be absent, and a bogus all-zero ECI is a
-     * interoperability hazard. This CP's IPC41 serving-network frame carries
-     * no ECI (the real one is behind the OEM-socket GetLteCellInfo), so in
-     * production this is normally omitted. */
-    bool cell_ok = cell_id && *cell_id;
-    if (cell_ok) {
-        for (const char *q = cell_id; *q; q++)
-            if (!((*q >= '0' && *q <= '9') || (*q >= 'a' && *q <= 'f') ||
-                  (*q >= 'A' && *q <= 'F'))) { cell_ok = false; break; }
-        if (cell_ok && strlen(cell_id) > 16) cell_ok = false;
-    }
-    /* TS 24.229 7.2A.2 / RFC 3455 4.1: utran-cell-id-3gpp =
-     *   (MCC||MNC) joined with the 28-bit ECI in 7 hex octets.
-     * The ECI is always present in this value (the parameter is "cell-id"),
-     * so we require BOTH a real PLMN (home_plmn, from NET 8/3) AND a real,
-     * non-zero ECI (from NET 8/17) before emitting it. If EITHER is missing,
-     * the cell-id parameter is OMITTED entirely (3GPP-E-UTRAN-FDD alone), which
-     * TS 24.229 permits; we never emit a fabricated 00000000 ECI and never
-     * splice a partial value. */
-    bool plmn_ok = home_plmn && strlen(home_plmn) >= 5;
-    if (plmn_ok) {
-        for (const char *q = home_plmn; q < home_plmn + 5; q++)
-            if (*q < '0' || *q > '9') { plmn_ok = false; break; }
-    }
-    /* The TAC (16-bit tracking-area code) is carried separately per
-     * TS 24.229 7.2A.2 (utran-tac, 4 hex octets); emit it ONLY with a valid
-     * PLMN and a genuine TAC (0..65535). It is independent of the ECI: a
-     * genuine TAC does not require a cell id. */
-    char tacparam[32] = "";
-    if (plmn_ok && utran_tac >= 0 && utran_tac <= 0xFFFF) {
-        snprintf(tacparam, sizeof tacparam, ";utran-tac=%04x", (unsigned)utran_tac);
-    }
-    if (cell_ok && plmn_ok) {
-        if (!addf(&r,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD;utran-cell-id-3gpp=%.5s%s%s\r\n",
-                  home_plmn, cell_id, tacparam)) return 0;
-    } else if (plmn_ok && tacparam[0]) {
-        if (!addf(&r,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD%s\r\n", tacparam)) return 0;
-    } else {
-        if (!addf(&r,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD\r\n")) return 0;
-    }
+    /* TS 24.229 7.2A.4.3 item 12: MCC+MNC+TAC(4 hex)+ECI(7 hex).
+     * Never mix a SIM home PLMN with serving-cell information. Unknown or
+     * incomplete location leaves only the known access type. */
+    bool cell_ok = cell_id && strlen(cell_id)==7;
+    if (cell_ok) for (const char *q=cell_id;*q;q++)
+        if (!isxdigit((unsigned char)*q)) cell_ok=false;
+    size_t pn = home_plmn ? strlen(home_plmn) : 0;
+    bool plmn_ok = pn==5 || pn==6;
+    if (plmn_ok) for (const char *q=home_plmn;*q;q++)
+        if (*q<'0' || *q>'9') plmn_ok=false;
+    if (cell_ok && plmn_ok && utran_tac>0 && utran_tac<=0xffff && utran_tac!=0xfffe) {
+        if (!addf(&r,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD;utran-cell-id-3gpp=%s%04x%s\r\n",
+                  home_plmn,(unsigned)utran_tac,cell_id)) return 0;
+    } else if (!add(&r,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD\r\n")) return 0;
     /* TS 33.203 7.1 / TS 24.229 5.1.2A: the first REGISTER in an IMS access
      * network carries an ipsec-3gpp Security-Client offer and the
      * Require/Proxy-Require: sec-agree headers so the P-CSCF returns the

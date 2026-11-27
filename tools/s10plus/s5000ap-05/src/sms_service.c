@@ -120,7 +120,7 @@ void sms_service_tick(struct sms_service *s,uint64_t now,bool online,bool sim_re
         s->selected_domain = 0xffu;   /* IMS (no CP FMT domain byte) */
     }
 
-    if (s->active || s->blocked || !sms_store_next(&s->store,&s->job)) return;
+    if (s->submit_held || s->active || s->blocked || !sms_store_next(&s->store,&s->job)) return;
 
     if (cs_ready) {
         struct fmt_tx_frame f;uint8_t sequence;

@@ -35,9 +35,14 @@ bool ims_sip_tr_open(struct ims_sip_tr *t, const struct ims_sip_tr_cfg *cfg,
         strlen(cfg->impi) >= IMS_SIP_TR_ID_MAX ||
         strlen(cfg->pcscf) >= IMS_SIP_TR_HOST_MAX ||
         strlen(cfg->local_ip) >= IMS_SIP_TR_HOST_MAX) return false;
+    if (cfg->instance && strlen(cfg->instance)>=sizeof t->_instance) return false;
     if (cfg->sec_offer && strlen(cfg->sec_offer) >= sizeof t->_sec_offer) return false;
     if (cfg->home_plmn && strlen(cfg->home_plmn) >= sizeof t->_home_plmn) return false;
     if (cfg->cell_id && strlen(cfg->cell_id) >= sizeof t->_cell_id) return false;
+    /* Production reopens with prev == t. Save the hold before clearing t. */
+    uint64_t hold=prev ? prev->next_action_ms : 0;
+    unsigned waits=prev ? prev->retry_waits : 0;
+    uint32_t retry=prev ? prev->retry_after_s : 0;
     memset(t, 0, sizeof *t);
     snprintf(t->_impu, sizeof t->_impu, "%s", cfg->impu);
     snprintf(t->_impi, sizeof t->_impi, "%s", cfg->impi);
@@ -46,7 +51,9 @@ bool ims_sip_tr_open(struct ims_sip_tr *t, const struct ims_sip_tr_cfg *cfg,
     if (cfg->sec_offer) snprintf(t->_sec_offer, sizeof t->_sec_offer, "%s", cfg->sec_offer);
     if (cfg->cell_id && *cfg->cell_id) snprintf(t->_cell_id, sizeof t->_cell_id, "%s", cfg->cell_id);
     if (cfg->home_plmn && *cfg->home_plmn) snprintf(t->_home_plmn, sizeof t->_home_plmn, "%s", cfg->home_plmn);
+    if(cfg->instance) snprintf(t->_instance,sizeof t->_instance,"%s",cfg->instance);
     t->cfg = *cfg;
+    t->cfg.instance=t->_instance;
     t->cfg.impu = t->_impu;
     t->cfg.impi = t->_impi;
     t->cfg.pcscf = t->_pcscf;
@@ -64,9 +71,9 @@ bool ims_sip_tr_open(struct ims_sip_tr *t, const struct ims_sip_tr_cfg *cfg,
      * so it remains valid across the re-open). RES/digest material is never
      * carried: a new challenge is re-issued by the network. */
     if (prev) {
-        t->next_action_ms = prev->next_action_ms;
-        t->retry_waits = prev->retry_waits;
-        t->retry_after_s = prev->retry_after_s;
+        t->next_action_ms = hold;
+        t->retry_waits = waits;
+        t->retry_after_s = retry;
         if (t->next_action_ms) t->phase = IMS_SIP_TR_RETRY_WAIT;
     }
     return true;
@@ -131,52 +138,51 @@ static bool send_register(struct ims_sip_tr *t, bool auth)
     size_t n = secure_first
         ? ims_sip_register_build_secure_ex4(out, sizeof out,
               t->cfg.impu, t->cfg.impi, t->cfg.pcscf, t->cfg.local_ip,
-              t->cfg.port, t->cfg.sec_offer, NULL, t->cfg.cell_id,
+              t->cfg.port, t->cfg.sec_offer, t->cfg.instance, t->cfg.cell_id,
               t->cfg.home_plmn, t->cfg.utran_tac)
         : ims_sip_register_build_ex4(out, sizeof out,
               t->cfg.impu, t->cfg.impi, t->cfg.pcscf, t->cfg.local_ip,
-              t->cfg.port, t->cfg.sec_offer, NULL, t->cfg.cell_id,
+              t->cfg.port, t->cfg.sec_offer, t->cfg.instance, t->cfg.cell_id,
               t->cfg.home_plmn, t->cfg.utran_tac);
     if (n == 0) return false;
-    /* Insert Authorization before the trailing CRLF CRLF for authenticated
-     * retry. The codec emits Content-Length: 0\r\n\r\n at the end; find it. */
+    /* Insert complete header lines before Content-Length, never concatenate
+     * them onto the previous value. Digest URI must equal the Request-URI. */
+    char *uri_start=out+strlen("REGISTER ");
+    char *uri_end=strchr(uri_start,' ');
+    char *tail=strstr(out,"Content-Length:");
+    if (!uri_end || !tail || uri_end-uri_start>=256) return false;
+    char uri[256]; size_t un=(size_t)(uri_end-uri_start);
+    memcpy(uri,uri_start,un);uri[un]=0;
+    char authhdr[IMS_SIP_TR_MAX_MSG]; size_t alen;
     if (auth) {
-        const char *end = "\r\n\r\n";
-        size_t mlen = n;
-        char *p = (char *)memmem(out, mlen, end, 4);
-        if (!p) return false;
-        size_t head = (size_t)(p - out);   /* points at first CR of the terminator */
-        struct ims_sip_digest_params d = {0};
-        d.impu = t->cfg.impi;              /* username is the private identity */
-        d.realm = t->realm;
-        d.nonce = t->nonce;
-        d.cnonce = t->cnonce;
-        d.method = "REGISTER";
-        d.uri = t->cfg.impu;
-        d.response = t->res_b64;
-        char authhdr[IMS_SIP_TR_MAX_MSG];
-        size_t alen = ims_sip_authorization_build(authhdr, sizeof authhdr, &d, true);
-        if (alen == 0) return false;
-        /* RFC 3329 2.3: when the P-CSCF advertised ipsec-3gpp in Security-Server
-         * and we installed the matching SAs, the authenticated REGISTER must
-         * carry Security-Verify echoing the negotiated offer. */
+        struct ims_sip_digest_params d = {
+            .impu=t->cfg.impi, .realm=t->realm, .nonce=t->nonce,
+            .cnonce=t->cnonce, .method="REGISTER", .uri=uri,
+            .response=t->res_b64
+        };
+        alen=ims_sip_authorization_build(authhdr,sizeof authhdr,&d,true);
+        if (!alen) return false;
         if (t->sec_server_valid && t->sec_server[0]) {
-            int w = snprintf(authhdr + alen, sizeof authhdr - alen,
-                             "Security-Verify: %s\r\n", t->sec_server);
-            if (w > 0 && alen + (size_t)w < sizeof authhdr) alen += (size_t)w;
+            int w=snprintf(authhdr+alen,sizeof authhdr-alen,
+                           "Security-Verify: %s\r\n",t->sec_server);
+            if (w<=0 || (size_t)w>=sizeof authhdr-alen) return false;
+            alen+=(size_t)w;
         }
-        /* authhdr already ends with \r\n; rebuild message = head + auth + tail. */
-        if (head + alen + (mlen - head) > sizeof t->scratch) return false;
-        memcpy(t->scratch, out, head);
-        memcpy(t->scratch + head, authhdr, alen);
-        memcpy(t->scratch + head + alen, out + head, mlen - head);
-        t->scratch_len = (unsigned)(head + alen + (mlen - head));
-        wipe(authhdr, sizeof authhdr);
     } else {
-        if (n > sizeof t->scratch) return false;
-        memcpy(t->scratch, out, n);
-        t->scratch_len = (unsigned)n;
+        /* TS24.229 5.1.1.2.2(a), empty initial AKA credentials. */
+        int w=snprintf(authhdr,sizeof authhdr,
+            "Authorization: Digest username=\"%s\", realm=\"%s\", uri=\"%s\", nonce=\"\", response=\"\"\r\n",
+            t->cfg.impi,uri+4,uri);
+        if (w<=0 || (size_t)w>=sizeof authhdr) return false;
+        alen=(size_t)w;
     }
+    size_t head=(size_t)(tail-out);
+    if (n+alen>sizeof t->scratch) return false;
+    memcpy(t->scratch,out,head);
+    memcpy(t->scratch+head,authhdr,alen);
+    memcpy(t->scratch+head+alen,tail,n-head);
+    t->scratch_len=(unsigned)(n+alen);
+    wipe(authhdr,sizeof authhdr);
     wipe(out, sizeof out);
     return send_scratch(t);
 }

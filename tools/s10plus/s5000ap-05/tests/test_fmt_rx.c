@@ -212,74 +212,42 @@ int main(void)
     assert(!fmt_rx_serving_network(NULL, 0, &sn));
     assert(fmt_rx_serving_network(serv, 0, &sn) && !sn.plmn_valid);
 
-    /* ---- NET_CELL_INFO_LIST (8/17) decoder: valid / malformed / truncated /
-     * unavailable / stale (all synthetic; never real subscriber data). ---- */
+    /* Synthetic vendor-verified LTE record; both old and NR-capable forms. */
     {
+        uint8_t old[35]={0,0,1,0,1,'0','0','1','0','1','#',
+                        0x67,0x45,0x23,1,0x2d,1,0,0,0x56,0x34,0x14,5};
         struct fmt_rx_net_cell_info ci;
-        /* Helper: build a 1-LTE-record response with a given ECI + gid. */
-        for (int variant = 0; variant < 6; variant++) {
-            uint8_t buf[40]; size_t n = 12 + 20;
-            memset(buf, 0, sizeof buf);
-            if (variant != 4) { buf[0] = (uint8_t)(n & 0xff); buf[1] = (uint8_t)(n >> 8); }
-            buf[6] = 3;               /* cmd_type = response */
-            buf[11] = 1;              /* n_lte = 1 */
-            uint8_t *e = buf + 12;
-            uint32_t eci = 0x0004bc5a; uint8_t gid = 2;
-            if (variant == 0) { /* valid */ }
-            else if (variant == 1) { eci = 0; }             /* zero ECI */
-            else if (variant == 2) { gid = 3; }             /* wrong class */
-            else if (variant == 3) { e[6] = 0xff; e[7] = 0xff; e[8] = 0xff; e[9] = 0x0f; } /* 28-bit max ECI */
-            else if (variant == 4) { n = 11; }              /* truncated hdr */
-            else if (variant == 5) { buf[11] = 2; }         /* total mismatch */
-            e[0] = gid;
-            e[1] = 2; e[2] = 0; e[3] = 4;  /* PLMN digits 2,0,4 (MCC 204) */
-            if (variant != 3) {
-                e[6] = (uint8_t)(eci & 0xff); e[7] = (uint8_t)((eci >> 8) & 0xff);
-                e[8] = (uint8_t)((eci >> 16) & 0xff); e[9] = (uint8_t)((eci >> 24) & 0xff);
-            }
-            e[4] = 0x11; e[5] = 0x22;
-            e[10] = 0x2e; e[11] = 0x00;
-            memset(&ci, 0xaa, sizeof ci);
-            bool r = fmt_rx_net_cell_info(buf, n, NULL, &ci);
-            if (variant == 0) {
-                assert(r && ci.cell_id_valid && !strcmp(ci.cell_id, "0004bc5a"));
-                assert(ci.tac == 0x2211 && ci.pci == 0x002e && ci.lte_count == 1);
-            } else if (variant == 3) {
-                assert(r && ci.cell_id_valid && !strcmp(ci.cell_id, "0fffffff"));
-            } else {
-                assert(!ci.cell_id_valid);   /* never fabricate on bad input */
-                if (variant == 4) assert(!r);
-            }
+        assert(fmt_rx_net_cell_info(old,sizeof old,"00101",&ci));
+        assert(ci.cell_id_valid && !strcmp(ci.cell_id,"1234567"));
+        assert(ci.tac==0x3456 && ci.pci==301 && ci.earfcn==1300);
+        assert(fmt_rx_cell_current(&ci,"00101",true,1000,31000));
+        assert(!fmt_rx_cell_current(&ci,"00101",true,1000,31001));
+        assert(!fmt_rx_cell_current(&ci,"00101",true,1000,999));
+        assert(!fmt_rx_cell_current(&ci,"00101",false,1000,1001));
+        assert(!fmt_rx_cell_current(&ci,"00102",true,1000,1001));
+        uint8_t newer[36]={0,0,1,0,0}; memcpy(newer+5,old+4,31);
+        assert(fmt_rx_net_cell_info(newer,sizeof newer,"00101",&ci) && ci.cell_id_valid);
+        for(size_t n=0;n<sizeof old;n++) {
+            assert(!fmt_rx_net_cell_info(old,n,"00101",&ci));
+            assert(!ci.cell_id_valid);
         }
-        /* Empty LTE section: parsed, no cell. */
-        uint8_t empty[12] = {12,0,0,0,0,0,3, 0,0,0,0,0};
-        memset(&ci, 0xaa, sizeof ci);
-        assert(fmt_rx_net_cell_info(empty, sizeof empty, NULL, &ci) && !ci.cell_id_valid);
-        /* Multi-LTE: only the gid==2 record is taken. */
-        uint8_t multi[12 + 40]; memset(multi, 0, sizeof multi);
-        multi[0] = (uint8_t)(sizeof multi); /* total = 52 */
-        multi[6] = 3; multi[11] = 2;
-        multi[12] = 3; /* first record gid 3 -> skip */
-        multi[32] = 2; multi[32+1] = 2; multi[32+2] = 0; multi[32+3] = 4;
-        multi[32+6] = 0x78; multi[32+7] = 0x56; /* second: 0x5678 */
-        assert(fmt_rx_net_cell_info(multi, sizeof multi, NULL, &ci) && ci.cell_id_valid &&
-               !strcmp(ci.cell_id, "00005678"));
-        /* Overflow-sized counts are rejected before any multiply. */
-        uint8_t huge[12] = {255,255,0,0,0,0,3, 40,40,40,40,16};
-        assert(!fmt_rx_net_cell_info(huge, sizeof huge, NULL, &ci));
-        /* PLMN sanity: same frame, expect "20408" -> accepted; expect a
-         * different MCC -> ECI rejected (stale/foreign cell). */
-        uint8_t ok[32]; memset(ok, 0, sizeof ok); ok[0]=32; ok[6]=3; ok[11]=1;
-        uint8_t *q = ok+12; q[0]=2; q[1]=2; q[2]=0; q[3]=4;
-        q[6]=0x5a; q[7]=0xbc; q[8]=0x04; q[9]=0x00;
-        memset(&ci,0xaa,sizeof ci);
-        assert(fmt_rx_net_cell_info(ok, sizeof ok, "20408", &ci) &&
-               ci.cell_id_valid && ci.plmn_sane && !strcmp(ci.cell_id,"0004bc5a"));
-        assert(fmt_rx_net_cell_info(ok, sizeof ok, "20808", &ci) &&
-               !ci.cell_id_valid && !ci.plmn_sane);
-        /* NULL / short safety. */
-        assert(!fmt_rx_net_cell_info(NULL, 0, NULL, &ci));
-        assert(!fmt_rx_net_cell_info(empty, 5, NULL, &ci));
+        assert(fmt_rx_net_cell_info(old,sizeof old,"00102",&ci) && !ci.cell_id_valid);
+        uint8_t bad[35]; memcpy(bad,old,35);bad[4]=0;
+        assert(fmt_rx_net_cell_info(bad,35,NULL,&ci) && !ci.cell_id_valid);
+        bad[4]=2; assert(!fmt_rx_net_cell_info(bad,35,NULL,&ci));
+        memcpy(bad,old,35);bad[14]=0x81; /* invalid high ECI bits, never mask */
+        assert(fmt_rx_net_cell_info(bad,35,NULL,&ci) && !ci.cell_id_valid);
+        memcpy(bad,old,35);bad[10]='2';
+        assert(fmt_rx_net_cell_info(bad,35,"001012",&ci) && ci.cell_id_valid);
+        bad[5]='X';assert(!fmt_rx_net_cell_info(bad,35,NULL,&ci));
+        uint8_t multi[66]={0,0,2,0};memcpy(multi+4,old+4,31);memcpy(multi+35,old+4,31);
+        assert(!fmt_rx_net_cell_info(multi,66,NULL,&ci) && !ci.cell_id_valid);
+        multi[4]=0;assert(fmt_rx_net_cell_info(multi,66,NULL,&ci) && ci.cell_id_valid);
+        uint8_t mixed[75]={1,1,1,0};memcpy(mixed+44,old+4,31);
+        assert(fmt_rx_net_cell_info(mixed,75,NULL,&ci) && ci.cell_id_valid);
+        uint8_t empty[4]={255,0,0,255};
+        assert(fmt_rx_net_cell_info(empty,4,NULL,&ci) && !ci.cell_id_valid);
+        assert(!fmt_rx_net_cell_info(NULL,4,NULL,&ci));
     }
 
     /* Live EFUJ2 8/5 PS-home frame (this CP's live bytes): domain=3,

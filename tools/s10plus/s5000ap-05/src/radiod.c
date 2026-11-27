@@ -153,10 +153,10 @@ struct radiod_ctx {
     bool sim_lock_valid;
     char home_plmn[6];
     char serving_plmn[6];        /* real serving PLMN from NET 8/3 */
-    char serving_cell_id[24];    /* REAL ECI only; empty when unavailable */
-    bool serving_cell_valid;
-    uint16_t serving_tac;        /* TAC from NET_REGIST (PS home) */
-    bool serving_tac_valid;
+    char ims_instance[64];
+    struct fmt_rx_net_cell_info serving_cell;
+    uint64_t serving_cell_ms;
+
     /* NET_CELL_INFO_LIST (8/17) acquisition: a read-only IPC41 GET that yields
      * the real 28-bit serving ECI. Bounded: a few attempts at CP-online, and a
      * single refresh after a new NET_REGIST so handover changes are followed. */
@@ -1849,6 +1849,7 @@ static bool sip_tr_open_from_iil(const struct iil_pdn *p)
     if (bind(sip_tr_fd, (struct sockaddr *)&sa, slen) != 0) goto fail;
 
     struct ims_sip_tr_cfg cfg = {
+        .instance=g.ims_instance,
         .impu = NULL, .impi = NULL,
         .pcscf = pcscf, .local_ip = local,
         .port = port, .pcscf_port = 5060,
@@ -1859,13 +1860,11 @@ static bool sip_tr_open_from_iil(const struct iil_pdn *p)
          * the earlier malformed single-token string. */
         .sec_offer = "alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;mod=trans;spi-c=4096;spi-s=4097;port-c=5062;port-s=5064",
         /* Only a REAL serving ECI is passed; empty -> parameter omitted. */
-        .cell_id = g.serving_cell_valid && g.serving_cell_id[0] ? g.serving_cell_id : NULL,
-        /* Serving PLMN for the (MCC||MNC) part of utran-cell-id-3gpp. Prefer the
-         * live NET 8/3 value; fall back to the SIM home PLMN (same network). */
-        .home_plmn = g.serving_plmn[0] ? g.serving_plmn : (g.home_plmn[0] ? g.home_plmn : NULL),
-        /* Genuine serving TAC from an affirmative LTE PS home registration;
-         * -1 when not yet known so the parameter is omitted, never faked. */
-        .utran_tac = g.serving_tac_valid ? (int)g.serving_tac : -1,
+        .cell_id = g.serving_cell.cell_id_valid ? g.serving_cell.cell_id : NULL,
+        /* PLMN from this exact registered cell record. */
+        .home_plmn = g.serving_cell.cell_id_valid ? g.serving_cell.plmn : NULL,
+        /* TAC from the same registered LTE record, or absent. */
+        .utran_tac = g.serving_cell.cell_id_valid ? (int)g.serving_cell.tac : -1,
         /* Opt-in (NUXEL_IMS_SECURITY_FIRST=1): Require/Proxy-Require sec-agree. */
         .security_first = ims_security_first_env(),
     };
@@ -1952,6 +1951,7 @@ static bool sip_tr_open_from_ims_pdn_idx(const struct ims_pdn *p, unsigned idx)
     }
 
     struct ims_sip_tr_cfg cfg = {
+        .instance=g.ims_instance,
         .impu = NULL, .impi = NULL,
         .pcscf = pcscf, .local_ip = local,
         .port = port, .pcscf_port = 5060,
@@ -1962,13 +1962,11 @@ static bool sip_tr_open_from_ims_pdn_idx(const struct ims_pdn *p, unsigned idx)
          * the earlier malformed single-token string. */
         .sec_offer = "alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;mod=trans;spi-c=4096;spi-s=4097;port-c=5062;port-s=5064",
         /* Only a REAL serving ECI is passed; empty -> parameter omitted. */
-        .cell_id = g.serving_cell_valid && g.serving_cell_id[0] ? g.serving_cell_id : NULL,
-        /* Serving PLMN for the (MCC||MNC) part of utran-cell-id-3gpp. Prefer the
-         * live NET 8/3 value; fall back to the SIM home PLMN (same network). */
-        .home_plmn = g.serving_plmn[0] ? g.serving_plmn : (g.home_plmn[0] ? g.home_plmn : NULL),
-        /* Genuine serving TAC from an affirmative LTE PS home registration;
-         * -1 when not yet known so the parameter is omitted, never faked. */
-        .utran_tac = g.serving_tac_valid ? (int)g.serving_tac : -1,
+        .cell_id = g.serving_cell.cell_id_valid ? g.serving_cell.cell_id : NULL,
+        /* PLMN from this exact registered cell record. */
+        .home_plmn = g.serving_cell.cell_id_valid ? g.serving_cell.plmn : NULL,
+        /* TAC from the same registered LTE record, or absent. */
+        .utran_tac = g.serving_cell.cell_id_valid ? (int)g.serving_cell.tac : -1,
         /* Opt-in (NUXEL_IMS_SECURITY_FIRST=1): Require/Proxy-Require sec-agree. */
         .security_first = ims_security_first_env(),
     };
@@ -2157,6 +2155,20 @@ static void sip_tr_recv(void)
         }
         /* Feed exactly one datagram; the FSM parse is bounded. Never log body. */
         ims_sip_tr_feed(&g.sip_tr, buf, (size_t)n);
+        /* Engineering mode: persist a conservative hold after network refusal.
+         * An unchanged REGISTER must not loop; preserve this across restart.
+         * The file records the earliest permitted epoch, never credentials. */
+        if (g.sip_tr.phase==IMS_SIP_TR_RETRY_WAIT) {
+            int fd=open("/var/lib/nuxel/ims-register.hold",O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC,0600);
+            if (fd>=0) {
+                char deadline[64];
+                int z=snprintf(deadline,sizeof deadline,"%llu\n",
+                    (unsigned long long)time(NULL)+g.sip_tr.retry_after_s);
+                if (write(fd,deadline,(size_t)z)!=z || fsync(fd)!=0)
+                    diag("ims_hold_persist_failed",NULL);
+                close(fd);
+            } else diag("ims_hold_persist_failed",NULL);
+        }
         /* A state change is surfaced below in sip_tr_tick. */
     }
 }
@@ -2251,13 +2263,22 @@ static void sip_tr_tick(uint64_t now)
             }
         }
         if (g.sip_tr_open && reg_allowed) {
+            bool fresh=fmt_rx_cell_current(&g.serving_cell,g.serving_plmn,
+                g.cp_online && g.sim_ready_seen && g.dsc.ps_state_valid &&
+                fmt_rx_registered(g.dsc.last_ps_reg_state) && fmt_rx_rat(g.dsc.last_rat_wire)==14,
+                g.serving_cell_ms,now);
+            snprintf(g.sip_tr._cell_id,sizeof g.sip_tr._cell_id,"%s",fresh?g.serving_cell.cell_id:"");
+            snprintf(g.sip_tr._home_plmn,sizeof g.sip_tr._home_plmn,"%s",fresh?g.serving_cell.plmn:"");
+            g.sip_tr.cfg.cell_id=fresh?g.sip_tr._cell_id:NULL;
+            g.sip_tr.cfg.home_plmn=fresh?g.sip_tr._home_plmn:NULL;
+            g.sip_tr.cfg.utran_tac=fresh?g.serving_cell.tac:-1;
             enum ims_sip_tr_phase before = g.sip_tr.phase;
             sip_tr_recv();   /* read 401/200 replies before advancing the FSM */
             if (before == IMS_SIP_TR_IDLE) {
                 /* STATE mode: don't send the first REGISTER until the CP has
                  * acknowledged our IMS_REGISTERED report (modem-aligned). */
-                bool can_first = !ims_report_state_env() ||
-                                 g.cp_report_state == CP_REPORT_ACKED;
+                bool can_first = fresh && g.ims_instance[0] &&
+                    access("/var/lib/nuxel/ims-register.hold", F_OK)!=0;
                 if (can_first) {
                     if (!ims_sip_tr_start(&g.sip_tr))
                         diag("sip_tr_start_send_fail", NULL);
@@ -2268,7 +2289,10 @@ static void sip_tr_tick(uint64_t now)
             if (g.sip_tr.phase == IMS_SIP_TR_CHALLENGED &&
                 !g.sip_auth_pending)
                 sip_tr_usim_challenge(now);
-            enum ims_sip_tr_phase after = ims_sip_tr_tick(&g.sip_tr, now, true);
+            enum ims_sip_tr_phase after = g.sip_tr.phase;
+            if (g.sip_tr.phase != IMS_SIP_TR_RETRY_WAIT ||
+                access("/var/lib/nuxel/ims-register.hold",F_OK)!=0)
+                after = ims_sip_tr_tick(&g.sip_tr, now, true);
             if (after != before)
                 diagf("iil_sip_tr_phase", "\"phase\":\"%s\"",
                       ims_sip_tr_phase_name(after));
@@ -2586,27 +2610,24 @@ static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
                 diagf("serving_network", "\"plmn\":\"%s\",\"cell_id_available\":%s",
                       g.serving_plmn, sn.cell_id_valid ? "true" : "false");
             }
-            /* This CP does not carry an ECI in the IPC41 frame; keep the real
-             * cell id empty so P-Access-Network-Info omits (never fabricates)
-             * utran-cell-id-3gpp. */
-            g.serving_cell_valid = sn.cell_id_valid;
-            if (!sn.cell_id_valid) g.serving_cell_id[0] = 0;
+            if (!sn.plmn_valid || strcmp(g.serving_cell.plmn, sn.plmn)) {
+                memset(&g.serving_cell,0,sizeof g.serving_cell);
+                g.serving_cell_ms=0;
+                g.cell_query_next_ms=0;
+            }
         }
         return DS_FEEDBACK_IGNORE;
     }
 
-    /* ---- NET_CELL_INFO_LIST (main=8 sub=17) ----
-     * The GET itself is a recovered, read-only vendor command
-     * (IpcTxNetCellInfoList @0x3378d0). The EFUJ2 response parser
-     * (IpcRxNetCellInfoList @0x33c3b0) is large and its exact LTE
-     * cellIdentity byte offset on THIS firmware is not yet proven by an
-     * independent live cross-check, so we must NOT feed a guessed ECI into
-     * P-Access-Network-Info. We only clear the in-flight flag here; the
-     * serving cell TAC is taken from the PROVEN NET_REGIST path below. */
-    if (f->main_cmd == IPC41_MAIN_NET &&
-        f->sub_cmd == (uint8_t)IPC41_NET_CELL_INFO_LIST &&
-        f->cmd_type == IPC41_TYPE_RESPONSE) {
-        g.cell_query_sent = false;
+    /* Vendor-verified payload decoder: keep the complete serving tuple. */
+    if (f->main_cmd == IPC41_MAIN_NET && f->sub_cmd == IPC41_NET_CELL_INFO_LIST &&
+        (f->cmd_type == IPC41_TYPE_RESPONSE || f->cmd_type == IPC41_TYPE_NOTIFICATION)) {
+        g.cell_query_sent=false;
+        bool ok=fmt_rx_net_cell_info(f->payload,f->payload_len,
+                                     g.serving_plmn,&g.serving_cell);
+        g.serving_cell_ms=ok && g.serving_cell.cell_id_valid ? now_ms() : 0;
+        diagf("net_cell_info", "\"decoded\":%s,\"serving_valid\":%s,\"lte_count\":%u",
+              ok?"true":"false",g.serving_cell.cell_id_valid?"true":"false",g.serving_cell.lte_count);
         return DS_FEEDBACK_IGNORE;
     }
 
@@ -2625,13 +2646,11 @@ static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
         }
         if (reg.domain != 3u) return DS_FEEDBACK_IGNORE;
         uint8_t ps_reg = reg.state;
-        /* Genuine serving TAC: only from an affirmative LTE PS home/roaming
-         * registration (never from a CS-denied or unregistered frame). */
-        if (fmt_rx_registered(ps_reg) && fmt_rx_rat(reg.rat_wire) == 14u /*LTE*/) {
-            g.serving_tac = reg.lac_tac;
-            g.serving_tac_valid = true;
-        } else if (!fmt_rx_registered(ps_reg)) {
-            g.serving_tac_valid = false;
+        /* NET_REGIST's legacy LAC is not LTE TAC. Invalidate on loss/RAT
+         * change; refresh cell information periodically and after PS reports. */
+        if (!fmt_rx_registered(ps_reg) || fmt_rx_rat(reg.rat_wire)!=14u) {
+            memset(&g.serving_cell,0,sizeof g.serving_cell);
+            g.serving_cell_ms=0;
         }
         g.dsc.last_rat_wire = reg.rat_wire;
         g.dsc.last_reg_wire = reg.state_wire;
@@ -3291,6 +3310,7 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
 
     /* Stage-06 data-session driver (opt-in, bounded). */
     data_session_tick(now_ms());
+    g.sms.submit_held = access("/var/lib/nuxel/sms-submit.hold", F_OK)==0;
     sms_service_tick(&g.sms,now_ms(),g.cp_online,g.sim_ready_seen,
         sms_cs_registered(),
         ims_service_registered(&g.ims),
@@ -3404,30 +3424,22 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
         } else g.status_next_ms = now_ms() + 5000;
     }
 
-    /* Real serving ECI acquisition (NET_CELL_INFO_LIST, main=8 sub=17). This
-     * is a read-only GET recovered from IpcTxNetCellInfoList @0x3378d0. It is
-     * issued at most a few times: immediately when the CP + SIM are ready
-     * (so the first REGISTER can carry a genuine utran-cell-id-3gpp), then a
-     * short backoff retry if unanswered, and once more after a fresh NET_REGIST
-     * so a handover is reflected. A valid ECI is cleared when the SIM/CP goes
-     * away so a stale id can never be transmitted. */
-    if (!(g.write_enabled && g.cp_online && g.fmt.present && g.sim_ready_seen)) {
-        if (g.cell_query_sent) g.cell_query_sent = false;
-        if (g.serving_cell_valid) { g.serving_cell_valid = false; g.serving_cell_id[0] = 0; }
-    } else if (!g.cell_query_sent && g.cell_query_attempts < 4u &&
-               now_ms() >= g.cell_query_next_ms &&
-               (g.dsc.phase == DS_IDLE || ds_terminal(&g.dsc) ||
-                !g.sim_ready_seen) &&
-               !mobile_stop_busy(&g.mobile_stop)) {
+    /* Supported read-only serving-cell query. One outstanding request;
+     * eight-second timeout, twenty-second refresh, never a tight retry loop. */
+    if (!(g.write_enabled && g.cp_online && g.fmt.present && g.sim_ready_seen &&
+          g.dsc.ps_state_valid && fmt_rx_registered(g.dsc.last_ps_reg_state) &&
+          fmt_rx_rat(g.dsc.last_rat_wire)==14)) {
+        g.cell_query_sent=false;
+        memset(&g.serving_cell,0,sizeof g.serving_cell);
+        g.serving_cell_ms=0;
+    } else if (now_ms()>=g.cell_query_next_ms && !mobile_stop_busy(&g.mobile_stop)) {
         struct fmt_tx_frame cq;
         if (fmt_tx_net_cell_info_list(&cq) && radiod_write_fmt(&cq)) {
-            g.cell_query_sent = true;
+            g.cell_query_sent=true;
             g.cell_query_attempts++;
-            g.cell_query_next_ms = now_ms() + 8000;   /* re-arm if unanswered */
-            diagf("net_cell_info_query", "\"attempt\":%u", g.cell_query_attempts);
-        } else {
-            g.cell_query_next_ms = now_ms() + 5000;
-        }
+            g.cell_query_next_ms=now_ms()+20000;
+            diagf("net_cell_info_query", "\"attempt\":%u",g.cell_query_attempts);
+        } else g.cell_query_next_ms=now_ms()+8000;
     }
 
     uint64_t t = now_ms();
@@ -4296,6 +4308,12 @@ int main(int argc, char **argv)
     snprintf(g.cp_state, sizeof g.cp_state, "UNKNOWN");
     struct passwd *owner=getpwnam("nuxel");g.control_uid=owner ? owner->pw_uid : 0;
     owner=getpwnam("nuxel-bridge");g.bridge_uid=owner ? owner->pw_uid : 0;
+    FILE *instance_file=fopen("/var/lib/nuxel/ims-instance","r");
+    if (instance_file) {
+        if (fgets(g.ims_instance,sizeof g.ims_instance,instance_file))
+            g.ims_instance[strcspn(g.ims_instance,"\r\n")]=0;
+        fclose(instance_file);
+    }
     const char *sms_path=getenv("NUXEL_SMS_DATABASE");
     if (!sms_path || !*sms_path) sms_path="/var/lib/nuxel-radio/sms.sqlite3";
     if (!sms_service_open(&g.sms,sms_path,sms_write,sms_notify,NULL)) diag("sms_storage_unavailable",NULL);

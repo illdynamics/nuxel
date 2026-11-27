@@ -19,18 +19,11 @@ int main(void)
     assert(strstr(buf,"sip:sip:")==NULL);
     assert(strstr(buf,"From: <sip:user@ims.mnc008.mcc204.3gppnetwork.org>"));
     assert(strstr(buf,"To: <sip:user@ims.mnc008.mcc204.3gppnetwork.org>"));
-    /* Contact MUST be a parseable SIP URI with an explicit transport, a
-     * syntactically valid +sip.instance URN (RFC 5626) and the MMTEL ICSI
-     * (TS 24.229 7.2A). It must NOT be the malformed bracketed-IPv6 form. */
-    /* Contact is the UE's own reachable address: bracketed IPv6 host + port. */
+    /* Reachable IPv6 contact; no invented device identifier on missing input. */
     assert(strstr(buf,"Contact: <sip:user@[2001:db8::2]:5062;transport=udp>"));
-    /* Without a real IMEI the codec must still emit a syntactically valid
-     * RFC 5626 +sip.instance URN (all-zero, anonymous device). */
-    /* +sip.instance is the GSMA IMEI URN itself (NOT double-wrapped in
-     * urn:uuid:, which produced an invalid urn:uuid:urn:gsma:...). */
-    assert(strstr(buf,"+sip.instance=\"<urn:gsma:imei:00000000-000000-0>\""));
+    assert(!strstr(buf,"+sip.instance"));
     assert(strstr(buf,"urn:uuid:urn:gsma") == NULL);
-    assert(strstr(buf,"urn%3Aurn-7%3A3gpp-service.ims.icsi.mmtel"));
+    assert(strstr(buf,"+g.3gpp.smsip;expires=600"));
     /* RFC 3329 2.1 / TS 33.203 7.1: the Security-Client value MUST begin with
      * the ipsec-3gpp mechanism token. */
     assert(strstr(buf,"Security-Client: ipsec-3gpp;alg=hmac-sha-1-96"));
@@ -77,14 +70,14 @@ int main(void)
     size_t cn=ims_sip_register_build_ex3(buf,sizeof buf,
         "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
         "user@ims.mnc008.mcc204.3gppnetwork.org",
-        "2001:db8::1","2001:db8::2",5062,NULL,NULL,"000a1b2c","20408");
-    assert(cn>0 && strstr(buf,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD;utran-cell-id-3gpp=20408000a1b2c"));
+        "2001:db8::1","2001:db8::2",5062,NULL,NULL,"00a1b2c","20408");
+    assert(cn>0 && !strstr(buf,"utran-cell-id-3gpp"));
     /* ex2 (no PLMN) leaves the value omitted even with a valid ECI: the
      * parameter cannot be emitted without the MCC||MNC part. */
     cn=ims_sip_register_build_ex2(buf,sizeof buf,
         "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
         "user@ims.mnc008.mcc204.3gppnetwork.org",
-        "2001:db8::1","2001:db8::2",5062,NULL,NULL,"000a1b2c");
+        "2001:db8::1","2001:db8::2",5062,NULL,NULL,"00a1b2c");
     assert(cn>0 && strstr(buf,"utran-cell-id-3gpp") == NULL);
     /* ex3 with a malformed/non-hex ECI -> omitted, never echoed verbatim. */
     cn=ims_sip_register_build_ex3(buf,sizeof buf,
@@ -96,20 +89,20 @@ int main(void)
     cn=ims_sip_register_build_ex3(buf,sizeof buf,
         "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
         "user@ims.mnc008.mcc204.3gppnetwork.org",
-        "2001:db8::1","2001:db8::2",5062,NULL,NULL,"000a1b2c","2040x");
+        "2001:db8::1","2001:db8::2",5062,NULL,NULL,"00a1b2c","2040x");
     assert(cn>0 && strstr(buf,"utran-cell-id-3gpp") == NULL);
     /* ex4: genuine TAC emitted with a valid PLMN (utran-tac 4 hex octets). */
     cn=ims_sip_register_build_ex4(buf,sizeof buf,
         "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
         "user@ims.mnc008.mcc204.3gppnetwork.org",
         "2001:db8::1","2001:db8::2",5062,NULL,NULL,NULL,"20408",285);
-    assert(cn>0 && strstr(buf,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD;utran-tac=011d"));
+    assert(cn>0 && !strstr(buf,"utran-tac") && !strstr(buf,"utran-cell-id"));
     /* ex4: ECI + TAC together. */
     cn=ims_sip_register_build_ex4(buf,sizeof buf,
         "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
         "user@ims.mnc008.mcc204.3gppnetwork.org",
-        "2001:db8::1","2001:db8::2",5062,NULL,NULL,"000a1b2c","20408",285);
-    assert(cn>0 && strstr(buf,"utran-cell-id-3gpp=20408000a1b2c;utran-tac=011d"));
+        "2001:db8::1","2001:db8::2",5062,NULL,NULL,"00a1b2c","20408",285);
+    assert(cn>0 && strstr(buf,"utran-cell-id-3gpp=20408011d00a1b2c"));
     /* ex4: TAC without PLMN -> omitted (never a bare TAC). */
     cn=ims_sip_register_build_ex4(buf,sizeof buf,
         "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
@@ -131,6 +124,11 @@ int main(void)
         "2001:db8::1","2001:db8::2",5062,NULL,NULL,NULL,"20408");
     assert(cn>0 && strstr(buf,"utran-cell-id-3gpp") == NULL);
 
+    cn=ims_sip_register_build_ex(buf,sizeof buf,"user@example.test","user@example.test",
+        "2001:db8::1","2001:db8::2",5062,NULL,
+        "urn:uuid:12345678-1234-4321-8765-123456789abc");
+    assert(cn && strstr(buf,"+sip.instance=\"<urn:uuid:12345678-1234-4321-8765-123456789abc>\""));
+
     /* _ex with a real 15-digit IMEI advertises a real device instance URN
      * (RFC 5626 <8>-<6>-<1> grouping); it is a device id, never a secret. */
     size_t en=ims_sip_register_build_ex(buf,sizeof buf,
@@ -139,13 +137,13 @@ int main(void)
         "2001:db8::1","2001:db8::2",5062,NULL,
         "353234110123456");
     assert(en>0 && en<sizeof buf);
-    assert(strstr(buf,"+sip.instance=\"<urn:gsma:imei:35323411-012345-6>\""));
-    /* A non-numeric/over-length IMEI falls back to the all-zero URN. */
+    assert(strstr(buf,"+sip.instance=\"<urn:gsma:imei:35323411-012345-0>\""));
+    /* Invalid device identity is rejected. */
     en=ims_sip_register_build_ex(buf,sizeof buf,
         "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
         "user@ims.mnc008.mcc204.3gppnetwork.org",
         "2001:db8::1","2001:db8::2",5062,NULL,"not-an-imei");
-    assert(en>0 && strstr(buf,"urn:gsma:imei:00000000-000000-0"));
+    assert(en==0);
 
     char realm[64],nonce[128],qop[16],alg[24],cnonce[16];
     const char ch[]="WWW-Authenticate: Digest realm=\"ims.mnc008.mcc204.3gppnetwork.org\", nonce=\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\", algorithm=AKAv1-MD5, qop=\"auth\"";

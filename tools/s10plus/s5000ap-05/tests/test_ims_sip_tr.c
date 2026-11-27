@@ -39,14 +39,15 @@ int main(void)
     assert(t.phase == IMS_SIP_TR_IDLE);
     assert(!ims_sip_tr_registered(&t));
 
-    /* 1. start -> initial REGISTER (no Authorization). */
+    /* 1. start -> initial REGISTER (empty AKA Authorization). */
     reset_capture();
     assert(ims_sip_tr_start(&t));
     assert(t.phase == IMS_SIP_TR_REGISTER_SENT);
     assert(send_called && captured_len > 0);
     assert(memmem(captured, captured_len, "REGISTER ", 9) == captured);
-    assert(memmem(captured, captured_len, "Authorization:", 14) == NULL);
+    assert(memmem(captured, captured_len, "Authorization:", 14) != NULL);
 
+    assert(memmem(captured,captured_len,"nonce=\"\", response=\"\"",strlen("nonce=\"\", response=\"\"")));
     /* 2. feed 401 AKAv1-MD5 -> CHALLENGED, realm/nonce recorded. */
     static const char ch401[] =
         "SIP/2.0 401 Unauthorized\r\n"
@@ -68,6 +69,10 @@ int main(void)
     assert(memmem(captured, captured_len, "Authorization: Digest ", 22) != NULL);
     assert(memmem(captured, captured_len, "algorithm=AKAv1-MD5", 18) != NULL);
 
+    assert(memmem(captured,captured_len,"\r\nAuthorization:",strlen("\r\nAuthorization:")));
+    assert(!memmem(captured,captured_len,"0Authorization:",15));
+    assert(memmem(captured,captured_len,"uri=\"sip:ims.mnc008.mcc204.3gppnetwork.org\"",strlen("uri=\"sip:ims.mnc008.mcc204.3gppnetwork.org\"")));
+
     /* 4. feed 200 OK -> REGISTERED. */
     static const char ok200[] =
         "SIP/2.0 200 OK\r\n"
@@ -80,7 +85,7 @@ int main(void)
     /* 5. submit an SMS-over-IP MESSAGE (RP-DATA body). */
     unsigned char tpdu[] = {0x01, 0x09, 0x00}; /* SMS-SUBMIT-ish minimal TPDU */
     reset_capture();
-    assert(ims_sip_tr_submit_sms(&t, "sip:+31649353067@ims.mnc008.mcc204.3gppnetwork.org", tpdu, sizeof tpdu, 77));
+    assert(ims_sip_tr_submit_sms(&t, "sip:+12025550123@ims.mnc008.mcc204.3gppnetwork.org", tpdu, sizeof tpdu, 77));
     assert(send_called);
     assert(memmem(captured, captured_len, "MESSAGE sip:", 11) != NULL);
     assert(memmem(captured, captured_len, "Content-Type: application/vnd.3gpp.sms", 38) != NULL);
@@ -145,6 +150,8 @@ int main(void)
         /* Re-open into a fresh FSM, carrying the hold. */
         assert(ims_sip_tr_open(&b, &cfg, &io, NULL, &a));
         assert(b.next_action_ms == 1000 + 30000);
+        assert(ims_sip_tr_open(&b, &cfg, &io, NULL, &b));
+        assert(b.next_action_ms == 31000 && b.phase == IMS_SIP_TR_RETRY_WAIT);
         assert(b.phase == IMS_SIP_TR_RETRY_WAIT);
         /* Before the hold elapses: start refuses; tick sends nothing. */
         reset_capture();

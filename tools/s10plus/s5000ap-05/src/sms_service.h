@@ -52,6 +52,7 @@ struct sms_service {
      * modem's IIL relay. Set by the caller (radiod) each tick; the IMS
      * transport is selected only when this is true. */
     bool ims_registered_native;
+    bool submit_held; /* operator hold: preserves queued jobs and incoming RX */
     uint8_t selected_domain;
     /* In-flight SMS-over-IMS submission. The SIP MESSAGE result is correlated
      * separately from the CP FMT submission result: the IMS hook send only
