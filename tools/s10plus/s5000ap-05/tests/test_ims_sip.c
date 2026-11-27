@@ -22,8 +22,8 @@ int main(void)
     /* Contact MUST be a parseable SIP URI with an explicit transport, a
      * syntactically valid +sip.instance URN (RFC 5626) and the MMTEL ICSI
      * (TS 24.229 7.2A). It must NOT be the malformed bracketed-IPv6 form. */
-    assert(strstr(buf,"Contact: <sip:user@ims.mnc008.mcc204.3gppnetwork.org;transport=udp>"));
-    assert(strstr(buf,"Contact: <sip:user@[2001:db8::2]") == NULL);
+    /* Contact is the UE's own reachable address: bracketed IPv6 host + port. */
+    assert(strstr(buf,"Contact: <sip:user@[2001:db8::2]:5062;transport=udp>"));
     /* Without a real IMEI the codec must still emit a syntactically valid
      * RFC 5626 +sip.instance URN (all-zero, anonymous device). */
     /* +sip.instance is the GSMA IMEI URN itself (NOT double-wrapped in

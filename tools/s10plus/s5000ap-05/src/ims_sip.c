@@ -160,9 +160,20 @@ size_t ims_sip_register_build_ex2(char *out, size_t cap, const char *impu,
      * IMS communication service identifier for MMTEL. `transport=udp` names
      * the signaling to which the ipsec-3gpp Security-Client applies.
      * The local IP stays in the Via (the UE's real reachable address). */
-    if (!addf(&r,"Contact: <sip:%s@%s;transport=udp>;+sip.instance=\"<%s>\";"
-              "+g.3gpp.icsi-ref=\"urn%%3Aurn-7%%3A3gpp-service.ims.icsi.mmtel\";expires=600000\r\n",
-              cuser, ruri, inst)) return 0;
+    /* RFC 3261 19.1.1 permits a bracketed IPv6 host in a SIP URI authority
+     * ("sip:user@[2001:db8::1]:5062"). The Contact MUST be the UE's own
+     * reachable address (TS 24.229 5.1.1.2 / registrar reachability), so use
+     * the real local IMS IP + port. The previous IMPU-domain host made the
+     * Contact unreachable, which a reachability-checking registrar rejects. */
+    if (strchr(local_ip, ':')) {
+        if (!addf(&r,"Contact: <sip:%s@[%s]:%u;transport=udp>;+sip.instance=\"<%s>\";"
+                  "+g.3gpp.icsi-ref=\"urn%%3Aurn-7%%3A3gpp-service.ims.icsi.mmtel\";expires=600000\r\n",
+                  cuser, local_ip, (unsigned)port, inst)) return 0;
+    } else {
+        if (!addf(&r,"Contact: <sip:%s@%s:%u;transport=udp>;+sip.instance=\"<%s>\";"
+                  "+g.3gpp.icsi-ref=\"urn%%3Aurn-7%%3A3gpp-service.ims.icsi.mmtel\";expires=600000\r\n",
+                  cuser, local_ip, (unsigned)port, inst)) return 0;
+    }
     /* The INVITE/REGISTER is sent directly to the P-CSCF address (outbound
      * proxy) on the transport; no Route header is needed and adding one that
      * points at the same P-CSCF caused the CP/P-CSCF to reject the request.
