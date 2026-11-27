@@ -63,6 +63,14 @@ size_t ims_sip_register_build_ex3(char *out, size_t cap,
                                   uint16_t port, const char *sec_offer,
                                   const char *imei, const char *cell_id,
                                   const char *home_plmn);
+/* Adds a genuine serving TAC (utran-tac, TS 24.229 7.2A.2). Emitted only
+ * with a valid 5-digit PLMN and 0<=utran_tac<=0xFFFF; pass -1 to omit. */
+size_t ims_sip_register_build_ex4(char *out, size_t cap,
+                                  const char *impu, const char *impi,
+                                  const char *pcscf, const char *local_ip,
+                                  uint16_t port, const char *sec_offer,
+                                  const char *imei, const char *cell_id,
+                                  const char *home_plmn, int utran_tac);
 /* Security-first initial REGISTER: adds `Require: sec-agree` +
  * `Proxy-Require: sec-agree` to a REGISTER that already carries a complete
  * ipsec-3gpp Security-Client offer. Used for P-CSCFs that reject a plaintext
@@ -78,6 +86,12 @@ size_t ims_sip_register_build_secure_ex3(char *out, size_t cap,
                                          uint16_t port, const char *sec_offer,
                                          const char *imei, const char *cell_id,
                                          const char *home_plmn);
+size_t ims_sip_register_build_secure_ex4(char *out, size_t cap,
+                                         const char *impu, const char *impi,
+                                         const char *pcscf, const char *local_ip,
+                                         uint16_t port, const char *sec_offer,
+                                         const char *imei, const char *cell_id,
+                                         const char *home_plmn, int utran_tac);
 /* Parse a 401/407 WWW-Authenticate challenge. Only AKAv1-MD5/AKAv2-MD5 and
  * qop=auth without integrity are accepted for IMS; MD5-only challenges are
  * rejected (IMS requires AKA). `nonce`/`realm`/`cnonce` are zero-terminated

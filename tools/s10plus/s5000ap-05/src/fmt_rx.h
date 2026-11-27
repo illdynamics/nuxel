@@ -23,6 +23,7 @@ const char *fmt_rx_reg_name(uint8_t state);
 bool fmt_rx_registered(uint8_t state);
 struct fmt_rx_registration {
     uint8_t rat_wire, domain, state_wire, state, reject_cause;
+    uint16_t lac_tac;   /* location area / tracking area code (payload[4..5]) */
 };
 /* IpcRxNetRegState @0x339818: reject cause is payload[10], not [3]. */
 bool fmt_rx_registration(const uint8_t *p, size_t n, struct fmt_rx_registration *out);

@@ -86,6 +86,8 @@ struct ims_sip_tr_cfg {
                               * for the (MCC||MNC) prefix of utran-cell-id-3gpp.
                               * The parameter needs BOTH this and cell_id; if
                               * either is absent it is omitted, never faked. */
+    int         utran_tac;   /* genuine serving TAC (0..65535) for utran-tac,
+                              * or -1 to omit. Requires a valid home_plmn. */
     bool        security_first; /* emit Require/Proxy-Require: sec-agree on the
                                  * initial REGISTER (TS 33.203 7.1). Only set
                                  * when sec_offer is a complete ipsec-3gpp offer. */

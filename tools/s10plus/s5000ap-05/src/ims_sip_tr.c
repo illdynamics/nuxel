@@ -54,6 +54,7 @@ bool ims_sip_tr_open(struct ims_sip_tr *t, const struct ims_sip_tr_cfg *cfg,
     t->cfg.sec_offer = cfg->sec_offer ? t->_sec_offer : NULL;
     t->cfg.cell_id = (cfg->cell_id && *cfg->cell_id) ? t->_cell_id : NULL;
     t->cfg.home_plmn = (cfg->home_plmn && *cfg->home_plmn) ? t->_home_plmn : NULL;
+    t->cfg.utran_tac = cfg->utran_tac;
     if (io) t->io = *io;
     t->user = user;
     t->phase = IMS_SIP_TR_IDLE;
@@ -128,14 +129,14 @@ static bool send_register(struct ims_sip_tr *t, bool auth)
     bool secure_first = t->cfg.security_first &&
                         t->cfg.sec_offer && *t->cfg.sec_offer;
     size_t n = secure_first
-        ? ims_sip_register_build_secure_ex3(out, sizeof out,
+        ? ims_sip_register_build_secure_ex4(out, sizeof out,
               t->cfg.impu, t->cfg.impi, t->cfg.pcscf, t->cfg.local_ip,
               t->cfg.port, t->cfg.sec_offer, NULL, t->cfg.cell_id,
-              t->cfg.home_plmn)
-        : ims_sip_register_build_ex3(out, sizeof out,
+              t->cfg.home_plmn, t->cfg.utran_tac)
+        : ims_sip_register_build_ex4(out, sizeof out,
               t->cfg.impu, t->cfg.impi, t->cfg.pcscf, t->cfg.local_ip,
               t->cfg.port, t->cfg.sec_offer, NULL, t->cfg.cell_id,
-              t->cfg.home_plmn);
+              t->cfg.home_plmn, t->cfg.utran_tac);
     if (n == 0) return false;
     /* Insert Authorization before the trailing CRLF CRLF for authenticated
      * retry. The codec emits Content-Length: 0\r\n\r\n at the end; find it. */

@@ -35,9 +35,16 @@ bool fmt_rx_registered(uint8_t state)
 bool fmt_rx_registration(const uint8_t *p, size_t n, struct fmt_rx_registration *out)
 {
     if (!p || !out || n < 20 || p[1] < 1 || p[1] > 3) return false;
+    /* Location area code / tracking area code. The WCDMA and LTE variants of
+     * this frame carry it as a u16 at payload[4..5] (libsec-ril EFUJ2
+     * IpcRxNetRegState @0x339818). This is a SILENT location indicator: the
+     * caller MUST only use it as the P-Access-Network-Info TAC when an LTE
+     * PS home registration is affirmatively present (see radiod), never as
+     * a cell identity. */
     struct fmt_rx_registration r = {
         .rat_wire = p[0], .domain = p[1], .state_wire = p[2],
-        .state = fmt_rx_reg_state(p[2]), .reject_cause = p[10]
+        .state = fmt_rx_reg_state(p[2]), .reject_cause = p[10],
+        .lac_tac = (uint16_t)(p[4] | (p[5] << 8))
     };
     *out = r;
     return true;

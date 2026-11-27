@@ -114,7 +114,7 @@ static size_t ims_sip_register_build_core(char *out, size_t cap,
                                           const char *pcscf, const char *local_ip,
                                           uint16_t port, const char *sec_offer,
                                           const char *imei, const char *cell_id,
-                                          const char *home_plmn,
+                                          const char *home_plmn, int utran_tac,
                                           bool require_sec_agree);
 
 size_t ims_sip_register_build_ex2(char *out, size_t cap, const char *impu,
@@ -124,7 +124,7 @@ size_t ims_sip_register_build_ex2(char *out, size_t cap, const char *impu,
                                   const char *cell_id)
 {
     return ims_sip_register_build_core(out, cap, impu, impi, pcscf, local_ip,
-                                       port, sec_offer, imei, cell_id, NULL, false);
+                                       port, sec_offer, imei, cell_id, NULL, -1, false);
 }
 size_t ims_sip_register_build_ex3(char *out, size_t cap, const char *impu,
                                   const char *impi, const char *pcscf,
@@ -134,7 +134,18 @@ size_t ims_sip_register_build_ex3(char *out, size_t cap, const char *impu,
 {
     return ims_sip_register_build_core(out, cap, impu, impi, pcscf, local_ip,
                                        port, sec_offer, imei, cell_id, home_plmn,
-                                       false);
+                                       -1, false);
+}
+size_t ims_sip_register_build_ex4(char *out, size_t cap, const char *impu,
+                                  const char *impi, const char *pcscf,
+                                  const char *local_ip, uint16_t port,
+                                  const char *sec_offer, const char *imei,
+                                  const char *cell_id, const char *home_plmn,
+                                  int utran_tac)
+{
+    return ims_sip_register_build_core(out, cap, impu, impi, pcscf, local_ip,
+                                       port, sec_offer, imei, cell_id, home_plmn,
+                                       utran_tac, false);
 }
 
 /* Security-first initial REGISTER (TS 33.203 7.1 / TS 24.229 5.1.2A). Some
@@ -151,7 +162,7 @@ size_t ims_sip_register_build_secure(char *out, size_t cap, const char *impu,
                                      const char *cell_id)
 {
     return ims_sip_register_build_core(out, cap, impu, impi, pcscf, local_ip,
-                                       port, sec_offer, imei, cell_id, NULL, true);
+                                       port, sec_offer, imei, cell_id, NULL, -1, true);
 }
 size_t ims_sip_register_build_secure_ex3(char *out, size_t cap,
                                          const char *impu, const char *impi,
@@ -162,7 +173,18 @@ size_t ims_sip_register_build_secure_ex3(char *out, size_t cap,
 {
     return ims_sip_register_build_core(out, cap, impu, impi, pcscf, local_ip,
                                        port, sec_offer, imei, cell_id, home_plmn,
-                                       true);
+                                       -1, true);
+}
+size_t ims_sip_register_build_secure_ex4(char *out, size_t cap,
+                                         const char *impu, const char *impi,
+                                         const char *pcscf, const char *local_ip,
+                                         uint16_t port, const char *sec_offer,
+                                         const char *imei, const char *cell_id,
+                                         const char *home_plmn, int utran_tac)
+{
+    return ims_sip_register_build_core(out, cap, impu, impi, pcscf, local_ip,
+                                       port, sec_offer, imei, cell_id, home_plmn,
+                                       utran_tac, true);
 }
 
 static size_t ims_sip_register_build_core(char *out, size_t cap,
@@ -170,7 +192,7 @@ static size_t ims_sip_register_build_core(char *out, size_t cap,
                                           const char *pcscf, const char *local_ip,
                                           uint16_t port, const char *sec_offer,
                                           const char *imei, const char *cell_id,
-                                          const char *home_plmn,
+                                          const char *home_plmn, int utran_tac,
                                           bool require_sec_agree)
 {
     if (!out || !impu || !impi || !pcscf || !local_ip) return 0;
@@ -264,9 +286,19 @@ static size_t ims_sip_register_build_core(char *out, size_t cap,
         for (const char *q = home_plmn; q < home_plmn + 5; q++)
             if (*q < '0' || *q > '9') { plmn_ok = false; break; }
     }
+    /* The TAC (16-bit tracking-area code) is carried separately per
+     * TS 24.229 7.2A.2 (utran-tac, 4 hex octets); emit it ONLY with a valid
+     * PLMN and a genuine TAC (0..65535). It is independent of the ECI: a
+     * genuine TAC does not require a cell id. */
+    char tacparam[32] = "";
+    if (plmn_ok && utran_tac >= 0 && utran_tac <= 0xFFFF) {
+        snprintf(tacparam, sizeof tacparam, ";utran-tac=%04x", (unsigned)utran_tac);
+    }
     if (cell_ok && plmn_ok) {
-        if (!addf(&r,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD;utran-cell-id-3gpp=%.5s%s\r\n",
-                  home_plmn, cell_id)) return 0;
+        if (!addf(&r,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD;utran-cell-id-3gpp=%.5s%s%s\r\n",
+                  home_plmn, cell_id, tacparam)) return 0;
+    } else if (plmn_ok && tacparam[0]) {
+        if (!addf(&r,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD%s\r\n", tacparam)) return 0;
     } else {
         if (!addf(&r,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD\r\n")) return 0;
     }

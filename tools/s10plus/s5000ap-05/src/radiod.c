@@ -154,6 +154,8 @@ struct radiod_ctx {
     char serving_plmn[6];        /* real serving PLMN from NET 8/3 */
     char serving_cell_id[24];    /* REAL ECI only; empty when unavailable */
     bool serving_cell_valid;
+    uint16_t serving_tac;        /* TAC from NET_REGIST (PS home) */
+    bool serving_tac_valid;
     /* NET_CELL_INFO_LIST (8/17) acquisition: a read-only IPC41 GET that yields
      * the real 28-bit serving ECI. Bounded: a few attempts at CP-online, and a
      * single refresh after a new NET_REGIST so handover changes are followed. */
@@ -1221,6 +1223,7 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
         hex[n] = 0;
         diagf("fmt_payload", "\"main\":%u,\"sub\":%u,\"hex\":\"%s\"",
               f->main_cmd, f->sub_cmd, hex);
+
     }
 }
 
@@ -1826,6 +1829,9 @@ static bool sip_tr_open_from_iil(const struct iil_pdn *p)
         /* Serving PLMN for the (MCC||MNC) part of utran-cell-id-3gpp. Prefer the
          * live NET 8/3 value; fall back to the SIM home PLMN (same network). */
         .home_plmn = g.serving_plmn[0] ? g.serving_plmn : (g.home_plmn[0] ? g.home_plmn : NULL),
+        /* Genuine serving TAC from an affirmative LTE PS home registration;
+         * -1 when not yet known so the parameter is omitted, never faked. */
+        .utran_tac = g.serving_tac_valid ? (int)g.serving_tac : -1,
         /* Opt-in (NUXEL_IMS_SECURITY_FIRST=1): Require/Proxy-Require sec-agree. */
         .security_first = ims_security_first_env(),
     };
@@ -1926,6 +1932,9 @@ static bool sip_tr_open_from_ims_pdn_idx(const struct ims_pdn *p, unsigned idx)
         /* Serving PLMN for the (MCC||MNC) part of utran-cell-id-3gpp. Prefer the
          * live NET 8/3 value; fall back to the SIM home PLMN (same network). */
         .home_plmn = g.serving_plmn[0] ? g.serving_plmn : (g.home_plmn[0] ? g.home_plmn : NULL),
+        /* Genuine serving TAC from an affirmative LTE PS home registration;
+         * -1 when not yet known so the parameter is omitted, never faked. */
+        .utran_tac = g.serving_tac_valid ? (int)g.serving_tac : -1,
         /* Opt-in (NUXEL_IMS_SECURITY_FIRST=1): Require/Proxy-Require sec-agree. */
         .security_first = ims_security_first_env(),
     };
@@ -2552,27 +2561,18 @@ static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
         return DS_FEEDBACK_IGNORE;
     }
 
-    /* ---- NET_CELL_INFO_LIST (main=8 sub=17): real serving ECI ---- */
+    /* ---- NET_CELL_INFO_LIST (main=8 sub=17) ----
+     * The GET itself is a recovered, read-only vendor command
+     * (IpcTxNetCellInfoList @0x3378d0). The EFUJ2 response parser
+     * (IpcRxNetCellInfoList @0x33c3b0) is large and its exact LTE
+     * cellIdentity byte offset on THIS firmware is not yet proven by an
+     * independent live cross-check, so we must NOT feed a guessed ECI into
+     * P-Access-Network-Info. We only clear the in-flight flag here; the
+     * serving cell TAC is taken from the PROVEN NET_REGIST path below. */
     if (f->main_cmd == IPC41_MAIN_NET &&
         f->sub_cmd == (uint8_t)IPC41_NET_CELL_INFO_LIST &&
         f->cmd_type == IPC41_TYPE_RESPONSE) {
-        struct fmt_rx_net_cell_info ci;
-        (void)fmt_rx_net_cell_info(f->payload, f->payload_len,
-                                   g.serving_plmn[0] ? g.serving_plmn : NULL, &ci);
         g.cell_query_sent = false;
-        if (ci.cell_id_valid) {
-            snprintf(g.serving_cell_id, sizeof g.serving_cell_id, "%s", ci.cell_id);
-            g.serving_cell_valid = true;
-            diagf("net_cell_info", "\"valid\":true,\"eci_len\":%u,\"tac_zero\":%s,\"pci_zero\":%s",
-                  (unsigned)strlen(g.serving_cell_id),
-                  ci.tac == 0 ? "true" : "false", ci.pci == 0 ? "true" : "false");
-        } else {
-            /* Parsed but no ECI-class serving cell for this CP right now:
-             * never fabricate; omit the parameter. */
-            g.serving_cell_valid = false;
-            g.serving_cell_id[0] = 0;
-            diagf("net_cell_info", "\"valid\":false,\"lte_count\":%u", (unsigned)ci.lte_count);
-        }
         return DS_FEEDBACK_IGNORE;
     }
 
@@ -2591,6 +2591,14 @@ static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
         }
         if (reg.domain != 3u) return DS_FEEDBACK_IGNORE;
         uint8_t ps_reg = reg.state;
+        /* Genuine serving TAC: only from an affirmative LTE PS home/roaming
+         * registration (never from a CS-denied or unregistered frame). */
+        if (fmt_rx_registered(ps_reg) && fmt_rx_rat(reg.rat_wire) == 14u /*LTE*/) {
+            g.serving_tac = reg.lac_tac;
+            g.serving_tac_valid = true;
+        } else if (!fmt_rx_registered(ps_reg)) {
+            g.serving_tac_valid = false;
+        }
         g.dsc.last_rat_wire = reg.rat_wire;
         g.dsc.last_reg_wire = reg.state_wire;
         g.dsc.last_ps_reg_state = ps_reg;

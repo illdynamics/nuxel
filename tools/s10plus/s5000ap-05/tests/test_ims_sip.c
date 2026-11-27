@@ -98,6 +98,31 @@ int main(void)
         "user@ims.mnc008.mcc204.3gppnetwork.org",
         "2001:db8::1","2001:db8::2",5062,NULL,NULL,"000a1b2c","2040x");
     assert(cn>0 && strstr(buf,"utran-cell-id-3gpp") == NULL);
+    /* ex4: genuine TAC emitted with a valid PLMN (utran-tac 4 hex octets). */
+    cn=ims_sip_register_build_ex4(buf,sizeof buf,
+        "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
+        "user@ims.mnc008.mcc204.3gppnetwork.org",
+        "2001:db8::1","2001:db8::2",5062,NULL,NULL,NULL,"20408",285);
+    assert(cn>0 && strstr(buf,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD;utran-tac=011d"));
+    /* ex4: ECI + TAC together. */
+    cn=ims_sip_register_build_ex4(buf,sizeof buf,
+        "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
+        "user@ims.mnc008.mcc204.3gppnetwork.org",
+        "2001:db8::1","2001:db8::2",5062,NULL,NULL,"000a1b2c","20408",285);
+    assert(cn>0 && strstr(buf,"utran-cell-id-3gpp=20408000a1b2c;utran-tac=011d"));
+    /* ex4: TAC without PLMN -> omitted (never a bare TAC). */
+    cn=ims_sip_register_build_ex4(buf,sizeof buf,
+        "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
+        "user@ims.mnc008.mcc204.3gppnetwork.org",
+        "2001:db8::1","2001:db8::2",5062,NULL,NULL,NULL,NULL,285);
+    assert(cn>0 && strstr(buf,"utran-tac") == NULL);
+    /* ex4: out-of-range TAC (-1 / 70000) -> omitted. */
+    cn=ims_sip_register_build_ex4(buf,sizeof buf,
+        "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
+        "user@ims.mnc008.mcc204.3gppnetwork.org",
+        "2001:db8::1","2001:db8::2",5062,NULL,NULL,NULL,"20408",70000);
+    assert(cn>0 && strstr(buf,"utran-tac") == NULL);
+
     /* ex3 with no ECI -> parameter omitted (the fabricated 00000000 is never
      * injected by any code path). */
     cn=ims_sip_register_build_ex3(buf,sizeof buf,

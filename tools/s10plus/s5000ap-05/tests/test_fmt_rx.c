@@ -21,6 +21,7 @@ int main(void)
     struct fmt_rx_registration reg;
     assert(fmt_rx_registration(denied, sizeof denied, &reg));
     assert(reg.domain == 2 && reg.state == 3 && reg.reject_cause == 11);
+    assert(reg.lac_tac == 0);   /* denied[4]=denied[5]=0 */
     assert(!fmt_rx_registered(reg.state));
     for (size_t n = 0; n < sizeof denied; n++) assert(!fmt_rx_registration(denied, n, &reg));
     denied[1] = 0; assert(!fmt_rx_registration(denied, sizeof denied, &reg));
@@ -279,6 +280,24 @@ int main(void)
         /* NULL / short safety. */
         assert(!fmt_rx_net_cell_info(NULL, 0, NULL, &ci));
         assert(!fmt_rx_net_cell_info(empty, 5, NULL, &ci));
+    }
+
+    /* Live EFUJ2 8/5 PS-home frame (this CP's live bytes): domain=3,
+     * state_wire=2 -> state 1 (REGISTERED_HOME), reject 0, LAC/TAC [4..5]=0. */
+    {
+        const uint8_t ps_home[] = {0x21,0x03,0x02,0x00,0x00,0x00,0x1f,0xf3,
+                                   0x76,0x00,0x00,0x6e,0x84,0x01,0x01,0x00,
+                                   0x1d,0x01,0x00,0x00};
+        struct fmt_rx_registration r2;
+        assert(fmt_rx_registration(ps_home, sizeof ps_home, &r2));
+        assert(r2.domain == 3 && r2.state == 1 && fmt_rx_registered(r2.state));
+        assert(r2.reject_cause == 0 && r2.lac_tac == 0x0000);
+    }
+    /* Synthetic non-zero LAC/TAC extraction at [4..5]. */
+    {
+        uint8_t f[20] = {0x21,0x03,0x02,0x00,0x34,0x12, 0};
+        struct fmt_rx_registration r2;
+        assert(fmt_rx_registration(f, sizeof f, &r2) && r2.lac_tac == 0x1234);
     }
 
     puts("FMT receive bounds, result correlation, RAT, PDP and IP: PASS");
