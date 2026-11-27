@@ -34,16 +34,19 @@ int iil_rx_parse(const uint8_t *buf, size_t len, struct iil_rx_event *out,
     return (int)total;
 }
 
-/* IpcRxIilConnected: minimal validated payload. The vendor handler reads a
- * CID/attached pair. We require at least 2 bytes and interpret byte 0 as cid,
- * byte 1 as the connection state (non-zero = attached). */
+/* IpcRxIilConnected (sub 22 @0x356870): the vendor handler ONLY records the
+ * event code 123 and returns; it does NOT carry a CID or attached flag in the
+ * payload. We therefore report a connect notification with no fabricated CID
+ * or attach state. The authoritative bearer IP/P-CSCF come from the GPRS
+ * GPRS_IP_CONFIGURATION path (main=13 sub=9), not from this event. */
 bool iil_rx_connected(const struct iil_rx_event *e, uint8_t *cid, bool *attached)
 {
-    if (!e || !cid || !attached) return false;
-    if (e->main_cmd != IIL_MAIN_IIL || e->sub_cmd != IIL_SUB_CONNECTED) return false;
-    if (e->payload_len < 2) return false;
-    if (cid) *cid = e->payload[0];
-    if (attached) *attached = e->payload[1] != 0;
+    if (!e || e->main_cmd != IIL_MAIN_IIL || e->sub_cmd != IIL_SUB_CONNECTED)
+        return false;
+    /* No cid/attached is encoded by the CP; report cid=0, attached=true only
+     * as "a connection notification was received". Never invent a CID. */
+    if (cid) *cid = 0;
+    if (attached) *attached = true;
     return true;
 }
 
@@ -61,6 +64,9 @@ bool iil_rx_parameters(const struct iil_rx_event *e, int *family,
 {
     if (!e || e->main_cmd != IIL_MAIN_IIL || e->sub_cmd != IIL_SUB_PARAMETERS)
         return false;
+    /* Vendor IpcRxIilParameters @0x356800 is a STUB (return 0); the CP does
+     * not deliver IP/P-CSCF here. Only decode if a payload of the expected
+     * shape is actually present; otherwise treat as unusable. */
     if (e->payload_len < 18) return false;   /* family+prefix+16-byte ip */
     if (family) *family = (e->payload[0] == 2) ? AF_INET : AF_INET6;
     if (prefix) *prefix = e->payload[1];
@@ -82,26 +88,40 @@ bool iil_rx_parameters(const struct iil_rx_event *e, int *family,
     return true;
 }
 
-/* IpcRxIilIsimAuth: AKA challenge. Requires RAND(16)+AUTN(16). */
+/* IpcRxIilIsimAuth (sub 17 @0x356808): builds UiccAuth(0, RAND, 16, AUTN, 16)
+ * with RAND read from buf+8 and AUTN from buf+0x18 (buf includes the 7-byte
+ * SIPC header). => payload[1..16] = RAND, payload[17..32] = AUTN. payload[0]
+ * is a leading type/flag byte. */
 bool iil_rx_isim_auth(const struct iil_rx_event *e,
                       uint8_t rand[16], uint8_t autn[16])
 {
     if (!e || e->main_cmd != IIL_MAIN_IIL || e->sub_cmd != IIL_SUB_ISIM_AUTH)
         return false;
-    if (e->payload_len < 32) return false;
-    if (rand) memcpy(rand, e->payload, 16);
-    if (autn) memcpy(autn, e->payload + 16, 16);
+    if (e->payload_len < 33) return false;
+    if (rand) memcpy(rand, e->payload + 1, 16);
+    if (autn) memcpy(autn, e->payload + 17, 16);
     return true;
 }
 
-/* IpcRxIilRegistration: state relayed by the modem. Non-zero => registered. */
-bool iil_rx_registration(const struct iil_rx_event *e, bool *registered)
+/* IpcRxIilRegistration (sub 7 @0x356528). Authoritative layout:
+ *   payload[0]   ImsRegStatus (1..5; vendor clamps buf[7] into 1..4)
+ *   payload[1]   NetworkType
+ *   payload[2]   EcmpState (==1)
+ *   payload[3]   EpdgState
+ *   payload[4..5] RadioTechnology (u16, buf[12]<<8|buf[11])
+ *   payload[6..7] u16
+ *   payload[8..9] u16
+ *   payload[10]  IMPU length (0=none), IMPU at payload[11..]
+ *   (payload[267] SmsOverIpFormat in the full frame)
+ * `registered` is true for ImsRegStatus==1 (REGISTERED); 2 is REGISTERING. */
+int iil_rx_registration(const struct iil_rx_event *e, int *status)
 {
     if (!e || e->main_cmd != IIL_MAIN_IIL || e->sub_cmd != IIL_SUB_REGISTRATION)
-        return false;
-    if (e->payload_len < 1) return false;
-    if (registered) *registered = e->payload[0] != 0;
-    return true;
+        return -1;
+    if (e->payload_len < 1) return -1;
+    int st = e->payload[0];
+    if (status) *status = st;
+    return st;
 }
 
 /* IpcRxIilPreference: 1-byte SMS-over-IP format selector. */
@@ -121,8 +141,10 @@ bool iil_rx_sms_incoming(const struct iil_rx_event *e,
                          const uint8_t **rp, size_t *rp_len)
 {
     if (!e || !rp || !rp_len) return false;
-    if (e->main_cmd != IIL_MAIN_SMS_RP && e->main_cmd != IIL_MAIN_IIL) return false;
-    if (e->sub_cmd != IIL_SUB_SMS_INCOMING && e->sub_cmd != IIL_SUB_SMS) return false;
+    /* sub 1 = IpcRxSmsIncomingMsg (main 112); legacy main 4 sub 1 also seen. */
+    if (e->main_cmd != IIL_MAIN_IIL && e->main_cmd != IIL_MAIN_SMS_RP)
+        return false;
+    if (e->sub_cmd != IIL_SUB_SMS_INCOMING) return false;
     if (e->payload_len < 2) return false;
     /* RP header: type byte <= 5 with upper bits clear, then reference. */
     if ((e->payload[0] & 0xf8) != 0) return false;

@@ -642,8 +642,9 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
             uint8_t cid = 0; bool attached = false;
             if (iil_rx_connected(&ev, &cid, &attached)) {
                 iil_pdn_on_connected(&g.iil_pdn, &ev);
-                diagf("iil_connected", "\"cid\":%u,\"attached\":%s",
-                      cid, attached ? "true" : "false");
+                /* The CP Connected event carries only a notify code (123),
+                 * not a CID/IP; never treat it as bearer readiness. */
+                diag("iil_connected", NULL);
             }
             break;
         }
@@ -677,9 +678,15 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
             break;
         }
         case IIL_SUB_REGISTRATION: {
-            bool reg = false;
-            if (iil_rx_registration(&ev, &reg))
-                diagf("iil_registration", "\"registered\":%s", reg ? "true" : "false");
+            int st = iil_rx_registration(&ev, NULL);
+            if (st >= 0) {
+                bool reg = (st == 1);      /* 1=REGISTERED, 2=REGISTERING */
+                diagf("iil_registration", "\"status\":%d,\"registered\":%s",
+                      st, reg ? "true" : "false");
+                /* Trust an authoritative modem-relayed registration to drive
+                 * the IMS service state (bearer-relayed REGISTERED). */
+                if (reg) ims_service_native_registered(&g.ims, true);
+            }
             break;
         }
         case IIL_SUB_PREFERENCE: {
@@ -692,15 +699,18 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
             break;
         }
     }
-    if (f->main_cmd == IIL_MAIN_SMS_RP &&
-        (f->sub_cmd == IIL_SUB_SMS_INCOMING || f->sub_cmd == IIL_SUB_SMS)) {
+    if ((f->main_cmd == IIL_MAIN_IIL || f->main_cmd == IIL_MAIN_SMS_RP) &&
+        f->sub_cmd == IIL_SUB_SMS_INCOMING) {
         struct iil_rx_event ev = {
             .msg_seq = f->msg_seq, .main_cmd = f->main_cmd, .sub_cmd = f->sub_cmd,
             .cmd_type = f->cmd_type, .payload = f->payload, .payload_len = f->payload_len
         };
         const uint8_t *rp = NULL; size_t rp_len = 0;
-        if (iil_rx_sms_incoming(&ev, &rp, &rp_len))
+        if (iil_rx_sms_incoming(&ev, &rp, &rp_len)) {
+            /* IIL RP-DATA (3GPP RP PDU). Storage wiring for IMSSMS is a
+             * separate inbound task; here we only surface its arrival. */
             diagf("iil_sms_incoming", "\"rp_len\":%u", (unsigned)rp_len);
+        }
     }
     /* CP IMS mode changes are not registration notifications. The stock
      * registration/auth challenge source is the separate AP IMS/IIL endpoint.
@@ -807,9 +817,16 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
         struct fmt_rx_ip ip;
         if (fmt_rx_ip(f->payload, f->payload_len, &ip) && ip.cid == IMS_PDN_CID) {
             ims_pdn_report_ip(&g.ims_pdn, &ip);
-            diagf("ims_context", "\"ip_ready\":%s,\"pcscf_count\":%u",
+            char ims_ip[64] = {0}, pc[64] = {0};
+            if (ip.ipv6_valid) inet_ntop(AF_INET6, ip.ipv6, ims_ip, sizeof ims_ip);
+            else if (ip.ipv4_valid) inet_ntop(AF_INET, ip.ipv4, ims_ip, sizeof ims_ip);
+            if (ip.pcscf6_count) inet_ntop(AF_INET6, ip.pcscf6[0], pc, sizeof pc);
+            else if (ip.pcscf4_count) inet_ntop(AF_INET, ip.pcscf4[0], pc, sizeof pc);
+            /* IMS bearer address + P-CSCF are network config, NOT secret. */
+            diagf("ims_context", "\"ip_ready\":%s,\"pcscf_count\":%u,"
+                  "\"ims_ip\":\"%s\",\"pcscf\":\"%s\"",
                   g.ims_pdn.ip_ready ? "true" : "false",
-                  ip.pcscf4_count + ip.pcscf6_count);
+                  ip.pcscf4_count + ip.pcscf6_count, ims_ip, pc);
         }
     }
     mobile_stop_receive(&g.mobile_stop,f);
@@ -1551,6 +1568,13 @@ static void sip_tr_recv(void)
             break;   /* hard error: drop the socket on next tick */
         }
         if (n == 0) break;
+        /* Surface only the SIP status code (no body → no PII/auth material). */
+        if (n >= 12 && memcmp(buf, "SIP/2.0 ", 8) == 0 &&
+            buf[8] >= '1' && buf[8] <= '6')
+            diagf("sip_tr_rx", "\"code\":%d", (buf[8]-'0')*100 +
+                  (buf[9]-'0')*10 + (buf[10]-'0'));
+        else
+            diagf("sip_tr_rx", "\"len\":%d,\"not_sip\":true", (int)n);
         /* Feed exactly one datagram; the FSM parse is bounded. Never log body. */
         ims_sip_tr_feed(&g.sip_tr, buf, (size_t)n);
         /* A state change is surfaced below in sip_tr_tick. */
@@ -1625,7 +1649,10 @@ static void sip_tr_tick(uint64_t now)
         if (g.sip_tr_open) {
             enum ims_sip_tr_phase before = g.sip_tr.phase;
             sip_tr_recv();   /* read 401/200 replies before advancing the FSM */
-            if (before == IMS_SIP_TR_IDLE) (void)ims_sip_tr_start(&g.sip_tr);
+            if (before == IMS_SIP_TR_IDLE) {
+                if (!ims_sip_tr_start(&g.sip_tr))
+                    diag("sip_tr_start_send_fail", NULL);
+            }
             /* A 401 sets CHALLENGED; drive the USIM AKA so an authenticated
              * REGISTER can be sent. (Only fires once per challenge.) */
             if (g.sip_tr.phase == IMS_SIP_TR_CHALLENGED &&

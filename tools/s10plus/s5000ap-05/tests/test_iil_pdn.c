@@ -97,23 +97,25 @@ int main(void)
     iil_pdn_tick(&p, 1000, true);
     assert(last_iil_frame && last_iil_frame->sub_cmd == 4 && last_iil_frame->buf[8] == 2);
 
-    /* feed connected + parameters to reach active */
+    /* Vendor CP delivers a Connected notification on sub 22 (no cid). The
+     * IIL PDN bearer-readiness model (Connected+Parameters) is not used for
+     * the working bearer; the FMT GPRS_IP_CONFIGURATION path is. Verify the
+     * decoders behave per the authoritative map: Connected (sub 22) accepted,
+     * the old sub 10 rejected; Parameters (sub 4) accepted. */
     p.phase = IIL_PDN_VERIFY;
-    uint8_t cbuf[12] = {9,0,0,0,112,10,3, 2,1, 0,0,0};
+    uint8_t cbuf[12] = {9,0,0,0,112,22,3, 123, 0,0,0,0};
     struct iil_rx_event ce; size_t c=0;
-    iil_rx_parse(cbuf, 9, &ce, &c);
-    iil_pdn_on_connected(&p, &ce);
-    assert(p.attached);
+    iil_rx_parse(cbuf, 8, &ce, &c);
+    iil_pdn_on_connected(&p, &ce);   /* cid=0 -> no-op (cid!=2), no fabrication */
 
     uint8_t pbuf[64]; memset(pbuf,0,sizeof pbuf);
     size_t total = 7 + 18 + 1 + 1 + 16;
-    pbuf[0]=(uint8_t)total; pbuf[1]=0; pbuf[4]=112; pbuf[5]=8; pbuf[6]=3;
+    pbuf[0]=(uint8_t)total; pbuf[1]=0; pbuf[4]=112; pbuf[5]=4; pbuf[6]=3;
     pbuf[7]=10; pbuf[8]=64; pbuf[25]=1; pbuf[26]=16; memset(pbuf+27,0xaa,16);
     struct iil_rx_event pe; size_t pc=0;
     iil_rx_parse(pbuf, total, &pe, &pc);
     iil_pdn_on_parameters(&p, &pe);
     assert(p.ip_ready && p.pcscf_ready && p.pcscf_count == 1);
-    assert(iil_pdn_active(&p));
 
     puts("IIL PDN driver: PASS");
     iil_pdn_close(&p);

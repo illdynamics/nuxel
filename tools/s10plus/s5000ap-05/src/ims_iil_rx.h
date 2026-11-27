@@ -8,14 +8,18 @@
  * header [u16 total_len][u16 msg_seq][u8 main][u8 sub][u8 type]. It is
  * distinct from the FMT header (which uses u8 msg_seq + u8 ack_seq).
  *
- * Recovered vendor RX handlers (see sms15.md for provenance; emulation/
- * disassembly verified):
- *   IpcRxIilRegistration @0x356528 (main=112)  — IMS registration state
- *   IpcRxIilIsimAuth     @0x356808 (main=112)  — AKA challenge (RAND/AUTN)
- *   IpcRxIilConnected    @0x356870 (main=112)  — IMS bearer connected + IP
- *   IpcRxIilParameters   @0x356800 (main=112)  — P-CSCF / IMS config
- *   IpcRxIilPreference   @0x356628 (main=112)  — IMS preference (SMS-over-IP fmt)
- *   IpcRxSms             @0x357018 / IpcRxSmsIncomingMsg @0x356d08 — SMS-in
+ * Authoritative vendor RX handlers (round17.md; recovered from libsec-ril.so
+ * build 60889dd714394ae0db7c2ecc2bf2740f, IpcRxIil dispatch @0x356c18):
+ *   sub 1  IpcRxSmsIncomingMsg @0x356d08 — SMS-over-IP RP-DATA
+ *   sub 2  IpcRxIilPreference  @0x356628 — IMS preference (SMS-over-IP fmt)
+ *   sub 4  IpcRxIilParameters  @0x356800 — vendor STUB (returns 0; ignored)
+ *   sub 7  IpcRxIilRegistration @0x356528 — IMS registration state + IMPU
+ *   sub 17 IpcRxIilIsimAuth    @0x356808 — AKA challenge (RAND@[1], AUTN@[17])
+ *   sub 22 IpcRxIilConnected   @0x356870 — connect notification (event 123)
+ *   sub 23 IpcRxIilChangePreferredNetwork
+ *   sub 24 IpcRxIilEpdgConfiguration
+ *   sub 20 IpcRxIilDeregistration (stub)
+ * Subcodes 8,9,10,11,12..16,18,19,21 are UNHANDLED by the CP.
  *
  * This parser is BOUNDED and fail-closed. It NEVER logs subscriber auth
  * material (RAND/AUTN/RES/CK/IK) or PII.
@@ -33,14 +37,25 @@
 #define IIL_MAIN_SMS_RP   4u
 #define IIL_MAIN_GPRS    13u
 
-/* IIL sub_cmd values recovered for the RX surface */
-#define IIL_SUB_REGISTRATION  4u
-#define IIL_SUB_PARAMETERS    8u
-#define IIL_SUB_ISIM_AUTH     9u
-#define IIL_SUB_CONNECTED    10u
-#define IIL_SUB_PREFERENCE   11u
-#define IIL_SUB_SMS_INCOMING 21u
-#define IIL_SUB_SMS          22u
+/* IIL sub_cmd values recovered from the AUTHORITATIVE vendor dispatch:
+ * IpcProtocol41Iil::IpcRxIil @0x356c18 jump table @0x14acbd (indexed by
+ * sub-1) resolved through _ZTV16IpcProtocol41Iil @0x3a9a60. See round17.md.
+ * A previous revision used CONNECTED=10/PARAMETERS=8/ISIM_AUTH=9/
+ * REGISTRATION=4/PREFERENCE=11/SMS_INCOMING=21, which are all UNHANDLED by
+ * the CP and could never decode a live event. Corrected values: */
+#define IIL_SUB_SMS_INCOMING  1u   /* -> IpcRxSmsIncomingMsg */
+#define IIL_SUB_PREFERENCE    2u   /* -> IpcRxIilPreference (SMS-over-IP fmt) */
+#define IIL_SUB_PARAMETERS    4u   /* -> IpcRxIilParameters (vendor STUB, ignored) */
+#define IIL_SUB_IIL           6u   /* -> IpcRxIil */
+#define IIL_SUB_REGISTRATION  7u   /* -> IpcRxIilRegistration */
+#define IIL_SUB_ISIM_AUTH    17u   /* -> IpcRxIilIsimAuth (RAND/AUTN) */
+#define IIL_SUB_DEREGISTRATION 20u /* -> IpcRxIilDeregistration (stub) */
+#define IIL_SUB_CONNECTED    22u   /* -> IpcRxIilConnected (event code 123) */
+#define IIL_SUB_CHANGE_PREF_NET 23u /* -> IpcRxIilChangePreferredNetwork */
+#define IIL_SUB_EPDG_CONFIG  24u   /* -> IpcRxIilEpdgConfiguration */
+#define IIL_SUB_SMS          IIL_SUB_SMS_INCOMING /* alias */
+/* Legacy 16-bit SIPC main for the SMS/RP family still observed. */
+#define IIL_MAIN_SMS_RP_LEGACY 22u
 
 struct iil_rx_event {
     uint16_t msg_seq;
@@ -76,9 +91,10 @@ bool iil_rx_parameters(const struct iil_rx_event *e, int *family,
 bool iil_rx_isim_auth(const struct iil_rx_event *e,
                       uint8_t rand[16], uint8_t autn[16]);
 
-/* IpcRxIilRegistration: IMS registration state. `registered` = 1 when the
- * network confirms registration (200 OK relayed by modem), 0 otherwise. */
-bool iil_rx_registration(const struct iil_rx_event *e, bool *registered);
+/* IpcRxIilRegistration (sub 7): IMS registration status. Returns the
+ * ImsRegStatus byte (payload[0]) or -1 if not a Registration event.
+ * 1=REGISTERED, 2=REGISTERING, 3=NOT_REGISTERED, (vendor clamps 1..5). */
+int iil_rx_registration(const struct iil_rx_event *e, int *status);
 
 /* IpcRxIilPreference: SMS-over-IP preference/format from the network. */
 bool iil_rx_preference(const struct iil_rx_event *e, uint8_t *sms_over_ip_fmt);
