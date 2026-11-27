@@ -1766,6 +1766,10 @@ static bool sip_tr_send_cb(const void *msg, size_t len, void *user)
             i = e + 1;
         }
         diagf("sip_tr_tx_mask", "\"len\":%d,\"fields\":\"%s\"", (int)len, mask);
+        /* Value of P-Access-Network-Info only (PLMN/TAC/ECI; no PII) to prove
+         * the access-network identity on the wire. */
+        { char pan[160]=""; const char *q=memmem(b,n,"P-Access-Network-Info:",21);
+          if(q){ const char *e=memchr(q,'\r',(size_t)(b+n-q)); if(e){ size_t L=(size_t)(e-q); if(L<sizeof pan){ memcpy(pan,q,L); pan[L]=0; } diagf("sip_tx_pani","\"v\":\"%s\"",pan);} } }
     }
     ssize_t w = sendto(sip_tr_fd, msg, len, 0, (struct sockaddr *)&peer, plen);
     return w == (ssize_t)len;
