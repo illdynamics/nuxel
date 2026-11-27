@@ -164,12 +164,10 @@ void sms_service_receive(struct sms_service *s,const struct nuxel_sipc_fmt *f)
     if (!s || !s->store.db || !f) return;
     const uint8_t *p=f->payload;size_t n=f->payload_len;
     if (n && !p) { s->decode_errors++;return; }
-    /* SMS device-ready response (main=4 sub=7 type=3), a single raw status
-     * byte (IpcProtocol41::IpcRxSms dispatch on the header status; Ready has
-     * no GEN echo). 0 = ready; any other value = rejected. */
-    if (f->main_cmd==4 && f->sub_cmd==7 && f->cmd_type==3 && n==1 && s->ready_sent) {
-        bool ok = p[0]==0;
-        s->ready_ack=ok;s->ready_rejected=!ok;
+    /* EFUJ2 IpcRxDeviceReady @3463b0 emits registrant 57 without reading
+     * payload bytes. It is an event, not a zero-success result field. */
+    if (f->main_cmd==4 && f->sub_cmd==7 && f->cmd_type==3 && n<=1 && s->ready_sent) {
+        s->ready_ack=true;s->ready_rejected=false;
         return;
     }
     if (f->main_cmd==128 && f->cmd_type==2 && n==5 && p[0]==4) {
@@ -242,8 +240,8 @@ bool sms_service_deliver_ims(struct sms_service *s, const uint8_t *pdu,
  * submission. This is deliberately separate from the CP FMT result
  * correlation: a SIP 2xx proves the MESSAGE reached the network (accepted for
  * delivery), NOT that the recipient received an SMS and NOT that an RP-ACK was
- * returned. We record "submitted" and let the timeout/STATUS-REPORT decide
- * anything stronger. Only the numeric SIP code is passed in; no SIP text. */
+ * returned. Only matching RP-ACK marks submitted; STATUS-REPORT describes
+ * delivery. Only the numeric SIP code is passed in; no SIP text. */
 bool sms_service_ims_result(struct sms_service *s, bool accepted, int sip_code)
 {
     if (!s || !s->store.db) return false;

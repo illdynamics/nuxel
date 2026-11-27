@@ -43,12 +43,14 @@ int main(void)
     sms_service_set_result_diag(&s,diag);
     sms_service_tick(&s,100,true,true,true,false,true);CHECK(m.last.sub_cmd==7 && s.ready_sent);
     const uint8_t drdy[]={0};receive(&s,4,7,3,0,drdy,1);CHECK(s.ready_ack && !s.ready_rejected);
-    /* A non-zero device-ready status byte is a rejection, not readiness. */
+    /* Vendor decoder ignores the event payload, including non-zero bytes. */
     { struct sms_service rs; struct mock rm={.service=&rs};
       CHECK(sms_service_open(&rs,":memory:",write_frame,changed,&rm));
       sms_service_tick(&rs,100,true,true,true,false,true);CHECK(rs.ready_sent);
       const uint8_t badready[]={1};receive(&rs,4,7,3,0,badready,1);
-      CHECK(!rs.ready_ack && rs.ready_rejected);
+      CHECK(rs.ready_ack && !rs.ready_rejected);
+      rs.ready_ack=false;const uint8_t overlong[]={1,0};
+      receive(&rs,4,7,3,0,overlong,2);CHECK(!rs.ready_ack);
       /* A GEN echo (n==5) for 4/7/3 must NOT be treated as a device-ready ack. */
       struct sms_service gs; struct mock gm={.service=&gs};
       CHECK(sms_service_open(&gs,":memory:",write_frame,changed,&gm));

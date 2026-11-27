@@ -2168,6 +2168,39 @@ static bool sip_sms_request(const uint8_t *buf,size_t n,int fd,
     return true;
 }
 
+/* Registration engineering hold: the hold file records the earliest
+ * permitted epoch (seconds since Unix) after a network refusal. Unlike a pure
+ * existence flag, this auto-expires: once the wall clock passes the recorded
+ * deadline the file is removed and a fresh REGISTER becomes permitted. Never
+ * stores credentials; the recorded value is a plain epoch. */
+static bool ims_register_hold_active(void)
+{
+    const char *path = "/var/lib/nuxel-radio/ims-register.hold";
+    struct stat st;
+    if (stat(path, &st) != 0) return false;       /* absent = no hold */
+    unsigned char buf[64];
+    int fd = open(path, O_RDONLY | O_CLOEXEC);
+    if (fd < 0) return true;                       /* unreadable: stay conservative */
+    ssize_t got = read(fd, buf, sizeof buf - 1);
+    close(fd);
+    if (got <= 0) return true;                     /* empty/corrupt: stay conservative */
+    buf[got] = 0;
+    unsigned long long deadline = 0;
+    for (ssize_t i = 0; i < got; i++) {
+        unsigned char c = buf[i];
+        if (c >= '0' && c <= '9') deadline = deadline * 10 + (c - '0');
+        else if (c == '\n' || c == '\r' || c == ' ') continue;
+        else { deadline = 0; break; }              /* non-numeric: treat as active hold */
+    }
+    if (deadline && (unsigned long long)time(NULL) >= deadline) {
+        /* Deadline elapsed: clear the hold so a fresh REGISTER is permitted. */
+        if (unlink(path) != 0) diag("ims_hold_clear_failed", NULL);
+        else diag("ims_hold_expired", NULL);
+        return false;
+    }
+    return true;                                    /* deadline still in the future */
+}
+
 static void sip_tr_recv(void)
 {
     if (sip_tr_fd < 0 || !g.sip_tr_open) return;
@@ -2316,7 +2349,7 @@ static void sip_tr_tick(uint64_t now)
             if (before == IMS_SIP_TR_IDLE) {
                 /* First registration requires fresh, genuine serving-cell data. */
                 bool can_first = fresh && g.ims_instance[0] &&
-                    access("/var/lib/nuxel-radio/ims-register.hold", F_OK)!=0;
+                    !ims_register_hold_active();
                 if (can_first) {
                     if (!ims_sip_tr_start(&g.sip_tr))
                         diag("sip_tr_start_send_fail", NULL);
@@ -2329,7 +2362,7 @@ static void sip_tr_tick(uint64_t now)
                 sip_tr_usim_challenge(now);
             enum ims_sip_tr_phase after = g.sip_tr.phase;
             if (g.sip_tr.phase != IMS_SIP_TR_RETRY_WAIT ||
-                access("/var/lib/nuxel-radio/ims-register.hold",F_OK)!=0)
+                !ims_register_hold_active())
                 after = ims_sip_tr_tick(&g.sip_tr, now, true);
             if (after != before)
                 diagf("iil_sip_tr_phase", "\"phase\":\"%s\"",
