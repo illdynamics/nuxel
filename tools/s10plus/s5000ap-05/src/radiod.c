@@ -198,6 +198,8 @@ static struct radiod_ctx g;
 static void begin_data_session(const char *apn);
 static int setup_session_bus(void);
 static void radiod_sip_param_from_pcscf(const struct iil_pdn *p);
+static void radiod_ims_iface_apply(const char *ims_ip, const char *pcscf);
+static void radiod_ims_iface_down(void);
 
 /* ------------------------------------------------------------------ */
 /* time helpers                                                         */
@@ -827,6 +829,10 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
                   "\"ims_ip\":\"%s\",\"pcscf\":\"%s\"",
                   g.ims_pdn.ip_ready ? "true" : "false",
                   ip.pcscf4_count + ip.pcscf6_count, ims_ip, pc);
+            /* Attach the CID-2 IMS bearer to rmnet1 so the native SIP
+             * transport can actually source traffic from the IMS IPv6. */
+            if (g.write_enabled && ims_ip[0])
+                radiod_ims_iface_apply(ims_ip, pc);
         }
     }
     mobile_stop_receive(&g.mobile_stop,f);
@@ -1363,6 +1369,73 @@ static bool radiod_sip_param_from_fmt_pcscf(const struct ims_pdn *p)
 
 
 /* ------------------------------------------------------------------ */
+/* IMS bearer data-path: attach CID-2 (rmnet1) to the AP                */
+/* ------------------------------------------------------------------ */
+/* The CID-2 IMS PDN lives inside the CP; its rmnet vnet (DT rmnet1,
+ * SIPC channel 0x0B) is DOWN until the AP opens it. Bringing rmnet1 up and
+ * assigning the modem-reported IMS IPv6 + a host route to the discovered
+ * P-CSCF makes the IMS P-CSCF reachable from the native SIP transport. This
+ * is the DT-defined vnet for PDP channel 0x0B; it does NOT touch rmnet0
+ * (the ordinary internet CID-1 bearer). Reversible; idempotent. */
+static char g_ims_iface_ip[64];        /* currently-applied IMS IPv6 on rmnet1 */
+static char g_ims_iface_pcscf[64];     /* currently-routed P-CSCF */
+
+static int run_ip(char *const argv[])
+{
+    pid_t pid = fork();
+    if (pid < 0) return -1;
+    if (!pid) {
+        sigset_t mask; sigemptyset(&mask);
+        (void)sigprocmask(SIG_SETMASK, &mask, NULL);
+        execv("/sbin/ip", argv);
+        _exit(127);
+    }
+    int st = 0;
+    while (waitpid(pid, &st, 0) < 0 && errno == EINTR) {}
+    return (WIFEXITED(st) && WEXITSTATUS(st) == 0) ? 0 : (WIFEXITED(st) ? WEXITSTATUS(st) : -1);
+}
+
+/* Apply the IMS bearer address to rmnet1 and route P-CSCF over it. Called
+ * only when a CID-2 GPRS_IP_CONFIGURATION carries an IPv6 + P-CSCF, and only
+ * when not already applied (so we don't spam `ip`). Not secret: the IMS IPv6
+ * and P-CSCF are network configuration. */
+static void radiod_ims_iface_apply(const char *ims_ip, const char *pcscf)
+{
+    if (!ims_ip || !*ims_ip) return;
+    if (!strcmp(ims_ip, g_ims_iface_ip) &&
+        (!pcscf || !strcmp(pcscf, g_ims_iface_pcscf))) return;  /* unchanged */
+    char addr[80], pcroute[96];
+    snprintf(addr, sizeof addr, "%s/64", ims_ip);
+    char *up[] = { "ip", "link", "set", "rmnet1", "up", NULL };
+    char *aadd[] = { "ip", "-6", "addr", "replace", addr, "dev", "rmnet1", NULL };
+    (void)run_ip(up);
+    int ra = run_ip(aadd);
+    int rp = -1;
+    if (pcscf && *pcscf) {
+        snprintf(pcroute, sizeof pcroute, "%s/128", pcscf);
+        char *padd[] = { "ip", "-6", "route", "replace", pcroute, "dev", "rmnet1", NULL };
+        rp = run_ip(padd);
+    }
+    snprintf(g_ims_iface_ip, sizeof g_ims_iface_ip, "%s", ims_ip);
+    snprintf(g_ims_iface_pcscf, sizeof g_ims_iface_pcscf, "%s", pcscf ? pcscf : "");
+    diagf("ims_iface_up", "\"addr_rc\":%d,\"route_rc\":%d", ra, rp);
+}
+
+/* Tear down the IMS iface binding (on bearer loss). Leaves rmnet0 intact. */
+static void radiod_ims_iface_down(void)
+{
+    if (!g_ims_iface_ip[0]) return;
+    char addr[80];
+    snprintf(addr, sizeof addr, "%s/64", g_ims_iface_ip);
+    char *adel[] = { "ip", "-6", "addr", "del", addr, "dev", "rmnet1", NULL };
+    (void)run_ip(adel);
+    char *dn[] = { "ip", "link", "set", "rmnet1", "down", NULL };
+    (void)run_ip(dn);
+    g_ims_iface_ip[0] = 0; g_ims_iface_pcscf[0] = 0;
+    diag("ims_iface_down", NULL);
+}
+
+/* ------------------------------------------------------------------ */
 /* native SIP transport (ims_sip_tr) integration                       */
 /* ------------------------------------------------------------------ */
 static int sip_tr_fd = -1;               /* UDP socket bound to the IMS bearer */
@@ -1670,6 +1743,8 @@ static void sip_tr_tick(uint64_t now)
         }
     } else {
         if (g.sip_tr_open) { sip_tr_close(); diag("sip_tr_close", NULL); }
+        /* Bearer loss: release the CID-2 iface binding (rmnet0 untouched). */
+        radiod_ims_iface_down();
         /* Bearer loss invalidates any prior native registration. */
         if (g.ims.modem_confirmed_registered)
             ims_service_native_registered(&g.ims, false);

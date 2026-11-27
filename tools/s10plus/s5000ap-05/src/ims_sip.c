@@ -77,18 +77,47 @@ size_t ims_sip_register_build(char *out, size_t cap, const char *impu,
                               const char *sec_offer)
 {
     if (!out || !impu || !impi || !pcscf || !local_ip) return 0;
+    /* Accept impu with or without the "sip:" scheme; derive (a) the full SIP
+     * URI and (b) the registrar domain (the part after '@') for the R-URI.
+     * A REGISTER Request-URI is the registrar/home domain, e.g.
+     *   REGISTER sip:ims.mnc008.mcc204.3gppnetwork.org
+     * NOT "sip:sip:IMSI@domain" (a previously emitted malformed R-URI that the
+     * P-CSCF answered with 403). To/From/Contact use the IMPU SIP URI. */
+    const char *impu_uri = (strncmp(impu, "sip:", 4) == 0) ? impu : NULL;
+    char impu_buf[256];
+    if (!impu_uri) {
+        int k = snprintf(impu_buf, sizeof impu_buf, "sip:%s", impu);
+        if (k < 0 || (size_t)k >= sizeof impu_buf) return 0;
+        impu_uri = impu_buf;
+    }
+    const char *dom = strchr(impu_uri, '@');
+    const char *ruri = dom ? dom + 1 : (impu_uri + 4);
+    /* Contact userpart: the user part of the IMPI (before '@'), e.g. the
+     * IMSI. The Contact host is the UE's local IMS IP/port. */
+    const char *impi_n = (strncmp(impi, "sip:", 4) == 0) ? impi + 4 : impi;
+    char cuser_buf[128];
+    const char *at = strchr(impi_n, '@');
+    size_t clen = at ? (size_t)(at - impi_n) : strlen(impi_n);
+    if (clen == 0 || clen >= sizeof cuser_buf) return 0;
+    memcpy(cuser_buf, impi_n, clen); cuser_buf[clen] = 0;
+    const char *cuser = cuser_buf;
     struct buf r={out,cap,0};
-    if (!addf(&r,"REGISTER sip:%s SIP/2.0\r\n", impu)) return 0;
+    if (!addf(&r,"REGISTER sip:%s SIP/2.0\r\n", ruri)) return 0;
     if (!addf(&r,"Via: SIP/2.0/UDP [%s]:%u;branch=z9hG4bKnuxel\r\n", local_ip, port)) return 0;
     if (!addf(&r,"Max-Forwards: 70\r\n")) return 0;
-    if (!addf(&r,"From: <%s>;tag=nuxel\r\n", impu)) return 0;
-    if (!addf(&r,"To: <%s>\r\n", impu)) return 0;
+    if (!addf(&r,"From: <%s>;tag=nuxel\r\n", impu_uri)) return 0;
+    if (!addf(&r,"To: <%s>\r\n", impu_uri)) return 0;
     if (!addf(&r,"Call-ID: nuxel-%x@%s\r\n", (unsigned)(uintptr_t)out, local_ip)) return 0;
     if (!addf(&r,"CSeq: 1 REGISTER\r\n")) return 0;
     if (!addf(&r,"Contact: <sip:%s@[%s]:%u>;+sip.instance=\"<urn:gsma:imei:nuxel>\";expires=600000\r\n",
-              impi, local_ip, port)) return 0;
-    if (!addf(&r,"Route: <sip:%s;lr>\r\n", pcscf)) return 0;
-    if (!addf(&r,"P-Access-Network-Info: 3GPP-E-UTRAN-TDD;utran-cell-id-3gpp=00000000\r\n")) return 0;
+              cuser, local_ip, port)) return 0;
+    /* The INVITE/REGISTER is sent directly to the P-CSCF address (outbound
+     * proxy) on the transport; no Route header is needed and adding one that
+     * points at the same P-CSCF caused the CP/P-CSCF to reject the request.
+     * (Live: with a direct R-URI-to-domain REGISTER the P-CSCF responded 480
+     *  "user unavailable" for an unknown IMPU instead of 403.) */
+    /* Netherlands LTE (KPN) is FDD, not TDD. A wrong access type is rejected. */
+    if (!addf(&r,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD;utran-cell-id-3gpp=00000000\r\n")) return 0;
     if (sec_offer && *sec_offer) { if (!addf(&r,"Security-Client: %s\r\n", sec_offer)) return 0; }
     if (!addf(&r,"Supported: path, 100rel\r\n")) return 0;
     if (!addf(&r,"Allow: REGISTER, MESSAGE, OPTIONS\r\n")) return 0;

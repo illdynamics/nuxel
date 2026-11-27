@@ -13,10 +13,16 @@ int main(void)
         "2001:db8::1","2001:db8::2",5062,
         "ipsec-3gpp;alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;mod=trans;spi-c=4096;spi-s=4097;port-c=5062;port-s=5064");
     assert(n>0 && n<sizeof buf);
-    assert(strstr(buf,"REGISTER sip:")==buf);
+    /* R-URI must be the registrar/home domain, not the full IMPU and never a
+     * doubled "sip:sip:" (a malformed R-URI the live P-CSCF answered 403). */
+    assert(strstr(buf,"REGISTER sip:ims.mnc008.mcc204.3gppnetwork.org SIP/2.0")==buf);
+    assert(strstr(buf,"sip:sip:")==NULL);
+    assert(strstr(buf,"From: <sip:user@ims.mnc008.mcc204.3gppnetwork.org>"));
+    assert(strstr(buf,"To: <sip:user@ims.mnc008.mcc204.3gppnetwork.org>"));
+    assert(strstr(buf,"Contact: <sip:user@[2001:db8::2]:5062>"));
     assert(strstr(buf,"Security-Client: ipsec-3gpp"));
-    assert(strstr(buf,"Route: <sip:2001:db8::1;lr>"));
-    assert(strstr(buf,"P-Access-Network-Info: 3GPP-E-UTRAN-TDD"));
+    assert(strstr(buf,"Route:")==NULL);
+    assert(strstr(buf,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD"));
 
     char realm[64],nonce[128],qop[16],alg[24],cnonce[16];
     const char ch[]="WWW-Authenticate: Digest realm=\"ims.mnc008.mcc204.3gppnetwork.org\", nonce=\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\", algorithm=AKAv1-MD5, qop=\"auth\"";
