@@ -1797,9 +1797,12 @@ static void sip_tr_tick(uint64_t now)
      * probe for an owner-verified IMS provisioning environment. */
     static const char *allow_unauth = NULL;
     if (!allow_unauth) allow_unauth = getenv("NUXEL_IMS_ALLOW_UNAUTH_REGISTER");
-    bool iil_a = (allow_unauth && *allow_unauth == '1') && iil_pdn_active(&g.iil_pdn);
-    bool fmt_a = (allow_unauth && *allow_unauth == '1') && ims_pdn_active(&g.ims_pdn);
-    bool bearer = iil_a || fmt_a;
+    /* The IMS bearer (CID2) + rmnet1 iface/route MUST stay applied so the
+     * SIP transport and P-CSCF remain physically available even while REGISTER
+     * TX is held (the ethics gate below only suppresses the REGISTER itself,
+     * never the bearer). */
+    bool bearer = iil_pdn_active(&g.iil_pdn) || ims_pdn_active(&g.ims_pdn);
+    bool reg_allowed = allow_unauth && *allow_unauth == '1';
     if (bearer) {
         if (!g.sip_tr_open) {
             if (iil_pdn_active(&g.iil_pdn)) {
@@ -1808,7 +1811,7 @@ static void sip_tr_tick(uint64_t now)
                 diag("fmt_sip_tr_open", NULL);
             }
         }
-        if (g.sip_tr_open) {
+        if (g.sip_tr_open && reg_allowed) {
             enum ims_sip_tr_phase before = g.sip_tr.phase;
             sip_tr_recv();   /* read 401/200 replies before advancing the FSM */
             if (before == IMS_SIP_TR_IDLE) {
