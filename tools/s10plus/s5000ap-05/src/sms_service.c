@@ -123,7 +123,6 @@ void sms_service_tick(struct sms_service *s,uint64_t now,bool online,bool sim_re
      * prefix) to the SIP MESSAGE builder, which wraps it in RP-DATA addressed
      * to the originating UE. The TPDU is what the SMSC encodes/decodes. */
     {
-        uint32_t peer_off = s->job.id ? 0u : 0u; (void)peer_off;
         char peer[SMS_MAX_PEER];
         if (!sms_store_peer(&s->store, s->job.id, peer, sizeof peer)) return;
         if (!sms_store_sending(&s->store,s->job.id,s->job.part)) { s->store_errors++;s->blocked=true;return; }
