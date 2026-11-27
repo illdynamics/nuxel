@@ -154,6 +154,12 @@ struct radiod_ctx {
     char serving_plmn[6];        /* real serving PLMN from NET 8/3 */
     char serving_cell_id[24];    /* REAL ECI only; empty when unavailable */
     bool serving_cell_valid;
+    /* NET_CELL_INFO_LIST (8/17) acquisition: a read-only IPC41 GET that yields
+     * the real 28-bit serving ECI. Bounded: a few attempts at CP-online, and a
+     * single refresh after a new NET_REGIST so handover changes are followed. */
+    unsigned cell_query_attempts;
+    uint64_t cell_query_next_ms;
+    bool cell_query_sent;        /* an outstanding GET is in flight */
     char baseband[33];
     bool radio_state_valid, radio_on;
     unsigned oes_requests;
@@ -1817,6 +1823,9 @@ static bool sip_tr_open_from_iil(const struct iil_pdn *p)
         .sec_offer = "alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;mod=trans;spi-c=4096;spi-s=4097;port-c=5062;port-s=5064",
         /* Only a REAL serving ECI is passed; empty -> parameter omitted. */
         .cell_id = g.serving_cell_valid && g.serving_cell_id[0] ? g.serving_cell_id : NULL,
+        /* Serving PLMN for the (MCC||MNC) part of utran-cell-id-3gpp. Prefer the
+         * live NET 8/3 value; fall back to the SIM home PLMN (same network). */
+        .home_plmn = g.serving_plmn[0] ? g.serving_plmn : (g.home_plmn[0] ? g.home_plmn : NULL),
         /* Opt-in (NUXEL_IMS_SECURITY_FIRST=1): Require/Proxy-Require sec-agree. */
         .security_first = ims_security_first_env(),
     };
@@ -1914,6 +1923,9 @@ static bool sip_tr_open_from_ims_pdn_idx(const struct ims_pdn *p, unsigned idx)
         .sec_offer = "alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;mod=trans;spi-c=4096;spi-s=4097;port-c=5062;port-s=5064",
         /* Only a REAL serving ECI is passed; empty -> parameter omitted. */
         .cell_id = g.serving_cell_valid && g.serving_cell_id[0] ? g.serving_cell_id : NULL,
+        /* Serving PLMN for the (MCC||MNC) part of utran-cell-id-3gpp. Prefer the
+         * live NET 8/3 value; fall back to the SIM home PLMN (same network). */
+        .home_plmn = g.serving_plmn[0] ? g.serving_plmn : (g.home_plmn[0] ? g.home_plmn : NULL),
         /* Opt-in (NUXEL_IMS_SECURITY_FIRST=1): Require/Proxy-Require sec-agree. */
         .security_first = ims_security_first_env(),
     };
@@ -2536,6 +2548,30 @@ static ds_feedback_kind decode_gating_response(const struct nuxel_sipc_fmt *f)
              * utran-cell-id-3gpp. */
             g.serving_cell_valid = sn.cell_id_valid;
             if (!sn.cell_id_valid) g.serving_cell_id[0] = 0;
+        }
+        return DS_FEEDBACK_IGNORE;
+    }
+
+    /* ---- NET_CELL_INFO_LIST (main=8 sub=17): real serving ECI ---- */
+    if (f->main_cmd == IPC41_MAIN_NET &&
+        f->sub_cmd == (uint8_t)IPC41_NET_CELL_INFO_LIST &&
+        f->cmd_type == IPC41_TYPE_RESPONSE) {
+        struct fmt_rx_net_cell_info ci;
+        (void)fmt_rx_net_cell_info(f->payload, f->payload_len,
+                                   g.serving_plmn[0] ? g.serving_plmn : NULL, &ci);
+        g.cell_query_sent = false;
+        if (ci.cell_id_valid) {
+            snprintf(g.serving_cell_id, sizeof g.serving_cell_id, "%s", ci.cell_id);
+            g.serving_cell_valid = true;
+            diagf("net_cell_info", "\"valid\":true,\"eci_len\":%u,\"tac_zero\":%s,\"pci_zero\":%s",
+                  (unsigned)strlen(g.serving_cell_id),
+                  ci.tac == 0 ? "true" : "false", ci.pci == 0 ? "true" : "false");
+        } else {
+            /* Parsed but no ECI-class serving cell for this CP right now:
+             * never fabricate; omit the parameter. */
+            g.serving_cell_valid = false;
+            g.serving_cell_id[0] = 0;
+            diagf("net_cell_info", "\"valid\":false,\"lte_count\":%u", (unsigned)ci.lte_count);
         }
         return DS_FEEDBACK_IGNORE;
     }
@@ -3324,6 +3360,32 @@ static int tick_handler(sd_event_source *s, uint64_t usec, void *userdata)
             g.status_query = (g.status_query + 1) % 11;
             g.status_next_ms = now_ms() + (g.status_query ? 1000 : 60000);
         } else g.status_next_ms = now_ms() + 5000;
+    }
+
+    /* Real serving ECI acquisition (NET_CELL_INFO_LIST, main=8 sub=17). This
+     * is a read-only GET recovered from IpcTxNetCellInfoList @0x3378d0. It is
+     * issued at most a few times: immediately when the CP + SIM are ready
+     * (so the first REGISTER can carry a genuine utran-cell-id-3gpp), then a
+     * short backoff retry if unanswered, and once more after a fresh NET_REGIST
+     * so a handover is reflected. A valid ECI is cleared when the SIM/CP goes
+     * away so a stale id can never be transmitted. */
+    if (!(g.write_enabled && g.cp_online && g.fmt.present && g.sim_ready_seen)) {
+        if (g.cell_query_sent) g.cell_query_sent = false;
+        if (g.serving_cell_valid) { g.serving_cell_valid = false; g.serving_cell_id[0] = 0; }
+    } else if (!g.cell_query_sent && g.cell_query_attempts < 4u &&
+               now_ms() >= g.cell_query_next_ms &&
+               (g.dsc.phase == DS_IDLE || ds_terminal(&g.dsc) ||
+                !g.sim_ready_seen) &&
+               !mobile_stop_busy(&g.mobile_stop)) {
+        struct fmt_tx_frame cq;
+        if (fmt_tx_net_cell_info_list(&cq) && radiod_write_fmt(&cq)) {
+            g.cell_query_sent = true;
+            g.cell_query_attempts++;
+            g.cell_query_next_ms = now_ms() + 8000;   /* re-arm if unanswered */
+            diagf("net_cell_info_query", "\"attempt\":%u", g.cell_query_attempts);
+        } else {
+            g.cell_query_next_ms = now_ms() + 5000;
+        }
     }
 
     uint64_t t = now_ms();

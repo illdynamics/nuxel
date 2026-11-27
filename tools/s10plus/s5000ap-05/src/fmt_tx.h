@@ -103,6 +103,12 @@ bool fmt_tx_get_atr(struct fmt_tx_frame *f);
 /* Query serving network / registration. No payload. */
 bool fmt_tx_get_serving_network(struct fmt_tx_frame *f);
 bool fmt_tx_get_registration(struct fmt_tx_frame *f);
+/* NET_CELL_INFO_LIST GET (main=8 sub=17) and DOMESTIC_LTE_CELL_INFO GET
+ * (main=32 sub=15): read-only IPC41 requests that yield the real serving
+ * E-UTRAN cell id (28-bit ECI). Recovered from IpcTxNetCellInfoList @0x3378d0
+ * and IpcTxDomesticGetLteCellInfo @0x326890 (libsec-ril EFUJ2). */
+bool fmt_tx_net_cell_info_list(struct fmt_tx_frame *f);
+bool fmt_tx_domestic_get_lte_cell_info(struct fmt_tx_frame *f);
 
 /* Query PS/data registration state (source: IpcTxNetGetDataRegState @0x335b00).
  * 9-byte NET(NET_REGIST sub=5) request with a 2-byte payload. This is the

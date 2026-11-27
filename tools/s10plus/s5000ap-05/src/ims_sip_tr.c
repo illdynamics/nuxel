@@ -36,6 +36,7 @@ bool ims_sip_tr_open(struct ims_sip_tr *t, const struct ims_sip_tr_cfg *cfg,
         strlen(cfg->pcscf) >= IMS_SIP_TR_HOST_MAX ||
         strlen(cfg->local_ip) >= IMS_SIP_TR_HOST_MAX) return false;
     if (cfg->sec_offer && strlen(cfg->sec_offer) >= sizeof t->_sec_offer) return false;
+    if (cfg->home_plmn && strlen(cfg->home_plmn) >= sizeof t->_home_plmn) return false;
     if (cfg->cell_id && strlen(cfg->cell_id) >= sizeof t->_cell_id) return false;
     memset(t, 0, sizeof *t);
     snprintf(t->_impu, sizeof t->_impu, "%s", cfg->impu);
@@ -44,6 +45,7 @@ bool ims_sip_tr_open(struct ims_sip_tr *t, const struct ims_sip_tr_cfg *cfg,
     snprintf(t->_local_ip, sizeof t->_local_ip, "%s", cfg->local_ip);
     if (cfg->sec_offer) snprintf(t->_sec_offer, sizeof t->_sec_offer, "%s", cfg->sec_offer);
     if (cfg->cell_id && *cfg->cell_id) snprintf(t->_cell_id, sizeof t->_cell_id, "%s", cfg->cell_id);
+    if (cfg->home_plmn && *cfg->home_plmn) snprintf(t->_home_plmn, sizeof t->_home_plmn, "%s", cfg->home_plmn);
     t->cfg = *cfg;
     t->cfg.impu = t->_impu;
     t->cfg.impi = t->_impi;
@@ -51,6 +53,7 @@ bool ims_sip_tr_open(struct ims_sip_tr *t, const struct ims_sip_tr_cfg *cfg,
     t->cfg.local_ip = t->_local_ip;
     t->cfg.sec_offer = cfg->sec_offer ? t->_sec_offer : NULL;
     t->cfg.cell_id = (cfg->cell_id && *cfg->cell_id) ? t->_cell_id : NULL;
+    t->cfg.home_plmn = (cfg->home_plmn && *cfg->home_plmn) ? t->_home_plmn : NULL;
     if (io) t->io = *io;
     t->user = user;
     t->phase = IMS_SIP_TR_IDLE;
@@ -84,6 +87,7 @@ void ims_sip_tr_close(struct ims_sip_tr *t)
     wipe(t->_local_ip, sizeof t->_local_ip);
     wipe(t->_sec_offer, sizeof t->_sec_offer);
     wipe(t->_cell_id, sizeof t->_cell_id);
+    wipe(t->_home_plmn, sizeof t->_home_plmn);
     t->scratch_len = 0;
     t->phase = IMS_SIP_TR_IDLE;
 }
@@ -124,12 +128,14 @@ static bool send_register(struct ims_sip_tr *t, bool auth)
     bool secure_first = t->cfg.security_first &&
                         t->cfg.sec_offer && *t->cfg.sec_offer;
     size_t n = secure_first
-        ? ims_sip_register_build_secure(out, sizeof out,
+        ? ims_sip_register_build_secure_ex3(out, sizeof out,
               t->cfg.impu, t->cfg.impi, t->cfg.pcscf, t->cfg.local_ip,
-              t->cfg.port, t->cfg.sec_offer, NULL, t->cfg.cell_id)
-        : ims_sip_register_build_ex2(out, sizeof out,
+              t->cfg.port, t->cfg.sec_offer, NULL, t->cfg.cell_id,
+              t->cfg.home_plmn)
+        : ims_sip_register_build_ex3(out, sizeof out,
               t->cfg.impu, t->cfg.impi, t->cfg.pcscf, t->cfg.local_ip,
-              t->cfg.port, t->cfg.sec_offer, NULL, t->cfg.cell_id);
+              t->cfg.port, t->cfg.sec_offer, NULL, t->cfg.cell_id,
+              t->cfg.home_plmn);
     if (n == 0) return false;
     /* Insert Authorization before the trailing CRLF CRLF for authenticated
      * retry. The codec emits Content-Length: 0\r\n\r\n at the end; find it. */

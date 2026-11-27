@@ -114,6 +114,7 @@ static size_t ims_sip_register_build_core(char *out, size_t cap,
                                           const char *pcscf, const char *local_ip,
                                           uint16_t port, const char *sec_offer,
                                           const char *imei, const char *cell_id,
+                                          const char *home_plmn,
                                           bool require_sec_agree);
 
 size_t ims_sip_register_build_ex2(char *out, size_t cap, const char *impu,
@@ -123,7 +124,17 @@ size_t ims_sip_register_build_ex2(char *out, size_t cap, const char *impu,
                                   const char *cell_id)
 {
     return ims_sip_register_build_core(out, cap, impu, impi, pcscf, local_ip,
-                                       port, sec_offer, imei, cell_id, false);
+                                       port, sec_offer, imei, cell_id, NULL, false);
+}
+size_t ims_sip_register_build_ex3(char *out, size_t cap, const char *impu,
+                                  const char *impi, const char *pcscf,
+                                  const char *local_ip, uint16_t port,
+                                  const char *sec_offer, const char *imei,
+                                  const char *cell_id, const char *home_plmn)
+{
+    return ims_sip_register_build_core(out, cap, impu, impi, pcscf, local_ip,
+                                       port, sec_offer, imei, cell_id, home_plmn,
+                                       false);
 }
 
 /* Security-first initial REGISTER (TS 33.203 7.1 / TS 24.229 5.1.2A). Some
@@ -140,7 +151,18 @@ size_t ims_sip_register_build_secure(char *out, size_t cap, const char *impu,
                                      const char *cell_id)
 {
     return ims_sip_register_build_core(out, cap, impu, impi, pcscf, local_ip,
-                                       port, sec_offer, imei, cell_id, true);
+                                       port, sec_offer, imei, cell_id, NULL, true);
+}
+size_t ims_sip_register_build_secure_ex3(char *out, size_t cap,
+                                         const char *impu, const char *impi,
+                                         const char *pcscf, const char *local_ip,
+                                         uint16_t port, const char *sec_offer,
+                                         const char *imei, const char *cell_id,
+                                         const char *home_plmn)
+{
+    return ims_sip_register_build_core(out, cap, impu, impi, pcscf, local_ip,
+                                       port, sec_offer, imei, cell_id, home_plmn,
+                                       true);
 }
 
 static size_t ims_sip_register_build_core(char *out, size_t cap,
@@ -148,6 +170,7 @@ static size_t ims_sip_register_build_core(char *out, size_t cap,
                                           const char *pcscf, const char *local_ip,
                                           uint16_t port, const char *sec_offer,
                                           const char *imei, const char *cell_id,
+                                          const char *home_plmn,
                                           bool require_sec_agree)
 {
     if (!out || !impu || !impi || !pcscf || !local_ip) return 0;
@@ -228,9 +251,22 @@ static size_t ims_sip_register_build_core(char *out, size_t cap,
                   (*q >= 'A' && *q <= 'F'))) { cell_ok = false; break; }
         if (cell_ok && strlen(cell_id) > 16) cell_ok = false;
     }
-    if (cell_ok) {
-        if (!addf(&r,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD;utran-cell-id-3gpp=%s\r\n",
-                  cell_id)) return 0;
+    /* TS 24.229 7.2A.2 / RFC 3455 4.1: utran-cell-id-3gpp =
+     *   (MCC||MNC) joined with the 28-bit ECI in 7 hex octets.
+     * The ECI is always present in this value (the parameter is "cell-id"),
+     * so we require BOTH a real PLMN (home_plmn, from NET 8/3) AND a real,
+     * non-zero ECI (from NET 8/17) before emitting it. If EITHER is missing,
+     * the cell-id parameter is OMITTED entirely (3GPP-E-UTRAN-FDD alone), which
+     * TS 24.229 permits; we never emit a fabricated 00000000 ECI and never
+     * splice a partial value. */
+    bool plmn_ok = home_plmn && strlen(home_plmn) >= 5;
+    if (plmn_ok) {
+        for (const char *q = home_plmn; q < home_plmn + 5; q++)
+            if (*q < '0' || *q > '9') { plmn_ok = false; break; }
+    }
+    if (cell_ok && plmn_ok) {
+        if (!addf(&r,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD;utran-cell-id-3gpp=%.5s%s\r\n",
+                  home_plmn, cell_id)) return 0;
     } else {
         if (!addf(&r,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD\r\n")) return 0;
     }

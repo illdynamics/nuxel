@@ -53,6 +53,16 @@ size_t ims_sip_register_build_ex2(char *out, size_t cap,
                                   const char *pcscf, const char *local_ip,
                                   uint16_t port, const char *sec_offer,
                                   const char *imei, const char *cell_id);
+/* Fullest variant: adds the serving PLMN (5 ASCII digits, e.g. "20408") so
+ * utran-cell-id-3gpp can be emitted as (MCC||MNC)||ECI per TS 24.229 7.2A.2.
+ * The parameter is emitted ONLY when BOTH home_plmn (5 digits) and a valid hex
+ * cell_id are present; otherwise it is omitted (never fabricated/partial). */
+size_t ims_sip_register_build_ex3(char *out, size_t cap,
+                                  const char *impu, const char *impi,
+                                  const char *pcscf, const char *local_ip,
+                                  uint16_t port, const char *sec_offer,
+                                  const char *imei, const char *cell_id,
+                                  const char *home_plmn);
 /* Security-first initial REGISTER: adds `Require: sec-agree` +
  * `Proxy-Require: sec-agree` to a REGISTER that already carries a complete
  * ipsec-3gpp Security-Client offer. Used for P-CSCFs that reject a plaintext
@@ -62,6 +72,12 @@ size_t ims_sip_register_build_secure(char *out, size_t cap, const char *impu,
                                      const char *local_ip, uint16_t port,
                                      const char *sec_offer, const char *imei,
                                      const char *cell_id);
+size_t ims_sip_register_build_secure_ex3(char *out, size_t cap,
+                                         const char *impu, const char *impi,
+                                         const char *pcscf, const char *local_ip,
+                                         uint16_t port, const char *sec_offer,
+                                         const char *imei, const char *cell_id,
+                                         const char *home_plmn);
 /* Parse a 401/407 WWW-Authenticate challenge. Only AKAv1-MD5/AKAv2-MD5 and
  * qop=auth without integrity are accepted for IMS; MD5-only challenges are
  * rejected (IMS requires AKA). `nonce`/`realm`/`cnonce` are zero-terminated

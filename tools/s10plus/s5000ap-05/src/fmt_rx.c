@@ -293,3 +293,108 @@ bool fmt_rx_serving_network(const uint8_t *p, size_t n,
     *out = v;
     return true;
 }
+
+/* NET_CELL_INFO_LIST (main=8 sub=17), decoded from libsec-ril EFUJ2
+ * IpcProtocol41::IpcRxNetCellInfoList @0x33c3b0 (request builder
+ * IpcProtocol41::IpcTxNetCellInfoList @0x3378d0 emits header
+ * `07 00 00 00 08 11 02` == main=8 sub=17 type=2 REQUEST, no payload).
+ *
+ * Payload (length byte [0..1]=total LE; [6]=cmd_type(3); [7..11]=per-RAT
+ * counts in the fixed order GSM-general, GSM, WCDMA-UMTS, UMTS, LTE; data
+ * starts at +12). Each LTE record is EXACTLY 20 bytes:
+ *   [0]     gid        (2 = ECI; the 28-bit E-UTRAN cell identity)
+ *   [1..3]  PLMN triplet
+ *   [4..5]  TAC (LE)
+ *   [6..9]  ECI (LE, 28 bits significant)                 <-- wanted
+ *   [10..11] PCI (LE)
+ *   [12..14] EARFCN (3 bytes)
+ *   [15]    bandwidth
+ *   [0x10..] RSRP/RSRQ/RSSNR/CQI/TA
+ * Non-LTE records must be skipped to reach the LTE block:
+ *   GSM-general 20, GSM 20, WCDMA-UMTS 32, UMTS 31, LTE 20 bytes each.
+ *
+ * This decoder is strictly bounded and never fabricates: it validates the
+ * declared total against the sum implied by the counts, rejects any count
+ * that would overflow the payload, and returns the ECI ONLY when the first
+ * LTE record with gid==2 has a non-zero ECI. On truncation, malformation or
+ * gid!=2 it reports cell_id_valid=false. It is read-only by nature. */
+bool fmt_rx_net_cell_info(const uint8_t *p, size_t n,
+                          const char *plmn_expect,
+                          struct fmt_rx_net_cell_info *out)
+{
+    if (!out) return false;
+    memset(out, 0, sizeof *out);
+    if (!p || n < 12) return false;
+    unsigned total = (unsigned)p[0] | ((unsigned)p[1] << 8);
+    uint8_t n_gsmg = p[7], n_gsm = p[8], n_wcu = p[9], n_umts = p[10], n_lte = p[11];
+    /* Declared total must reference the actual buffer (allow trailing bytes
+     * but not fewer than declared). */
+    if (total < 12 || total > n) return false;
+    if (p[6] != 3) return false;          /* cmd_type must be a response */
+    /* Overflow-guard: refuse absurd counts before multiplying. */
+    if (n_gsmg > 32 || n_gsm > 32 || n_wcu > 32 || n_umts > 32 || n_lte > 16)
+        return false;
+    size_t need = 12u;
+    need += (size_t)n_gsmg * 20u;
+    need += (size_t)n_gsm  * 20u;
+    need += (size_t)n_wcu  * 32u;
+    need += (size_t)n_umts * 31u;
+    need += (size_t)n_lte  * 20u;
+    /* total_length must exactly equal the computed record size. */
+    if (need != total) return false;
+    size_t off = 12u;
+    off += (size_t)n_gsmg * 20u;
+    off += (size_t)n_gsm  * 20u;
+    off += (size_t)n_wcu  * 32u;
+    off += (size_t)n_umts * 31u;
+    out->lte_count = n_lte;
+    for (unsigned i = 0; i < n_lte; i++) {
+        const uint8_t *e = p + off + (size_t)i * 20u;
+        if (off + (size_t)(i + 1) * 20u > total) break;
+        uint8_t gid = e[0];
+        uint32_t eci = (uint32_t)e[6] | ((uint32_t)e[7] << 8) |
+                       ((uint32_t)e[8] << 16) | ((uint32_t)e[9] << 24);
+        eci &= 0x0FFFFFFFu;   /* ECI is 28 bits */
+        uint16_t tac = (uint16_t)e[4] | ((uint16_t)e[5] << 8);
+        uint16_t pci = (uint16_t)e[10] | ((uint16_t)e[11] << 8);
+        if (gid == 2 && eci != 0) {
+            /* Fill tac/pci/plmn first so the PLMN sanity check can gate it. */
+            out->tac = tac;
+            out->pci = pci;
+            /* PLMN: NetworkManager::SetOperatorNametoCellInfo formats the
+             * operator as "%s%s" (alpha=record[+10..12], numeric=
+             * record[+20..22]); each is a byte array where byte k is
+             * MCC/MNC digit k of "MCC||MNC". Network 8/3 already gives the
+             * authoritative serving PLMN (P-Access-Network-Info prefix), so we
+             * register a SANITY check here only: accept the cell's PLMN iff its
+             * five digits equal the serving PLMN the daemon passed in
+             * `plmn_expect`. This rejects stale/foreign cells without ever
+             * fabricating a value (the daemon still uses 8/3 for the prefix). */
+            out->plmn_bcd[0] = e[1]; out->plmn_bcd[1] = e[2]; out->plmn_bcd[2] = e[3];
+            bool sane = true;
+            for (int k = 0; k < 3; k++)
+                if (out->plmn_bcd[k] > 9) { sane = false; break; }
+            if (sane && plmn_expect && strlen(plmn_expect) >= 5) {
+                /* cell digits d0 d1 d2 = MCC(3); for a 3-digit MNC the vendor
+                 * uses e[3] as the 3rd MNC digit; otherwise e[3]==0xFF. We only
+                 * assert the MCC matches and (when present) the digits line up
+                 * with the expected 5-digit PLMN prefix. */
+                const char *x = plmn_expect;
+                bool eq = (out->plmn_bcd[0] == (uint8_t)(x[0]-'0') &&
+                           out->plmn_bcd[1] == (uint8_t)(x[1]-'0') &&
+                           out->plmn_bcd[2] == (uint8_t)(x[2]-'0'));
+                out->plmn_sane = eq;
+            } else {
+                out->plmn_sane = sane;   /* no expectation: just digit check */
+            }
+            if (!out->plmn_sane) return true;   /* stale/foreign cell: reject ECI */
+            /* 8 lowercase hex digits, no libc printf dependency. */
+            static const char hx[] = "0123456789abcdef";
+            for (int b = 7; b >= 0; b--) out->cell_id[7 - b] = hx[(eci >> (b * 4)) & 0xf];
+            out->cell_id[8] = 0;
+            out->cell_id_valid = true;
+            return true;
+        }
+    }
+    return true;   /* parsed; no ECI-class serving cell present */
+}

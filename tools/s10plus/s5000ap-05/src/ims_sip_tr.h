@@ -82,6 +82,10 @@ struct ims_sip_tr_cfg {
     const char *cell_id;     /* REAL serving ECI (hex) for utran-cell-id-3gpp,
                               * or NULL when unavailable (parameter omitted;
                               * never fabricated). */
+    const char *home_plmn;   /* serving PLMN, 5 ASCII digits (e.g. "20408")
+                              * for the (MCC||MNC) prefix of utran-cell-id-3gpp.
+                              * The parameter needs BOTH this and cell_id; if
+                              * either is absent it is omitted, never faked. */
     bool        security_first; /* emit Require/Proxy-Require: sec-agree on the
                                  * initial REGISTER (TS 33.203 7.1). Only set
                                  * when sec_offer is a complete ipsec-3gpp offer. */
@@ -96,6 +100,7 @@ struct ims_sip_tr {
     char _local_ip[IMS_SIP_TR_HOST_MAX];
     char _sec_offer[320];
     char _cell_id[24];
+    char _home_plmn[8];
 
     struct ims_sip_tr_cfg cfg;
     struct ims_sip_tr_io  io;

@@ -72,26 +72,39 @@ int main(void)
         assert(strstr(buf,"Proxy-Require: sec-agree")==NULL);
     }
 
-    /* A real ECI is emitted only when supplied via ex2. */
-    size_t cn=ims_sip_register_build_ex2(buf,sizeof buf,
+    /* A real ECI requires ex3 + serving PLMN; the value is the (MCC||MNC)
+     * prefix joined with the 28-bit ECI (TS 24.229 7.2A.2), e.g. 20408 + ECI. */
+    size_t cn=ims_sip_register_build_ex3(buf,sizeof buf,
         "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
         "user@ims.mnc008.mcc204.3gppnetwork.org",
-        "2001:db8::1","2001:db8::2",5062,NULL,NULL,"0a1b2c3");
-    assert(cn>0 && strstr(buf,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD;utran-cell-id-3gpp=0a1b2c3"));
-    /* A malformed / non-hex cell id is rejected -> parameter omitted, never
-     * echoed verbatim. */
+        "2001:db8::1","2001:db8::2",5062,NULL,NULL,"000a1b2c","20408");
+    assert(cn>0 && strstr(buf,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD;utran-cell-id-3gpp=20408000a1b2c"));
+    /* ex2 (no PLMN) leaves the value omitted even with a valid ECI: the
+     * parameter cannot be emitted without the MCC||MNC part. */
     cn=ims_sip_register_build_ex2(buf,sizeof buf,
         "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
         "user@ims.mnc008.mcc204.3gppnetwork.org",
-        "2001:db8::1","2001:db8::2",5062,NULL,NULL,"zz!!");
+        "2001:db8::1","2001:db8::2",5062,NULL,NULL,"000a1b2c");
     assert(cn>0 && strstr(buf,"utran-cell-id-3gpp") == NULL);
-    /* The all-zero cell id, even if passed, is not the fabricated form; it is
-     * only emitted when explicitly given (proving no code path injects it). */
-    cn=ims_sip_register_build_ex2(buf,sizeof buf,
+    /* ex3 with a malformed/non-hex ECI -> omitted, never echoed verbatim. */
+    cn=ims_sip_register_build_ex3(buf,sizeof buf,
         "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
         "user@ims.mnc008.mcc204.3gppnetwork.org",
-        "2001:db8::1","2001:db8::2",5062,NULL,NULL,NULL);
-    assert(cn>0 && strstr(buf,"utran-cell-id-3gpp=00000000") == NULL);
+        "2001:db8::1","2001:db8::2",5062,NULL,NULL,"zz!!","20408");
+    assert(cn>0 && strstr(buf,"utran-cell-id-3gpp") == NULL);
+    /* ex3 with a non-digit PLMN -> omitted (never splice a bad prefix). */
+    cn=ims_sip_register_build_ex3(buf,sizeof buf,
+        "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
+        "user@ims.mnc008.mcc204.3gppnetwork.org",
+        "2001:db8::1","2001:db8::2",5062,NULL,NULL,"000a1b2c","2040x");
+    assert(cn>0 && strstr(buf,"utran-cell-id-3gpp") == NULL);
+    /* ex3 with no ECI -> parameter omitted (the fabricated 00000000 is never
+     * injected by any code path). */
+    cn=ims_sip_register_build_ex3(buf,sizeof buf,
+        "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
+        "user@ims.mnc008.mcc204.3gppnetwork.org",
+        "2001:db8::1","2001:db8::2",5062,NULL,NULL,NULL,"20408");
+    assert(cn>0 && strstr(buf,"utran-cell-id-3gpp") == NULL);
 
     /* _ex with a real 15-digit IMEI advertises a real device instance URN
      * (RFC 5626 <8>-<6>-<1> grouping); it is a device id, never a secret. */

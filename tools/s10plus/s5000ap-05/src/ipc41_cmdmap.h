@@ -136,7 +136,8 @@ enum ipc41_net_subcmd {
     IPC41_NET_PREFERRED_NETWORK_INFO = 13,
     IPC41_NET_HYBRID_MODE            = 14,
     IPC41_NET_HANDOVER               = 15,
-    IPC41_NET_CELL_INFO              = 18,
+    IPC41_NET_CELL_INFO_LIST         = 17,  /* NET_CELL_INFO_LIST: IpcTx/IpcRxNetCellInfoList @0x3378d0/@0x33c3b0 (GET main=8 sub=17); carries the real 28-bit serving ECI */
+    IPC41_NET_CELL_INFO              = 17,  /* alias kept for source compat */
     IPC41_NET_ECC_RAT                = 19,
     IPC41_NET_LTE_UE_CAPA            = 20,
     IPC41_NET_HVOLTE_TESTMODE       = 40,  /* NET_HVOLTE_TESTMODE (IpcTxGet/SetVolteTestmode) */

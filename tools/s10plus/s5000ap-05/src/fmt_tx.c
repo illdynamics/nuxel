@@ -277,6 +277,26 @@ bool fmt_tx_get_registration(struct fmt_tx_frame *f)
     return fmt_tx_raw(f, MAIN_NET, 5 /*NET_REGIST*/, FMT_TX_TYPE_REQUEST, NULL, 0);
 }
 
+/* NET_CELL_INFO_LIST GET (main=8 sub=17 type=2), recovered byte-exact from
+ * IpcProtocol41::IpcTxNetCellInfoList @0x3378d0 in libsec-ril EFUJ2. The
+ * vendor builder writes a 7-byte frame `07 00 00 00 08 11 02` with NO
+ * payload; the CP answers with IpcRxNetCellInfoList, from which the real
+ * 28-bit serving ECI is decoded (fmt_rx_net_cell_info). Strictly read-only. */
+bool fmt_tx_net_cell_info_list(struct fmt_tx_frame *f)
+{
+    return fmt_tx_raw(f, MAIN_NET, 17 /*NET_CELL_INFO_LIST*/, FMT_TX_TYPE_REQUEST, NULL, 0);
+}
+
+/* DOMESTIC_LTE_CELL_INFO GET (main=32 sub=15 type=2), recovered byte-exact
+ * from IpcProtocol41::IpcTxDomesticGetLteCellInfo @0x326890; the vendor
+ * builder writes a 7-byte frame `07 00 00 00 20 0f 02`. Alternate read-only
+ * source of the serving LTE cell id (IpcRxDomesticLteCellInfo @0x328c18). */
+bool fmt_tx_domestic_get_lte_cell_info(struct fmt_tx_frame *f)
+{
+    return fmt_tx_raw(f, 32u /*MAIN_DOMESTIC*/, 15 /*DOMESTIC_LTE_CELL_INFO*/,
+                      FMT_TX_TYPE_REQUEST, NULL, 0);
+}
+
 /*
  * PS/data registration state query (IpcTxNetGetDataRegState @0x335b00).
  *

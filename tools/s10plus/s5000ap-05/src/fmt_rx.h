@@ -44,6 +44,28 @@ struct fmt_rx_serving_network {
 bool fmt_rx_serving_network(const uint8_t *p, size_t n,
                             struct fmt_rx_serving_network *out);
 
+/* NET_CELL_INFO_LIST (main=8 sub=17). The IPC41 serving-network frame (8/3)
+ * above carries no E-UTRAN cell id on this CP, but the vendor RIL DOES have a
+ * dedicated read-only cell-info GET, recovered byte-exact from libsec-ril
+ * EFUJ2: IpcProtocol41::IpcTxNetCellInfoList @0x3378d0 emits
+ * `07 00 00 00 08 11 02` (main=8 sub=17 type=2). Its response is decoded by
+ * IpcProtocol41::IpcRxNetCellInfoList @0x33c3b0. The 20-byte LTE record
+ * carries the 28-bit ECI at [6..9] (gid=2). Below is a bounded decoder of that
+ * response that returns ONLY a genuine, non-zero ECI; never fabricated. */
+struct fmt_rx_net_cell_info {
+    char     cell_id[16];   /* "%08x" of the ECI; empty unless valid */
+    bool     cell_id_valid; /* false on truncation/malformation/gid!=2/ECI==0 */
+    uint16_t tac;
+    uint16_t pci;
+    uint8_t  lte_count;
+    uint8_t  plmn_bcd[3];   /* raw MCC/MNC digit bytes (vendor byte-array form) */
+    bool     plmn_sane;     /* digits valid; and match plmn_expect (MCC) if given */
+};
+/* `plmn_expect` = the serving PLMN from NET 8/3 ("20408"); when non-NULL the
+ * cell's MCC must match it (stale/foreign-cell rejection). Pass NULL to skip. */
+bool fmt_rx_net_cell_info(const uint8_t *p, size_t n, const char *plmn_expect,
+                          struct fmt_rx_net_cell_info *out);
+
 /* NET_REGIST's RAT is a Samsung wire enum, not the Android RadioTechnology. */
 uint8_t fmt_rx_rat(uint8_t wire);
 const char *fmt_rx_rat_name(uint8_t wire);

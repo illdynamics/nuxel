@@ -247,6 +247,24 @@ int main(void)
         CHECK(g.main_cmd == 22 && g.sub_cmd == 7);
     }
 
+    /* NET_CELL_INFO_LIST GET (IpcTxNetCellInfoList @0x3378d0): exactly the
+     * 7-byte vendor frame 07 00 00 00 08 11 02, no payload. */
+    {
+        struct fmt_tx_frame g;
+        memset(&g, 0xcc, sizeof g);
+        CHECK(fmt_tx_net_cell_info_list(&g));
+        static const uint8_t want[] = {0x07,0x00,0x00,0x00,0x08,0x11,0x02};
+        CHECK(g.len == sizeof want && !memcmp(g.buf, want, sizeof want));
+        CHECK(g.main_cmd == 8 && g.sub_cmd == 17 && g.cmd_type == 2);
+        /* DOMESTIC_LTE_CELL_INFO GET (IpcTxDomesticGetLteCellInfo @0x326890):
+         * 07 00 00 00 20 0f 02. */
+        memset(&g, 0xcc, sizeof g);
+        CHECK(fmt_tx_domestic_get_lte_cell_info(&g));
+        static const uint8_t want2[] = {0x07,0x00,0x00,0x00,0x20,0x0f,0x02};
+        CHECK(g.len == sizeof want2 && !memcmp(g.buf, want2, sizeof want2));
+        CHECK(g.main_cmd == 32 && g.sub_cmd == 15 && g.cmd_type == 2);
+    }
+
     printf("FMT vendor golden vectors: %s (%d failures)\n", failures ? "FAIL" : "PASS", failures);
     return failures ? 1 : 0;
 }
