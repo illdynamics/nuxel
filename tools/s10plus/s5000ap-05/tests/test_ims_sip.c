@@ -26,10 +26,14 @@ int main(void)
     assert(strstr(buf,"Contact: <sip:user@[2001:db8::2]") == NULL);
     /* Without a real IMEI the codec must still emit a syntactically valid
      * RFC 5626 +sip.instance URN (all-zero, anonymous device). */
-    assert(strstr(buf,"+sip.instance=\"<urn:uuid:urn:gsma:imei:00000000-000000-0>\""));
+    /* +sip.instance is the GSMA IMEI URN itself (NOT double-wrapped in
+     * urn:uuid:, which produced an invalid urn:uuid:urn:gsma:...). */
+    assert(strstr(buf,"+sip.instance=\"<urn:gsma:imei:00000000-000000-0>\""));
+    assert(strstr(buf,"urn:uuid:urn:gsma") == NULL);
     assert(strstr(buf,"urn%3Aurn-7%3A3gpp-service.ims.icsi.mmtel"));
-    assert(strstr(buf,"Security-Client: alg=")); /* RFC 3329 key=value token list */
-    assert(strstr(buf,"Security-Client: alg=hmac-sha-1-96"));
+    /* RFC 3329 2.1 / TS 33.203 7.1: the Security-Client value MUST begin with
+     * the ipsec-3gpp mechanism token. */
+    assert(strstr(buf,"Security-Client: ipsec-3gpp;alg=hmac-sha-1-96"));
     /* Round 18 live: the KPN P-CSCF answers 400 Bad Request when the first
      * REGISTER asserts Require/Proxy-Require: sec-agree. The request must
      * therefore carry only the Security-Client OFFER (no Require headers). */
@@ -72,7 +76,7 @@ int main(void)
         "2001:db8::1","2001:db8::2",5062,NULL,
         "353234110123456");
     assert(en>0 && en<sizeof buf);
-    assert(strstr(buf,"+sip.instance=\"<urn:uuid:urn:gsma:imei:35323411-012345-6>\""));
+    assert(strstr(buf,"+sip.instance=\"<urn:gsma:imei:35323411-012345-6>\""));
     /* A non-numeric/over-length IMEI falls back to the all-zero URN. */
     en=ims_sip_register_build_ex(buf,sizeof buf,
         "sip:user@ims.mnc008.mcc204.3gppnetwork.org",

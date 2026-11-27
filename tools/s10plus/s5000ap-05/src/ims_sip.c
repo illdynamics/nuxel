@@ -160,7 +160,7 @@ size_t ims_sip_register_build_ex2(char *out, size_t cap, const char *impu,
      * IMS communication service identifier for MMTEL. `transport=udp` names
      * the signaling to which the ipsec-3gpp Security-Client applies.
      * The local IP stays in the Via (the UE's real reachable address). */
-    if (!addf(&r,"Contact: <sip:%s@%s;transport=udp>;+sip.instance=\"<urn:uuid:%s>\";"
+    if (!addf(&r,"Contact: <sip:%s@%s;transport=udp>;+sip.instance=\"<%s>\";"
               "+g.3gpp.icsi-ref=\"urn%%3Aurn-7%%3A3gpp-service.ims.icsi.mmtel\";expires=600000\r\n",
               cuser, ruri, inst)) return 0;
     /* The INVITE/REGISTER is sent directly to the P-CSCF address (outbound
@@ -201,7 +201,13 @@ size_t ims_sip_register_build_ex2(char *out, size_t cap, const char *impu,
      * is transmitted here and sec-agree is asserted only when continuing after
      * a 401 that advertises Security-Server (handled by the FSM). */
     if (sec_offer && *sec_offer) {
-        if (!addf(&r,"Security-Client: %s\r\n", sec_offer)) return 0;
+        /* RFC 3329 2.1 / TS 33.203 7.1: the header value MUST begin with the
+         * security mechanism name ("ipsec-3gpp"), followed by the parameters.
+         * The caller's offer may or may not already carry it; enforce it. */
+        if (strncmp(sec_offer, "ipsec-3gpp", 10) == 0)
+            { if (!addf(&r,"Security-Client: %s\r\n", sec_offer)) return 0; }
+        else
+            { if (!addf(&r,"Security-Client: ipsec-3gpp;%s\r\n", sec_offer)) return 0; }
     }
     /* P-Preferred-Identity: control the *public* identity presented, separate
      * from the private IMPI used for digest. This is the UE-selected IMPU. */
