@@ -688,3 +688,67 @@ so a real IIL event could never be decoded. THIS IS THE P2/P3 DEFECT to fix.
 ### Preference payload (sub 2 @0x356628)
   payload[0]=buf[7]..., sms format fields at buf[9..]; SmsOverIpFormat
   derived via 0xd54 table for buf[11]/buf[12] (2..4).
+
+---
+
+## ROUND 17 PROGRESS #2 (2026-11-27) — IMS bearer reachable, SIP REGISTER live
+
+### Commits this round
+- 1f17fdf8  IIL RX subcode map correction (authoritative) + CID2 data-path proof
+- adbbc9ce  REGISTER R-URI/Route/TDD fix + attach CID2 IMS bearer to rmnet1
+- (also committed: tests, round17.md)
+
+### Kernel/DT authoritative facts
+- DT exynos9820-beyond2lte: umts_ipc0 id=0xEB fmt=0 (FMT, all FMT+IIL cmds);
+  umts_ipc1 id=0xEC fmt=0 (second FMT, NOT opened by vendor RIL — RIL strings
+  only /dev/umts_ipc0 + /dev/umts_rfs0). rmnet0..7 = SIPC PDP ch 0xA..0x11,
+  io_type=net. So CID1 internet=rmnet0(ch0x0A), CID2 IMS=rmnet1(ch0x0B).
+  multipdp = io_type 2 multiplexer (no process holds it; vnets bind per ch).
+- Vendor RIL IpcProtocol41Iil frames use the SAME sipc_fmt_hdr as FMT
+  ([u16 len][msg_seq][ack_seq][main][sub][type]); confirm from
+  IpcTxImsReqRegistrationE911 @0x355ef0 etc. => IIL rides umts_ipc0 main=0x70.
+- Vendor base IpcTxImsReqRegistrationE911 @0x34ce60 / SetImsPdnInfoE911
+  @0x34cf00 are STUBS (return -1); the E911 provisioning (IIL main112 sub10,
+  2332B) is GEN-rejected (result 0x8003) by this CP. Not the normal path.
+
+### Physical results (live)
+- FMT IMS PDN reaches ACTIVE: CID2 state1, GPRS_IP_CONFIGURATION gives
+  IMS IPv6 + 2 P-CSCF. e.g. ims_ip=2a02:a420:2b62:a843:...:ec85,
+  pcscf=2a02:a47e:e000:100::116 (values rotate per attach).
+- IMS IP is NOT on any AP iface by default (bind EADDRNOTAVAIL); route to
+  P-CSCF leaked out wlan0. After rmnet1 up + IMS IP + P-CSCF /128 route:
+  - SIP OPTIONS/REGISTER physically EGRESS over rmnet1 (dmesg
+    UNCLASSIFIED-OUT OUT=rmnet1) and the P-CSCF replies.
+  - radiod now: ims_iface_up addr_rc=0 route_rc=0, fmt_sip_tr_open,
+    iil_sip_tr_phase register-sent, sip_tr_rx code=480 (every 8s retry).
+- CID2 data path is bidirectional-capable (rmnet1 rx increments).
+
+### REGISTER defect chain (demonstrated + fixed)
+- OLD: R-URI 'sip:sip:IMSI@domain' (double sip), Route self-ref raw IPv6,
+  P-Access-Network-Info TDD -> P-CSCF 403 Forbidden.
+- FIXED -> well-formed REGISTER, R-URI=sip:home.dom, no Route, E-UTRAN-FDD.
+- NOW: P-CSCF/S-CSCF answer **480 Temporarily Unavailable** (Retry-After 180)
+  for IMPU sip:<IMSI>@ims.mnc008.mcc204.3gppnetwork.org. This is a
+  registrar-level "public identity not resolvable / not provisioned as
+  IMSI-derived" — NOT a transport, framing or local parser defect. The 480 is
+  returned BEFORE any 401 AKA challenge.
+
+### Remaining layer (next execution)
+- 480 on the IMSI-derived temporary IMPU. Options to establish conclusively:
+  (a) P5 stock-reference: does the SAME SIM register IMS in a stock S10+/any
+      VoLTE phone? (no second handset currently available — LIMITATION).
+  (b) Read EF_MSISDN from the USIM (legitimate, supported) and try the
+      MSISDN-based IMPU sip:+31...@ims.mnc008.mcc204.3gppnetwork.org. Needs a
+      USIM file-read path (RFS/APDU) not yet implemented.
+  (c) Confirm KPN's required IMPU/IMPI format / IMS entitlement via carrier.
+  Do NOT fabricate an identity; 480 must not be papered over.
+- IPsec-3GPP Gm (ESP from CK/IK) is only exercised AFTER a 401 challenge; not
+  reached yet because of the 480. ims_security.c is ready for that step.
+
+### Invariants preserved (verified live)
+- LTE CID1 IPv6 valid; internet HTTPS 200/301; USB usb0 UP; ZeroTier UP.
+- SMS message 4 = queued/error 0, NOT transmitted; IDs 1-3 untouched.
+- Rollback: /var/lib/nuxel/radio-install.round17-1795770284 (pre-round17
+  binary) + .step2. Deployed sha256 fd1530cc... runs, active.
+- rmnet1 binding is reversible (radiod_ims_iface_down on bearer loss);
+  rmnet0/CID1 never touched.
