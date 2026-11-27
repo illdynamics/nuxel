@@ -158,12 +158,14 @@ int main(void)
     struct ims_sip_digest_params d={0};
     d.impu="user@ims.mnc008.mcc204.3gppnetwork.org";
     d.realm="ims.mnc008.mcc204.3gppnetwork.org";
-    d.nonce=nonce; d.cnonce="6e75786c"; d.method="REGISTER";
+    d.nonce="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="; d.cnonce="6e75786c"; d.method="REGISTER";
     d.uri="sip:ims.mnc008.mcc204.3gppnetwork.org";
     d.response="AQIDBA=="; /* base64 of RES [01 02 03 04] */
     size_t an=ims_sip_authorization_build(buf,sizeof buf,&d,true);
     assert(an>0 && strstr(buf,"Authorization: Digest "));
     assert(strstr(buf,"algorithm=AKAv1-MD5"));
+    assert(strstr(buf,"username=\"user@ims.mnc008.mcc204.3gppnetwork.org\""));
+    assert(strstr(buf,"response=\"b95aa38050f8ae91b06c884dcf23beef\""));
 
     /* SMS-over-IP MESSAGE with RP-DATA body. */
     uint8_t sc[]={3,0x91,0x21,0xf3}, tp[]={1,9,0}, rp[300];
@@ -171,7 +173,7 @@ int main(void)
     assert(rn>0);
     size_t mn=ims_sip_message_build(buf,sizeof buf,
         "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
-        "sip:+31649353067@ims.mnc008.mcc204.3gppnetwork.org",
+        "sip:+12025550123@ims.mnc008.mcc204.3gppnetwork.org",
         "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
         "2001:db8::1", 1, rp, rn);
     assert(mn>0 && strstr(buf,"Content-Type: application/vnd.3gpp.sms"));
@@ -184,12 +186,12 @@ int main(void)
     mn=ims_sip_message_build_ex(buf,sizeof buf,
         "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
         "ims.mnc008.mcc204.3gppnetwork.org",
-        "+31649353067","2001:db8::2",5062,"2001:db8::1",7,rp,rn);
+        "+12025550123","2001:db8::2",5062,"2001:db8::1",7,rp,rn);
     assert(mn>0);
-    assert(strstr(buf,"MESSAGE sip:+31649353067@ims.mnc008.mcc204.3gppnetwork.org SIP/2.0")==buf);
+    assert(strstr(buf,"MESSAGE sip:+12025550123@ims.mnc008.mcc204.3gppnetwork.org SIP/2.0")==buf);
     assert(strstr(buf,"Via: SIP/2.0/UDP [2001:db8::2]:5062;branch="));
     assert(strstr(buf,"From: <sip:user@ims.mnc008.mcc204.3gppnetwork.org>;tag=nuxel7"));
-    assert(strstr(buf,"To: <sip:+31649353067@ims.mnc008.mcc204.3gppnetwork.org>\r\n"));
+    assert(strstr(buf,"To: <sip:+12025550123@ims.mnc008.mcc204.3gppnetwork.org>\r\n"));
     assert(strstr(buf,"Route: <sip:2001:db8::1;lr>"));
     assert(strstr(buf,"P-Preferred-Identity: <sip:user@ims.mnc008.mcc204.3gppnetwork.org>"));
     assert(strstr(buf,"P-Asserted-Identity") == NULL);
@@ -238,6 +240,23 @@ int main(void)
         assert(!ims_sip_response_parse("", 0, &r));
     }
 
+    /* Actual AP-side binary RP MESSAGE parser/response and correlation. */
+    {
+        const uint8_t rp[]={3,77};char wire[2048],response[2400];
+        size_t wn=ims_sip_message_build_ex(wire,sizeof wire,"sip:sc@example.test",NULL,
+            "sip:user@example.test","2001:db8::1",5064,"2001:db8::2",17,rp,sizeof rp);
+        assert(wn);struct ims_sip_sms_request request;
+        assert(ims_sip_sms_parse(wire,wn,&request));
+        assert(request.body_len==2 && !memcmp(request.body,rp,2));
+        size_t rn=ims_sip_sms_response(response,sizeof response,&request,200);
+        assert(rn && ims_sip_same_transaction(wire,wn,response,rn));
+        assert(!ims_sip_sms_parse(wire,wn-1,&request));
+        assert(!ims_sip_same_transaction(wire,wn,"SIP/2.0 200 OK\r\n\r\n",18));
+        const uint8_t sc[]={3,0x91,0x21,0xf3};char uri[32];
+        assert(ims_smsc_uri(sc,sizeof sc,uri,sizeof uri) && !strcmp(uri,"tel:+123"));
+        const uint8_t bad[]={3,0x91,0xf1,0x32};
+        assert(!ims_smsc_uri(bad,sizeof bad,uri,sizeof uri));
+    }
     puts("IMS SIP wire codec: PASS");
     return 0;
 }

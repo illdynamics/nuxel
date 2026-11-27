@@ -97,6 +97,8 @@ struct ims_sip_tr_cfg {
 struct ims_sip_tr {
     /* Owned copies of the config strings (deep-copied on open) so the FSM can
      * outlive the caller's stack buffers. */
+    char _public_impu[256];
+    char _service_route[512];
     char _instance[64];
     char _impu[IMS_SIP_TR_ID_MAX];
     char _impi[IMS_SIP_TR_ID_MAX];
@@ -129,7 +131,12 @@ struct ims_sip_tr {
      * the matching IPsec SAs from CK/IK BEFORE that REGISTER is sent. */
     char sec_server[320];
     bool sec_server_valid;
-    uint32_t cseq;
+    uint32_t cseq, nonce_count;
+    char call_id[64];
+    uint64_t now_ms, refresh_ms;
+    unsigned expires_s;
+    unsigned char reg_request[IMS_SIP_TR_MAX_MSG], sms_request[IMS_SIP_TR_MAX_MSG];
+    unsigned reg_request_len, sms_request_len;
     /* Absolute monotonic time (ms) of the NEXT permitted REGISTER attempt.
      * Carried across a transport re-open so the registrar's Retry-After is
      * honored even when the bearer/socket is re-established mid-backoff.
@@ -192,7 +199,7 @@ bool ims_sip_tr_deregister(struct ims_sip_tr *t);
  * true on send. `tpdu`/`tpdu_len` is the TS 23.040 TPDU (SMS-DELIVER PDU). */
 bool ims_sip_tr_submit_sms(struct ims_sip_tr *t, const char *to,
                            const uint8_t *tpdu, size_t tpdu_len,
-                           uint8_t rp_ref);
+                           uint8_t rp_ref,const uint8_t *smsc,size_t smsc_len);
 
 /* Classification of a SIP response that is NOT a REGISTER transaction reply.
  * Used to advance the SMS-over-IMS submission (TS 24.341): a MESSAGE's

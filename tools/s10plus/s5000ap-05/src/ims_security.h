@@ -19,6 +19,9 @@ struct ims_security {
     unsigned states,policies;
     bool active;
 };
+/* Verify the negotiated algorithms against our offer, retaining each peer's
+ * independently allocated SPIs/ports. No session keys are involved. */
+bool ims_security_negotiate(struct ims_security *s,const char *client,const char *server);
 /* Session CK/IK only, never the private USIM key. Netlink keys never enter
  * argv, logs or files. Installation rolls back a partially installed set. */
 bool ims_security_install(struct ims_security *s,const uint8_t ck[16],const uint8_t ik[16]);

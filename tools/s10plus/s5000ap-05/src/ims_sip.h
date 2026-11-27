@@ -17,6 +17,7 @@
 
 /* RFC 2617 MD5 digest hex output (SIP digest doesn't truncate). */
 struct ims_sip_digest_params {
+    uint32_t nonce_count;
     const char *impu;      /* public identity (sip:...) */
     const char *realm;
     const char *nonce;     /* base64(RAND||AUTN) for AKA, server nonce otherwise */
@@ -149,4 +150,14 @@ bool ims_sip_response_parse(const void *msg, size_t len, struct ims_sip_response
 /* Companion base64 helpers used by challenge/nonce framing. */
 size_t ims_base64_encode(const uint8_t *in, size_t in_len, char *out, size_t cap);
 bool   ims_base64_decode(const char *in, size_t in_len, uint8_t *out, size_t cap, size_t *out_len);
+struct ims_sip_sms_request {
+    char via[512],from[512],to[512],call_id[256];
+    uint32_t cseq;
+    const uint8_t *body;
+    size_t body_len;
+};
+bool ims_sip_header(const void *msg,size_t n,const char *name,char *out,size_t cap);
+bool ims_sip_same_transaction(const void *request,size_t rn,const void *reply,size_t n);
+bool ims_sip_sms_parse(const void *msg,size_t n,struct ims_sip_sms_request *r);
+size_t ims_sip_sms_response(char *out,size_t cap,const struct ims_sip_sms_request *r,unsigned code);
 #endif

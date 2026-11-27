@@ -175,6 +175,10 @@ int main(void)
         is.ims_registered_native=true;
         im.ims_ok=true;
         unsigned iw_before=im.writes;
+        is.submit_held=true;
+        sms_service_tick(&is,299,true,true,false,true,true);
+        CHECK(im.ims_calls==0 && !is.active);
+        is.submit_held=false;
         sms_service_tick(&is,300,true,true,false,true,true);
         CHECK(im.ims_calls==1 && is.active && is.ims_await_ack);
         CHECK(im.ims_tpdu_len>0 && im.ims_tpdu_len==is.job.pdu.len);
@@ -194,7 +198,11 @@ int main(void)
         ims_submit_echo[3]=is.job.pdu.reference;
         receive(&is,4,1,2,is.sequence,ims_submit_echo,sizeof ims_submit_echo);
         CHECK(is.ims_await_ack);
-        CHECK(sms_service_ims_result(&is,true,200) && !is.active && !is.ims_await_ack);
+        CHECK(sms_service_ims_result(&is,true,202) && is.active && is.ims_await_ack);
+        CHECK(sms_store_get(&is.store,iid,&ir) && !strcmp(ir.state,"sending"));
+        CHECK(!sms_service_ims_rp_result(&is,(uint8_t)(is.job.pdu.reference+1),0));
+        CHECK(sms_service_ims_rp_result(&is,is.job.pdu.reference,0));
+        CHECK(!sms_service_ims_rp_result(&is,is.job.pdu.reference,0));
         CHECK(sms_store_get(&is.store,iid,&ir) && !strcmp(ir.state,"submitted"));
         CHECK(!sms_service_ims_result(&is,true,200)); /* idempotent: none pending */
 
@@ -242,23 +250,15 @@ int main(void)
     {
         struct sms_service ds; struct mock dm={.service=&ds};
         CHECK(sms_service_open(&ds,":memory:",write_frame,changed,&dm));
-        /* Synthetic SMS-DELIVER PDU: SMSC length 0, then a minimal deliver. */
-        const uint8_t pdu[] = {0x00, 0x04, 0x0b, 0x91, 0x26, 0x56, 0x14, 0x00,
-                               0x00, 0x11, 0x00, 0x11, 0xf1, 0x02, 0x10, 0x20,
-                               0x00, 0x00, 0xc8, 0x32, 0x9b, 0xfd, 0x0e, 0x01};
-        unsigned before = dm.notifications;
-        bool ok = sms_service_deliver_ims(&ds, pdu, sizeof pdu);
-        if (ok) {
-            uint32_t ids[4]; unsigned n = sms_store_list(&ds.store, ids, 4);
-            CHECK(n == 1 && ds.received >= 1 && dm.notifications > before);
-            /* Same PDU again: dedupe (no second store row). */
-            (void)sms_service_deliver_ims(&ds, pdu, sizeof pdu);
-            CHECK(sms_store_list(&ds.store, ids, 4) == n);
-        } else {
-            /* If the synthetic PDU is rejected by the strict decoder, the
-             * entry point must fail closed (no row, no notify). */
-            uint32_t ids[4]; CHECK(sms_store_list(&ds.store, ids, 4) == 0);
-        }
+        const uint8_t pdu[] = {0x00,0x00,0x0b,0x91,0x21,0x43,0x65,0x87,0x09,0xf1,0x00,0x00,0x62,0x11,0x42,0x12,0x43,0x65,0x40,0x05,0xe8,0x32,0x9b,0xfd,0x06};
+        unsigned before=dm.notifications;
+        CHECK(sms_service_deliver_ims(&ds,pdu,sizeof pdu));
+        uint32_t ids[4];unsigned n=sms_store_list(&ds.store,ids,4);
+        CHECK(n==1 && ds.received==1 && dm.notifications==before+1);
+        struct sms_record stored;CHECK(sms_store_get(&ds.store,ids[0],&stored));
+        CHECK(!strcmp(stored.text,"hello"));
+        CHECK(sms_service_deliver_ims(&ds,pdu,sizeof pdu));
+        CHECK(sms_store_list(&ds.store,ids,4)==1 && dm.notifications==before+1);
         /* Truncated/malformed input never stored. */
         CHECK(!sms_service_deliver_ims(&ds, pdu, 3));
         CHECK(!sms_service_deliver_ims(&ds, NULL, 0));

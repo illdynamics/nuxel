@@ -74,3 +74,54 @@ Contact advertises SMS-over-IP and 600-second expiry, not unimplemented MMTEL.
 Network refusal will persist an engineering registration hold containing the
 minimum retry epoch. This deliberately prevents unchanged repeated attempts
 across restarts; remove only after a meaningful correction and expiry.
+
+## Physical result (2026-11-27 16:26 UTC)
+Installed/running MD5 eeebf16dbd71a2272f135cebec571b5b verified after wrapper
+finished exec. CP ONLINE; CID1/CID2 preserved. NET_CELL_INFO parsed true:
+4–5 LTE records, exactly one serving, full PLMN match. Actual ECI 076f31f,
+TAC 846e. On-wire PANI: 3GPP-E-UTRAN-FDD;utran-cell-id-3gpp=20408846e076f31f.
+This disproves sms24's TAC=0000 claim (legacy LAC, wrong LTE field).
+One corrected REGISTER at 16:26:16 UTC -> SIP480 at 16:26:17, before AKA.
+Acquiring ECI and fixing initial AKA header did NOT suffice for registration.
+No SMS transmitted. Source commit 6eeaca88. Persistent registration hold now
+placed manually because service namespace prevented creation under /var/lib/nuxel;
+move writable hold to /var/lib/nuxel-radio in next deployment.
+
+Remaining concrete defects found: security setup copies remote offer into
+local allocation and ignores installation failure; protected destination port
+not switched. AP SIP MESSAGE receive/RP outcome processing is absent, despite
+IIL receive integration. SIP2xx prematurely advances SMS to submitted.
+These are LOCAL defects, not an external dependency classification.
+
+## Subsequent interoperability work (16:34 UTC)
+Full final host suites, 3000 normal and 3000 ASan/UBSan fuzz inputs, and all
+sanitized unit suites PASS (exit0). Physical kernel test in NEW network namespace
+installs four synthetic SAs/policies, rejects duplicates, clears/reinstalls PASS.
+No authentication keys or production network interfaces used in that test.
+
+Fixed binary-RES AKA digest (RFC3310), full IMPI username, random cnonce,
+AKAv1-only supported algorithm, nonce count, independent client/server security
+allocations, negotiated protected ports, fail-closed security install, receive
+server socket. Removed diagnostic modes falsely reporting registration to CP.
+REGISTER uses correlated Call-ID/CSeq/branch; timeout retransmits identical
+bytes; refresh uses authenticated registration before accepted expiry;
+deregister actually requests expiry0. Unrelated responses cannot register.
+
+SMS: real modem-provided SC address in RP-DA and MESSAGE target; network-assigned
+public identity and Service-Route retained after registration. SIP2xx does NOT
+mark submitted; matching RP-ACK does, RP-ERROR fails, timeout stays unknown.
+AP SIP incoming MESSAGE/RP-DATA now reaches same durable decode/store/notify
+pipeline and emits SIP response + RP-ACK/error. Synthetic actual DELIVER fixture
+now MUST store hello and deduplicate (old test allowed both success and failure).
+MESSAGE transaction tokens randomized across boots; RP and SIP correlations
+separate. Incoming physical behavior remains unverified.
+
+USIM has no ISIM, so use C.2 temporary IMSI-derived public identity for REGISTER
+only, not unprovisioned MSISDN-derived identity. First deployment of this change
+missed cfg.impi assignment; physical open failed without any REGISTER. Corrected
+both production callsites; build/deployment e7aa12238200783d09669f524d8dbdac.
+At 16:34:09 corrected REGISTER -> 423 Interval Too Brief, NOT 480. Read-only
+physical packet observation confirms Min-Expires:3600, no Retry-After. Old FSM
+did not handle423 and retransmitted unchanged; now adds bounded adjustment per
+RFC3261 10.2.8, rejects non-increasing/malformed minima, ends other final errors.
+This is new actionable network evidence; do NOT classify as carrier entitlement.

@@ -38,6 +38,13 @@ bool ims_security_parse(const char *value,struct ims_security_offer *out)
     if ((seen&255)!=255 || r.spi_c==r.spi_s || r.port_c==r.port_s) return false;
     *out=r;return true;
 }
+bool ims_security_negotiate(struct ims_security *s,const char *client,const char *server)
+{
+    struct ims_security_offer local,remote;
+    if (!s || !ims_security_parse(client,&local) || !ims_security_parse(server,&remote) ||
+        local.aes!=remote.aes || local.sha1!=remote.sha1) return false;
+    s->local=local;s->remote=remote;return true;
+}
 #ifdef __linux__
 #include <sys/socket.h>
 #include <unistd.h>

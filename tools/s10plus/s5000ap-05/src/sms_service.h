@@ -77,6 +77,7 @@ bool sms_service_resolve(struct sms_service *s,uint32_t id,const char *outcome);
  * non-2xx final (the message is "failed" with the SIP code as error). Returns
  * true only when it applied to an in-flight IMS submission. Caller passes an
  * opaque SIP result (a status code) only; the service never sees SIP text. */
+bool sms_service_ims_rp_result(struct sms_service *s,uint8_t reference,uint8_t cause);
 bool sms_service_ims_result(struct sms_service *s,bool accepted,int sip_code);
 /* True while a SIP MESSAGE has been sent but its transaction result has not
  * yet been observed (used to classify stray/late replies). */

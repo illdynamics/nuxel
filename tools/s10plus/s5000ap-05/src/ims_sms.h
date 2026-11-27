@@ -12,6 +12,7 @@ struct ims_rp {
     const uint8_t *origin, *destination, *tpdu;
     size_t origin_len, destination_len, tpdu_len;
 };
+bool ims_smsc_uri(const uint8_t *smsc,size_t n,char *out,size_t cap);
 bool ims_rp_decode(const uint8_t *p,size_t n,struct ims_rp *out);
 size_t ims_rp_submit(uint8_t *out,size_t cap,uint8_t ref,const uint8_t *smsc,
                      size_t smsc_len,const uint8_t *tpdu,size_t tpdu_len);

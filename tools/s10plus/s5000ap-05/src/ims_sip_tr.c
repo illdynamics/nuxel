@@ -9,7 +9,11 @@
 #include "ims_sms.h"
 
 #include <string.h>
+#include <strings.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/random.h>
 
 #define SREG_TIMEOUT_MS   12000u
 #define SREG_REFRESH_MS   3600000u   /* > 600s Registration expiry: refresh well inside */
@@ -65,7 +69,10 @@ bool ims_sip_tr_open(struct ims_sip_tr *t, const struct ims_sip_tr_cfg *cfg,
     if (io) t->io = *io;
     t->user = user;
     t->phase = IMS_SIP_TR_IDLE;
-    t->cseq = 1;
+    uint8_t random[16];
+    if(getentropy(random,sizeof random)) return false;
+    for(unsigned i=0;i<sizeof random;i++) snprintf(t->call_id+2*i,3,"%02x",random[i]);
+    t->expires_s=600;
     /* Carry over a network-imposed hold so re-opening the bearer/socket does
      * NOT bypass a registrar Retry-After (the hold is absolute monotonic ms,
      * so it remains valid across the re-open). RES/digest material is never
@@ -120,6 +127,18 @@ static bool send_scratch(struct ims_sip_tr *t)
     return t->io.send(t->scratch, t->scratch_len, t->user);
 }
 
+/* Replace bounded complete header lines in a codec-produced request. */
+static bool replace_header(char *msg,size_t cap,const char *name,const char *value)
+{
+    char key[64];snprintf(key,sizeof key,"\r\n%s: ",name);
+    char *a=strstr(msg,key),*b=a?strstr(a+2,"\r\n"):NULL;
+    if(!a || !b) return false;
+    a+=2;char line[512];int n=snprintf(line,sizeof line,"%s: %s",name,value);
+    size_t tail=strlen(b);
+    if(n<0 || (size_t)n>=sizeof line || (size_t)(a-msg)+n+tail>=cap) return false;
+    memmove(a+n,b,tail+1);memcpy(a,line,(size_t)n);return true;
+}
+
 /* Build and send an (un)authenticated REGISTER. When `auth` is true, add the
  * Authorization header using the base64(RES) already stored. */
 static bool send_register(struct ims_sip_tr *t, bool auth)
@@ -145,6 +164,23 @@ static bool send_register(struct ims_sip_tr *t, bool auth)
               t->cfg.port, t->cfg.sec_offer, t->cfg.instance, t->cfg.cell_id,
               t->cfg.home_plmn, t->cfg.utran_tac);
     if (n == 0) return false;
+    out[n]=0;
+    char value[512];uint32_t seq=++t->cseq;
+    snprintf(value,sizeof value,"%s",t->call_id);
+    if(!replace_header(out,sizeof out,"Call-ID",value)) return false;
+    snprintf(value,sizeof value,"%u REGISTER",seq);
+    if(!replace_header(out,sizeof out,"CSeq",value)) return false;
+    snprintf(value,sizeof value,"SIP/2.0/UDP %s%s%s:%u;branch=z9hG4bK%s-%u",
+        strchr(t->cfg.local_ip,':')?"[":"",t->cfg.local_ip,
+        strchr(t->cfg.local_ip,':')?"]":"",t->cfg.port,t->call_id,seq);
+    if(!replace_header(out,sizeof out,"Via",value)) return false;
+    char *expiry=strstr(out,"expires=600");
+    if(!expiry) return false;
+    char seconds[16];int en=snprintf(seconds,sizeof seconds,"%u",t->expires_s);
+    size_t remaining=strlen(expiry+11);
+    if((size_t)(expiry-out)+8+(size_t)en+remaining>=sizeof out) return false;
+    memmove(expiry+8+en,expiry+11,remaining+1);memcpy(expiry+8,seconds,(size_t)en);
+    n=strlen(out);
     /* Insert complete header lines before Content-Length, never concatenate
      * them onto the previous value. Digest URI must equal the Request-URI. */
     char *uri_start=out+strlen("REGISTER ");
@@ -158,7 +194,7 @@ static bool send_register(struct ims_sip_tr *t, bool auth)
         struct ims_sip_digest_params d = {
             .impu=t->cfg.impi, .realm=t->realm, .nonce=t->nonce,
             .cnonce=t->cnonce, .method="REGISTER", .uri=uri,
-            .response=t->res_b64
+            .response=t->res_b64, .nonce_count=++t->nonce_count
         };
         alen=ims_sip_authorization_build(authhdr,sizeof authhdr,&d,true);
         if (!alen) return false;
@@ -182,6 +218,8 @@ static bool send_register(struct ims_sip_tr *t, bool auth)
     memcpy(t->scratch+head,authhdr,alen);
     memcpy(t->scratch+head+alen,tail,n-head);
     t->scratch_len=(unsigned)(n+alen);
+    memcpy(t->reg_request,t->scratch,t->scratch_len);
+    t->reg_request_len=t->scratch_len;
     wipe(authhdr,sizeof authhdr);
     wipe(out, sizeof out);
     return send_scratch(t);
@@ -233,7 +271,7 @@ static const uint8_t *header(const uint8_t *msg, size_t len, const char *name,
         /* line = p .. le (exclusive of CR). */
         size_t llen = (size_t)(le - p);
         if (llen >= nlen + 1 && p[nlen] == ':' &&
-            memcmp(p, name, nlen) == 0) {
+            strncasecmp((const char *)p, name, nlen) == 0) {
             const uint8_t *v = p + nlen + 1;
             while (v < le && (*v == ' ' || *v == '\t')) v++;
             size_t vl = (size_t)(le - v);
@@ -266,6 +304,8 @@ static bool nonce_and_realm(struct ims_sip_tr *t, const uint8_t *msg, size_t len
      * codec already. */
     if (strcmp(alg, "AKAv1-MD5") != 0 && strcmp(alg, "AKAv2-MD5") != 0)
         return false;
+    t->nonce_count=0;
+    wipe(t->res_b64,sizeof t->res_b64);
     memcpy(t->realm, realm, sizeof t->realm);
     memcpy(t->nonce, nonce, sizeof t->nonce);
     memcpy(t->qop, qop, sizeof t->qop);
@@ -314,7 +354,7 @@ void ims_sip_tr_feed(struct ims_sip_tr *t, const uint8_t *msg, size_t len)
 {
     if (!t || !msg || len == 0 || len > IMS_SIP_TR_MAX_REPLY) return;
     int code = sip_status(msg, len);
-    if (code == 0) return;
+    if (code == 0 || !ims_sip_same_transaction(t->reg_request,t->reg_request_len,msg,len)) return;
     switch (t->phase) {
     case IMS_SIP_TR_REGISTER_SENT:
     case IMS_SIP_TR_SECURE_REGISTER_SENT:
@@ -329,6 +369,24 @@ void ims_sip_tr_feed(struct ims_sip_tr *t, const uint8_t *msg, size_t len)
                 t->phase = IMS_SIP_TR_FAILED;
             }
         } else if (code >= 200 && code < 300) {
+            char associated[512];
+            t->_public_impu[0]=0;t->_service_route[0]=0;
+            if(ims_sip_header(msg,len,"P-Associated-URI",associated,sizeof associated)) {
+                char *a=strchr(associated,'<'),*b=a?strchr(a+1,'>'):NULL;
+                if(a && b && b>a+1 && (size_t)(b-a-1)<sizeof t->_public_impu) {
+                    memcpy(t->_public_impu,a+1,(size_t)(b-a-1));t->_public_impu[b-a-1]=0;
+                }
+            }
+            (void)ims_sip_header(msg,len,"Service-Route",t->_service_route,sizeof t->_service_route);
+            char expiry[1024];unsigned seconds=0;
+            if(ims_sip_header(msg,len,"Contact",expiry,sizeof expiry)) {
+                char *e=strstr(expiry,"expires=");if(e) seconds=(unsigned)strtoul(e+8,NULL,10);
+            }
+            if(!seconds && ims_sip_header(msg,len,"Expires",expiry,sizeof expiry))
+                seconds=(unsigned)strtoul(expiry,NULL,10);
+            if(!seconds || seconds>86400) {t->phase=IMS_SIP_TR_FAILED;break;}
+            t->refresh_ms=t->now_ms+(uint64_t)seconds*800u;
+            t->deadline_ms=0;
             t->phase = IMS_SIP_TR_REGISTERED;
             t->retry_waits = 0;
             t->next_action_ms = 0;
@@ -342,8 +400,20 @@ void ims_sip_tr_feed(struct ims_sip_tr *t, const uint8_t *msg, size_t len)
             t->deadline_ms = 0;   /* tick schedules from now */
             t->next_action_ms = 0; /* tick fills the ABSOLUTE hold */
             t->phase = IMS_SIP_TR_RETRY_WAIT;
-        } else if (code == 403 || code == 404 || code == 500) {
-            t->phase = IMS_SIP_TR_FAILED;
+        } else if(code==423) {
+            char min[16];uint32_t secs=0;bool valid=ims_sip_header(msg,len,"Min-Expires",min,sizeof min);
+            if(valid) for(const char *c=min;*c;c++) {
+                if(*c<'0'||*c>'9'||secs>8640) {valid=false;break;}
+                secs=secs*10+(unsigned)(*c-'0');
+            }
+            if(!valid || secs<=t->expires_s || secs>86400 || ++t->attempt>2) {
+                t->phase=IMS_SIP_TR_FAILED;break;
+            }
+            t->expires_s=secs;
+            if(!send_register(t,t->res_b64[0]!=0)) t->phase=IMS_SIP_TR_FAILED;
+            else t->deadline_ms=t->now_ms+SREG_TIMEOUT_MS;
+        } else if(code>=300) {
+            t->phase=IMS_SIP_TR_FAILED;
         }
         break;
     case IMS_SIP_TR_DEREG_SENT:
@@ -395,39 +465,23 @@ bool ims_sip_tr_security_params(const struct ims_sip_tr *t,
 bool ims_sip_tr_deregister(struct ims_sip_tr *t)
 {
     if (!t || t->phase != IMS_SIP_TR_REGISTERED) return false;
-    /* Build a REGISTER with expires=0. The codec always emits expires=600000;
-     * a deregister is handled by sending an unauthenticated REGISTER with
-     * expires=0. For correctness we reuse start() but override Contact expiry
-     * is out of scope for the codec; instead mark phase and let the caller
-     * rebuild. Simplest legitimate path: send the authenticated-by-now empty
-     * REGISTER. We send a plain (no Contact) REGISTER. */
-    char out[IMS_SIP_TR_MAX_MSG];
-    size_t n = ims_sip_register_build(out, sizeof out,
-        t->cfg.impu, t->cfg.impi, t->cfg.pcscf, t->cfg.local_ip,
-        t->cfg.port, NULL);
-    if (n == 0) return false;
-    if (n > sizeof t->scratch) return false;
-    memcpy(t->scratch, out, n);
-    t->scratch_len = (unsigned)n;
-    wipe(out, sizeof out);
-    if (!send_scratch(t)) return false;
+    t->expires_s=0;
+    if (!send_register(t,t->res_b64[0]!=0)) return false;
     t->phase = IMS_SIP_TR_DEREG_SENT;
     return true;
 }
 
 bool ims_sip_tr_submit_sms(struct ims_sip_tr *t, const char *to,
                            const uint8_t *tpdu, size_t tpdu_len,
-                           uint8_t rp_ref)
+                           uint8_t rp_ref,const uint8_t *smsc,size_t smsc_len)
 {
-    if (!t || !to || !tpdu || tpdu_len == 0) return false;
-    /* Build the RP-DATA body (application/vnd.3gpp.sms). SMSC is not used on
-     * the IMS path: a zero-length SMSC address is encoded as 0x00. */
-    /* Empty-but-valid SMSC address (Length=1, TOA only, no digits). The IMS
-     * path does not require a real SMSC; the RP-Destination-Address is opaque.
-     * The codec requires slen>=2 (length byte + at least a TOA byte). */
-    uint8_t smsc[2] = {1, 0x91};
+    if (!t || !to || !tpdu || tpdu_len == 0 || !ims_sip_tr_registered(t) ||
+        !t->_public_impu[0]) return false;
+    /* The real SC address is required by TS24.341 5.3.1.2. */
+    char sc_uri[32];
+    if (!ims_smsc_uri(smsc,smsc_len,sc_uri,sizeof sc_uri) || strcmp(to,sc_uri)) return false;
     uint8_t rp[300];
-    size_t rn = ims_rp_submit(rp, sizeof rp, rp_ref, smsc, sizeof smsc,
+    size_t rn = ims_rp_submit(rp, sizeof rp, rp_ref, smsc, smsc_len,
                               tpdu, tpdu_len);
     if (rn == 0) return false;
     /* Home domain = the IMPU host (registration registrar/domain). */
@@ -436,16 +490,17 @@ bool ims_sip_tr_submit_sms(struct ims_sip_tr *t, const char *to,
     if (at) snprintf(home, sizeof home, "%s", at + 1);
     char out[IMS_SIP_TR_MAX_MSG];
     size_t n = ims_sip_message_build_ex(out, sizeof out,
-        t->cfg.impu, home, to, t->cfg.local_ip, t->cfg.port,
+        t->_public_impu, home, to, t->cfg.local_ip, t->cfg.port,
         /* The P-CSCF is always the outbound proxy for IMS SMS; without a
          * proper scheme it becomes "sip:<pcscf>;lr" (correct for an IP). */
-        t->cfg.pcscf,
+        t->_service_route[0]?t->_service_route:t->cfg.pcscf,
         (uint16_t)(++t->cseq & 0xffff), rp, rn);
     wipe(rp, sizeof rp);
     if (n == 0) return false;
     if (n > sizeof t->scratch) return false;
     memcpy(t->scratch, out, n);
     t->scratch_len = (unsigned)n;
+    memcpy(t->sms_request,out,n);t->sms_request_len=(unsigned)n;
     wipe(out, sizeof out);
     return send_scratch(t);
 }
@@ -453,6 +508,7 @@ bool ims_sip_tr_submit_sms(struct ims_sip_tr *t, const char *to,
 enum ims_sip_tr_phase ims_sip_tr_tick(struct ims_sip_tr *t, uint64_t now_ms, bool ready)
 {
     if (!t) return IMS_SIP_TR_IDLE;
+    t->now_ms=now_ms;
     if (!ready) {
         /* Network/bearer loss: fall back to idle and re-arm on next ready. */
         t->phase = IMS_SIP_TR_IDLE;
@@ -490,10 +546,9 @@ enum ims_sip_tr_phase ims_sip_tr_tick(struct ims_sip_tr *t, uint64_t now_ms, boo
             if (++t->attempt >= SREG_ATTEMPT_LIMIT) {
                 t->phase = IMS_SIP_TR_FAILED;
             } else {
-                t->phase = (t->cfg.security_first && t->cfg.sec_offer && *t->cfg.sec_offer)
-                               ? IMS_SIP_TR_SECURE_REGISTER_SENT : IMS_SIP_TR_REGISTER_SENT;
                 t->deadline_ms = now_ms + SREG_RETRY_MS;
-                if (!send_register(t, false)) t->phase = IMS_SIP_TR_FAILED;
+                if (!t->io.send || !t->io.send(t->reg_request,t->reg_request_len,t->user))
+                    t->phase=IMS_SIP_TR_FAILED;
             }
         }
         break;
@@ -522,9 +577,9 @@ enum ims_sip_tr_phase ims_sip_tr_tick(struct ims_sip_tr *t, uint64_t now_ms, boo
         /* Long-lived: refresh by deregister+register when the deadline passes.
          * The 600s expiry from the Contact header requires a refresh; we
          * trigger it via a fresh REGISTER. */
-        if (t->deadline_ms && now_ms >= t->deadline_ms) {
-            if (!send_register(t, false)) { t->phase = IMS_SIP_TR_FAILED; }
-            else { t->phase = IMS_SIP_TR_REGISTER_SENT; }
+        if (t->refresh_ms && now_ms >= t->refresh_ms) {
+            if (!send_register(t,t->res_b64[0]!=0)) t->phase=IMS_SIP_TR_FAILED;
+            else { t->phase=IMS_SIP_TR_AUTH_SENT;t->deadline_ms=now_ms+SREG_TIMEOUT_MS;t->attempt=0; }
         }
         break;
     default:

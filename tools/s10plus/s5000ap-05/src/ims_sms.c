@@ -46,3 +46,17 @@ size_t ims_rp_reply(uint8_t out[5],uint8_t ref,uint8_t cause)
     if (!cause) return 2;
     out[2]=1;out[3]=cause;return 4;
 }
+
+bool ims_smsc_uri(const uint8_t *p,size_t n,char *out,size_t cap)
+{
+    if(!p || !out || n<3 || n>12 || p[0]!=n-1 || p[1]!=0x91 || cap<5) return false;
+    memcpy(out,"tel:+",5);size_t k=5;
+    for(size_t i=2;i<n;i++) for(unsigned half=0;half<2;half++) {
+        unsigned d=(p[i]>>(4*half))&15;
+        if(d==15 && i==n-1 && half==1) continue;
+        if(d>9 || k+1>=cap || k>=20) return false;
+        out[k++]=(char)('0'+d);
+    }
+    if(k==5 || k>=cap)return false;
+    out[k]=0;return true;
+}

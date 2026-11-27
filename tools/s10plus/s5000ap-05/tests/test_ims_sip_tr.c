@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 #include "ims_sip_tr.h"
+#include "ims_sip.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -21,6 +22,20 @@ static bool fake_send(const void *msg, size_t len, void *user)
 }
 
 static void reset_capture(void) { captured_len = 0; send_called = false; memset(captured, 0, sizeof captured); }
+
+static void reply(struct ims_sip_tr *t,const uint8_t *body,size_t n)
+{
+    char msg[4096],via[512],id[128],seq[64];
+    assert(ims_sip_header(t->reg_request,t->reg_request_len,"Via",via,sizeof via));
+    assert(ims_sip_header(t->reg_request,t->reg_request_len,"Call-ID",id,sizeof id));
+    assert(ims_sip_header(t->reg_request,t->reg_request_len,"CSeq",seq,sizeof seq));
+    const char *e=memmem(body,n,"\r\n",2);assert(e);
+    size_t first=(size_t)(e-(const char *)body);
+    int len=snprintf(msg,sizeof msg,"%.*s\r\nVia: %s\r\nCall-ID: %s\r\nCSeq: %s%.*s",
+        (int)first,body,via,id,seq,(int)(n-first),e);
+    assert(len>0 && (size_t)len<sizeof msg);
+    ims_sip_tr_feed(t,(const uint8_t *)msg,(size_t)len);
+}
 
 int main(void)
 {
@@ -48,6 +63,11 @@ int main(void)
     assert(memmem(captured, captured_len, "Authorization:", 14) != NULL);
 
     assert(memmem(captured,captured_len,"nonce=\"\", response=\"\"",strlen("nonce=\"\", response=\"\"")));
+    /* Registrar minimum is a concrete correction, not an unchanged retry. */
+    const char *short_interval="SIP/2.0 423 Interval Too Brief\r\nmin-expires: 3600\r\nContent-Length: 0\r\n\r\n";
+    reply(&t,(const uint8_t *)short_interval,strlen(short_interval));
+    assert(t.phase==IMS_SIP_TR_REGISTER_SENT && t.expires_s==3600);
+    assert(strstr((char *)captured,"expires=3600"));
     /* 2. feed 401 AKAv1-MD5 -> CHALLENGED, realm/nonce recorded. */
     static const char ch401[] =
         "SIP/2.0 401 Unauthorized\r\n"
@@ -55,7 +75,7 @@ int main(void)
         "nonce=\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\", "
         "algorithm=AKAv1-MD5, qop=\"auth\"\r\n"
         "Content-Length: 0\r\n\r\n";
-    ims_sip_tr_feed(&t, (const uint8_t *)ch401, sizeof ch401 - 1);
+    reply(&t, (const uint8_t *)ch401, sizeof ch401 - 1);
     assert(t.phase == IMS_SIP_TR_CHALLENGED);
     assert(strlen(t.realm) > 0 && strlen(t.nonce) > 0);
 
@@ -76,24 +96,39 @@ int main(void)
     /* 4. feed 200 OK -> REGISTERED. */
     static const char ok200[] =
         "SIP/2.0 200 OK\r\n"
-        "Contact: <sip:user@[2001:db8::2]:5062>;expires=600000\r\n"
+        "P-Associated-URI: <sip:public@example.test>\r\n"
+        "Contact: <sip:user@[2001:db8::2]:5062>;expires=600\r\n"
         "Content-Length: 0\r\n\r\n";
-    ims_sip_tr_feed(&t, (const uint8_t *)ok200, sizeof ok200 - 1);
+    reply(&t, (const uint8_t *)ok200, sizeof ok200 - 1);
     assert(t.phase == IMS_SIP_TR_REGISTERED);
     assert(ims_sip_tr_registered(&t));
 
+    reset_capture();
+    assert(ims_sip_tr_tick(&t,13000,true)==IMS_SIP_TR_REGISTERED && !send_called);
+    assert(ims_sip_tr_tick(&t,481001,true)==IMS_SIP_TR_AUTH_SENT && send_called);
+    assert(strstr((char *)captured,"nc=00000002"));
+    unsigned char retry[sizeof captured];size_t retry_n=captured_len;memcpy(retry,captured,retry_n);
+    reset_capture();ims_sip_tr_tick(&t,494002,true);
+    assert(send_called && retry_n==captured_len && !memcmp(retry,captured,retry_n));
+    reply(&t,(const uint8_t *)ok200,sizeof ok200-1);
+    /* An uncorrelated 200 cannot register a new transport. */
+    { struct ims_sip_tr other;assert(ims_sip_tr_open(&other,&cfg,&io,NULL,NULL));
+      assert(ims_sip_tr_start(&other));ims_sip_tr_feed(&other,(const uint8_t *)ok200,sizeof ok200-1);
+      assert(!ims_sip_tr_registered(&other));ims_sip_tr_close(&other); }
     /* 5. submit an SMS-over-IP MESSAGE (RP-DATA body). */
     unsigned char tpdu[] = {0x01, 0x09, 0x00}; /* SMS-SUBMIT-ish minimal TPDU */
     reset_capture();
-    assert(ims_sip_tr_submit_sms(&t, "sip:+12025550123@ims.mnc008.mcc204.3gppnetwork.org", tpdu, sizeof tpdu, 77));
+    const uint8_t sc[]={3,0x91,0x21,0xf3};
+    assert(ims_sip_tr_submit_sms(&t,"tel:+123",tpdu,sizeof tpdu,77,sc,sizeof sc));
     assert(send_called);
-    assert(memmem(captured, captured_len, "MESSAGE sip:", 11) != NULL);
+    assert(memmem(captured, captured_len, "MESSAGE tel:", 12) != NULL);
     assert(memmem(captured, captured_len, "Content-Type: application/vnd.3gpp.sms", 38) != NULL);
 
     /* 6. deregister. */
     reset_capture();
     assert(ims_sip_tr_deregister(&t));
     assert(t.phase == IMS_SIP_TR_DEREG_SENT);
+    assert(strstr((char *)captured,"expires=0"));
 
     /* 7. 480 + Retry-After enters Retry-Wait, then a fresh REGISTER is sent
      * only after the network interval elapses (not an instant fail/retry). */
@@ -111,7 +146,7 @@ int main(void)
             "SIP/2.0 480 Temporarily Unavailable\r\n"
             "Via: SIP/2.0/UDP [2001:db8::2]:5062;branch=z9hG4bKx\r\n"
             "Retry-After: 5\r\nContent-Length: 0\r\n\r\n";
-        ims_sip_tr_feed(&t2, (const uint8_t *)e480, sizeof e480 - 1);
+        reply(&t2, (const uint8_t *)e480, sizeof e480 - 1);
         assert(t2.phase == IMS_SIP_TR_RETRY_WAIT);
         assert(t2.retry_after_s == 5);
         reset_capture();
@@ -143,7 +178,7 @@ int main(void)
             "SIP/2.0 480 Temporarily Unavailable\r\n"
             "Via: SIP/2.0/UDP [2001:db8::2]:5062;branch=z9hG4bKx\r\n"
             "Retry-After: 30\r\nContent-Length: 0\r\n\r\n";
-        ims_sip_tr_feed(&a, (const uint8_t *)e480, sizeof e480 - 1);
+        reply(&a, (const uint8_t *)e480, sizeof e480 - 1);
         assert(a.phase == IMS_SIP_TR_RETRY_WAIT);
         assert(ims_sip_tr_tick(&a, 1000, true) == IMS_SIP_TR_RETRY_WAIT);
         assert(a.next_action_ms == 1000 + 30000);
@@ -187,7 +222,7 @@ int main(void)
             "Security-Server: ipsec-3gpp;alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;"
             "mod=trans;spi-c=5000;spi-s=5001;port-c=5064;port-s=5062\r\n"
             "Content-Length: 0\r\n\r\n";
-        ims_sip_tr_feed(&a, (const uint8_t *)c401, sizeof c401 - 1);
+        reply(&a, (const uint8_t *)c401, sizeof c401 - 1);
         assert(a.phase == IMS_SIP_TR_CHALLENGED);
         char off[320], lip[64], rip[64]; int fam=0;
         assert(ims_sip_tr_security_params(&a, off, sizeof off, lip, sizeof lip,
@@ -257,7 +292,7 @@ int main(void)
             "Security-Server: ipsec-3gpp;alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;"
             "mod=trans;spi-c=4097;spi-s=4096;port-c=5064;port-s=5062\r\n"
             "Content-Length: 0\r\n\r\n";
-        ims_sip_tr_feed(&u, (const uint8_t *)sc401, sizeof sc401 - 1);
+        reply(&u, (const uint8_t *)sc401, sizeof sc401 - 1);
         assert(u.phase == IMS_SIP_TR_CHALLENGED);
         ims_sip_tr_close(&u);
     }

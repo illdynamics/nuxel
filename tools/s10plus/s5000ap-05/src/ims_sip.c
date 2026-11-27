@@ -7,9 +7,14 @@
 #include "nv_items.h"   /* nv_md5_hex() RFC 1321 MD5 */
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <sys/random.h>
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdlib.h>
+
+static void sip_wipe(void *p,size_t n)
+{ volatile unsigned char *v=p;while(n--) *v++=0; }
 
 /* ---- base64 (RFC 4648, no padding requirement enforced) ---- */
 static const char b64[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -330,9 +335,9 @@ bool ims_sip_challenge_parse(const char *hdr, size_t n, char realm[64], char non
               param(hdr,n,"algorithm=",10,alg,24);
     (void)param(hdr,n,"qop=",4,qop,16);      /* optional; validated loosely */
     if (!ok) return false;
-    if (strcmp(alg,"AKAv1-MD5")!=0 && strcmp(alg,"AKAv2-MD5")!=0) return false;
-    /* cnonce: deterministic privacy-safe token (real impl uses RANDOM). */
-    snprintf(cnonce,16,"%x",0x6e75786cU); /* "nuxel" */
+    if (strcmp(alg,"AKAv1-MD5") || strcmp(qop,"auth")) return false;
+    uint8_t random[7];if(getentropy(random,sizeof random)) return false;
+    for(unsigned i=0;i<sizeof random;i++) snprintf(cnonce+2*i,3,"%02x",random[i]);
     return true;
 }
 
@@ -391,18 +396,26 @@ size_t ims_sip_authorization_build(char *out, size_t cap,
     char ha1[33], ha2[33], resp[33];
     const char *a1 = p->response ? p->response : "";
     const char *a1user = p->impu ? p->impu : "";
-    const char *colon=strchr(a1user,'@');
-    /* A1 username is the private identity (IMPI), not the full sip: URI. */
-    char username[128]={0};
-    if (colon && colon>a1user && (size_t)(colon-a1user)<sizeof username) {
-        memcpy(username,a1user,(size_t)(colon-a1user)); username[colon-a1user]=0;
-    } else snprintf(username,sizeof username,"%s",a1user);
-    const char *pp[]={username,p->realm?p->realm:"",a1};
-    if (!md5cathex(pp,3,ha1)) return 0;
+    /* IMPI includes its realm; AKA password is binary RES, not base64 text. */
+    const char *username=!strncmp(a1user,"sip:",4)?a1user+4:a1user;
+    const char *realm=p->realm?p->realm:"";
+    if (is_aka) {
+        uint8_t res[16], a1buf[512];size_t rn=0;
+        if (!ims_base64_decode(a1,strlen(a1),res,sizeof res,&rn) || rn<4 || rn>16) return 0;
+        int n=snprintf((char *)a1buf,sizeof a1buf,"%s:%s:",username,realm);
+        if (n<0 || (size_t)n+rn>sizeof a1buf) { sip_wipe(res,sizeof res);return 0; }
+        memcpy(a1buf+n,res,rn);
+        int rc=nv_md5_hex(a1buf,(size_t)n+rn,ha1);
+        sip_wipe(a1buf,sizeof a1buf);sip_wipe(res,sizeof res);
+        if(rc) return 0;
+    } else {
+        const char *pp[]={username,realm,a1};
+        if (!md5cathex(pp,3,ha1)) return 0;
+    }
     const char *a2u=p->uri?p->uri:""; const char *m=p->method?p->method:"REGISTER";
     const char *pa2[]={m,a2u};
     if (!md5cathex(pa2,2,ha2)) return 0;
-    const char *nc="00000001";
+    char nc[9];snprintf(nc,sizeof nc,"%08x",p->nonce_count?p->nonce_count:1u);
     const char *qop="auth";
     const char *pd[]={ha1,p->nonce?p->nonce:"",nc,p->cnonce?p->cnonce:"",qop,ha2};
     if (!md5cathex(pd,6,resp)) return 0;
@@ -447,28 +460,33 @@ size_t ims_sip_message_build_ex(char *out, size_t cap,
         const char *host = (home_domain && *home_domain) ? home_domain : "localhost";
         snprintf(ruri, sizeof ruri, "sip:%s@%s", to, host);
     }
+    uint8_t random[16];char token[33];
+    if(getentropy(random,sizeof random)) return 0;
+    for(unsigned i=0;i<sizeof random;i++) snprintf(token+2*i,3,"%02x",random[i]);
     struct buf b={out,cap,0};
     if (!addf(&b,"MESSAGE %s SIP/2.0\r\n", ruri)) return 0;
     if (local_ip && *local_ip) {
         if (strchr(local_ip, ':'))
-            { if (!addf(&b,"Via: SIP/2.0/UDP [%s]:%u;branch=z9hG4bKmsg%u\r\n",
-                        local_ip, (unsigned)local_port, (unsigned)tag)) return 0; }
+            { if (!addf(&b,"Via: SIP/2.0/UDP [%s]:%u;branch=z9hG4bK%s\r\n",
+                        local_ip, (unsigned)local_port, token)) return 0; }
         else
-            { if (!addf(&b,"Via: SIP/2.0/UDP %s:%u;branch=z9hG4bKmsg%u\r\n",
-                        local_ip, (unsigned)local_port, (unsigned)tag)) return 0; }
+            { if (!addf(&b,"Via: SIP/2.0/UDP %s:%u;branch=z9hG4bK%s\r\n",
+                        local_ip, (unsigned)local_port, token)) return 0; }
     } else {
-        if (!addf(&b,"Via: SIP/2.0/UDP ims;branch=z9hG4bKmsg%u\r\n", (unsigned)tag)) return 0;
+        if (!addf(&b,"Via: SIP/2.0/UDP ims;branch=z9hG4bK%s\r\n", token)) return 0;
     }
     if (!addf(&b,"Max-Forwards: 70\r\n")) return 0;
     /* From carries an originator tag; To has none (it is the callee). */
     if (!addf(&b,"From: <%s>;tag=nuxel%u\r\n", impu, (unsigned)tag)) return 0;
     if (!addf(&b,"To: <%s>\r\n", ruri)) return 0;
-    if (!addf(&b,"Call-ID: nuxel-msg-%u\r\n", (unsigned)tag)) return 0;
+    if (!addf(&b,"Call-ID: nuxel-msg-%s\r\n", token)) return 0;
     if (!addf(&b,"CSeq: 1 MESSAGE\r\n")) return 0;
     /* Route: only a real sip:/tel: URI is used; a bare host is wrapped with an
      * explicit scheme and the loose-route ;lr flag (RFC 3261 8.1.2). */
     if (route_uri && *route_uri) {
-        if (!strncmp(route_uri, "sip:", 4) || !strncmp(route_uri, "tel:", 4)) {
+        if (*route_uri=='<') {
+            if (!addf(&b,"Route: %s\r\n",route_uri)) return 0;
+        } else if (!strncmp(route_uri, "sip:", 4) || !strncmp(route_uri, "tel:", 4)) {
             if (strstr(route_uri, ";lr"))
                 { if (!addf(&b,"Route: <%s>\r\n", route_uri)) return 0; }
             else
@@ -499,6 +517,7 @@ static const uint8_t *ragain_header(const uint8_t *msg, size_t len, const char *
         const uint8_t *e = memchr(p, '\n', (size_t)(end - p));
         if (!e) break;
         size_t llen = (size_t)(e - p);
+        if(llen==0 || (llen==1 && *p=='\r')) break;
         if (llen >= nlen + 1 && p[nlen] == ':' &&
             strncasecmp((const char *)p, name, nlen) == 0) {
             const uint8_t *v = p + nlen + 1;
@@ -552,4 +571,58 @@ bool ims_sip_response_parse(const void *msg, size_t len, struct ims_sip_response
         out->body_len = (unsigned)(len - (size_t)(body - b));
     }
     return true;
+}
+
+/* Copies only header values, never scans into a binary RP body. */
+bool ims_sip_header(const void *msg,size_t n,const char *name,char *out,size_t cap)
+{
+    size_t len=0;const uint8_t *v=ragain_header(msg,n,name,&len);
+    if (!v || !len || len>=cap) return false;
+    for(size_t i=0;i<len;i++) if(v[i]<32 && v[i]!='\t') return false;
+    memcpy(out,v,len);out[len]=0;return true;
+}
+bool ims_sip_same_transaction(const void *request,size_t rn,const void *reply,size_t n)
+{
+    char a[256],b[256];
+    const char *fields[]={"Call-ID","CSeq"};
+    for(unsigned i=0;i<2;i++)
+        if(!ims_sip_header(request,rn,fields[i],a,sizeof a) ||
+           !ims_sip_header(reply,n,fields[i],b,sizeof b) || strcmp(a,b)) return false;
+    if(!ims_sip_header(request,rn,"Via",a,sizeof a) ||
+       !ims_sip_header(reply,n,"Via",b,sizeof b)) return false;
+    char *ap=strstr(a,"branch="),*bp=strstr(b,"branch=");
+    if(!ap || !bp) return false;
+    size_t an=strcspn(ap,"; ,\t"),bn=strcspn(bp,"; ,\t");
+    return an==bn && !memcmp(ap,bp,an);
+}
+bool ims_sip_sms_parse(const void *msg,size_t n,struct ims_sip_sms_request *r)
+{
+    if(!msg || !r || n<16 || memcmp(msg,"MESSAGE ",8)) return false;
+    memset(r,0,sizeof *r);
+    const uint8_t *p=msg,*end=memmem(p,n,"\r\n\r\n",4);
+    if(!end) return false;
+    char type[80],length[16],seq[80];
+    if(!ims_sip_header(msg,n,"Content-Type",type,sizeof type) ||
+       strcasecmp(type,"application/vnd.3gpp.sms") ||
+       !ims_sip_header(msg,n,"Content-Length",length,sizeof length) ||
+       !ims_sip_header(msg,n,"CSeq",seq,sizeof seq) ||
+       !ims_sip_header(msg,n,"Via",r->via,sizeof r->via) ||
+       !ims_sip_header(msg,n,"From",r->from,sizeof r->from) ||
+       !ims_sip_header(msg,n,"To",r->to,sizeof r->to) ||
+       !ims_sip_header(msg,n,"Call-ID",r->call_id,sizeof r->call_id)) return false;
+    unsigned long len=0;
+    for(const char *q=length;*q;q++) {if(*q<'0'||*q>'9') return false;len=len*10+*q-'0';if(len>300)return false;}
+    char *se;unsigned long cs=strtoul(seq,&se,10);
+    if(se==seq || cs>0x7fffffff || strcmp(se," MESSAGE")) return false;
+    r->cseq=(uint32_t)cs;r->body=end+4;r->body_len=n-(size_t)(r->body-p);
+    return r->body_len==len && len>=2;
+}
+size_t ims_sip_sms_response(char *out,size_t cap,const struct ims_sip_sms_request *r,unsigned code)
+{
+    if(!out || !r || (code!=200 && code!=202 && code!=400 && code!=500)) return 0;
+    const char *reason=code==200?"OK":code==202?"Accepted":code==400?"Bad Request":"Server Internal Error";
+    struct buf b={out,cap,0};
+    if(!addf(&b,"SIP/2.0 %u %s\r\nVia: %s\r\nFrom: %s\r\nTo: %s%s\r\nCall-ID: %s\r\nCSeq: %u MESSAGE\r\nContent-Length: 0\r\n\r\n",
+        code,reason,r->via,r->from,r->to,strstr(r->to,";tag=")?"":";tag=nuxel-rp",r->call_id,r->cseq))return 0;
+    return b.len;
 }

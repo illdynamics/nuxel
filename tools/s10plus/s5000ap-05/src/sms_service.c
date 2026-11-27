@@ -174,7 +174,7 @@ void sms_service_receive(struct sms_service *s,const struct nuxel_sipc_fmt *f)
     }
     if (f->main_cmd==128 && f->cmd_type==2 && n==5 && p[0]==4) {
         unsigned result=p[3]|((unsigned)p[4]<<8);
-        if (p[1]==1 && p[2]==1 && s->active && f->ack_seq==s->sequence && result!=0x8000) {
+        if (p[1]==1 && p[2]==1 && s->active && !s->ims_await_ack && f->ack_seq==s->sequence && result!=0x8000) {
             if (!sms_store_fail(&s->store,s->job.id,s->job.part,(int)result,false)) { s->store_errors++;s->blocked=true; }
             s->active=false;notify(s,s->job.id,false);
         }
@@ -192,7 +192,7 @@ void sms_service_receive(struct sms_service *s,const struct nuxel_sipc_fmt *f)
          * Retain the result, leave the message pending, then timeout unknown. */
         struct fmt_sms_submit_result result;
         if (!fmt_sms_submit_result(p,n,&result)) { s->decode_errors++;return; }
-        if (!s->active) { s->unmatched++;result_diag(s,f,&result,false,NULL);return; }
+        if (!s->active || s->ims_await_ack) { s->unmatched++;result_diag(s,f,&result,false,NULL);return; }
         bool match = f->cmd_type==2 && f->ack_seq==s->sequence;
         if (!match) { s->unmatched++;result_diag(s,f,&result,false,NULL);return; }
         if (!sms_store_submit(&s->store,s->job.id,s->job.part,result.reference,result.result)) { s->store_errors++;uncertain(s);result_diag(s,f,&result,false,"storage-error");return; }
@@ -250,19 +250,7 @@ bool sms_service_ims_result(struct sms_service *s, bool accepted, int sip_code)
     /* Gate on the IMS transaction state alone: `active` is a shared flag that
      * an unrelated CP-path result may have already cleared. */
     if (!s->ims_await_ack) return false;
-    if (accepted) {
-        /* The part may already have been marked by an unrelated path; only a
-         * still-`sending` part is advanced here (the store update is guarded on
-         * state IN('sending','delivered')). Either way the IMS transaction is
-         * now resolved and the guard cleared so a later tick can proceed. */
-        if (sms_store_submit(&s->store, s->job.id, s->job.part,
-                             s->job.pdu.reference, 0)) {
-            notify(s, s->job.id, false);
-        }
-        s->ims_await_ack=false; s->ims_deadline_ms=0; s->active=false;
-        s->blocked = sms_store_blocked(&s->store);
-        return true;
-    }
+    if (accepted) return true; /* SIP acceptance is not an RP submission result. */
     /* Non-2xx final: the network refused the MESSAGE. Fail the part with the
      * SIP status as the error and do not auto-retransmit (a client error will
      * recur; a transient 5xx is left to the operator/durable queue policy). */
@@ -275,4 +263,15 @@ bool sms_service_ims_result(struct sms_service *s, bool accepted, int sip_code)
     s->ims_await_ack=false; s->ims_deadline_ms=0; s->active=false;
     notify(s, s->job.id, false);
     return true;
+}
+
+bool sms_service_ims_rp_result(struct sms_service *s,uint8_t reference,uint8_t cause)
+{
+    if (!s || !s->store.db || !s->active || !s->ims_await_ack ||
+        reference!=s->job.pdu.reference) return false;
+    if (!sms_store_submit(&s->store,s->job.id,s->job.part,reference,cause)) {
+        s->store_errors++;uncertain(s);return false;
+    }
+    s->ims_await_ack=false;s->ims_deadline_ms=0;s->active=false;
+    s->blocked=sms_store_blocked(&s->store);notify(s,s->job.id,false);return true;
 }

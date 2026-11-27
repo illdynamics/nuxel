@@ -245,15 +245,6 @@ static bool radiod_report_ims_reg_to_cp(bool registered);
  * Round-18 probe on this P-CSCF answered 400 to Require+Proxy-Require sec-agree,
  * so we never assert it unless explicitly requested. When requested, the build
  * fails closed to the default offer-less path if no Security-Client is present. */
-static bool ims_report_state_env(void)
-{
-    static int cached = -1;
-    if (cached < 0) {
-        const char *v = getenv("NUXEL_IMS_REPORT_STATE");
-        cached = (v && *v == '1') ? 1 : 0;
-    }
-    return cached == 1;
-}
 static bool ims_security_first_env(void)
 {
     static int cached = -1;
@@ -630,15 +621,10 @@ static bool sms_ims_submit(const char *peer,const uint8_t *tpdu,size_t tpdu_len,
     (void)user;
     if (!peer || !tpdu || !tpdu_len) return false;
     if (!g.sip_tr_open || !ims_sip_tr_registered(&g.sip_tr)) return false;
-    /* `peer` is the E.164 destination; build the SIP To URI in the home domain
-     * the P-CSCF serves. The TPDU already carries the real TP-DA, so the SIP
-     * To is the network's SMS-over-IP routing target. */
-    char to[160];
-    const char *dom = strrchr(g.sip_tr.cfg.impu, '@');
-    if (!dom || !dom[1]) return false;
-    int w = snprintf(to, sizeof to, "sip:%s@%s", peer, dom + 1);
-    if (w < 0 || (size_t)w >= sizeof to) return false;
-    bool ok = ims_sip_tr_submit_sms(&g.sip_tr, to, tpdu, tpdu_len, mr);
+    /* TP-DA retains the authorized recipient; SIP routes to the actual SC. */
+    char to[32];
+    if(!ims_smsc_uri(g.sms.smsc,g.sms.smsc_len,to,sizeof to)) return false;
+    bool ok=ims_sip_tr_submit_sms(&g.sip_tr,to,tpdu,tpdu_len,mr,g.sms.smsc,g.sms.smsc_len);
     diagf("sms_ims_submit", "\"mr\":%u,\"ok\":%s", mr, ok ? "true" : "false");
     return ok;
 }
@@ -696,6 +682,7 @@ static void respond_oes_certificate(void)
  * Security-Server (RFC 3329 / TS 33.203 7.1). The SAs own the IMS-bearer UDP
  * leg (the negotiated port-c/port-s), so they are installed only when the
  * offer is a valid ipsec-3gpp set. CK/IK are session keys, never logged. */
+static bool sip_sec_transport_ready(const struct ims_security_offer *remote);
 static bool sip_sec_install_from_aka(const struct fmt_rx_usim_auth *r)
 {
     if (!r || !r->authenticated || !r->ck || !r->ik) return false;
@@ -717,9 +704,14 @@ static bool sip_sec_install_from_aka(const struct fmt_rx_usim_auth *r)
         return false;
     }
     if (fam != AF_INET && fam != AF_INET6) { diag("sip_sec_bad_family", NULL); explicit_bzero(offer, sizeof offer); return false; }
+    if(g.sip_sec_installed) ims_security_clear(&g.sip_sec);
+    g.sip_sec_installed=false;
     memset(&g.sip_sec, 0, sizeof g.sip_sec);
-    g.sip_sec.local = o;
-    g.sip_sec.remote = o;
+    char client[512];
+    snprintf(client,sizeof client,"ipsec-3gpp;%s",g.sip_tr.cfg.sec_offer);
+    if (!ims_security_negotiate(&g.sip_sec,client,offer)) {
+        explicit_bzero(offer,sizeof offer);return false;
+    }
     g.sip_sec.family = fam;
     g.sip_sec.reqid = 0xC0DE0000u;
     int rc = (fam == AF_INET6)
@@ -733,6 +725,7 @@ static bool sip_sec_install_from_aka(const struct fmt_rx_usim_auth *r)
         diag("sip_sec_install_failed", NULL);
         return false;
     }
+    if (!sip_sec_transport_ready(&o)) { ims_security_clear(&g.sip_sec);return false; }
     g.sip_sec_installed = true;
     diag("sip_sec_installed", NULL);
     return true;
@@ -773,7 +766,11 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
              * authenticated REGISTER goes out (TS 33.203 7.1). When the
              * network advertised no Security-Server this is skipped and the
              * REGISTER is sent on the (already secured) access leg. */
-            (void)sip_sec_install_from_aka(&r);
+            if (!sip_sec_install_from_aka(&r)) {
+                g.sip_tr.phase=IMS_SIP_TR_FAILED;
+                diag("sip_auth_security_required",NULL);
+                return;
+            }
             if (ims_sip_tr_auth(&g.sip_tr, r.res, r.res_len))
                 diag("iil_sip_tr_auth_res", NULL);
             else
@@ -1752,6 +1749,30 @@ static void radiod_ims_iface_down(void)
 /* native SIP transport (ims_sip_tr) integration                       */
 /* ------------------------------------------------------------------ */
 static int sip_tr_fd = -1;               /* UDP socket bound to the IMS bearer */
+static int sip_server_fd=-1;
+static bool sip_sec_transport_ready(const struct ims_security_offer *remote)
+{
+    int fam=strchr(g.sip_tr.cfg.local_ip,':')?AF_INET6:AF_INET;
+    if (sip_server_fd>=0) { close(sip_server_fd);sip_server_fd=-1; }
+    int fd=socket(fam,SOCK_DGRAM|SOCK_CLOEXEC|SOCK_NONBLOCK,0);
+    if(fd<0) return false;
+    struct sockaddr_storage ss={0};socklen_t n;
+    if(fam==AF_INET6) {
+        struct sockaddr_in6 *a=(void *)&ss;a->sin6_family=fam;
+        a->sin6_port=htons(g.sip_sec.local.port_s);n=sizeof *a;
+        if(inet_pton(fam,g.sip_tr.cfg.local_ip,&a->sin6_addr)!=1) {close(fd);return false;}
+    } else {
+        struct sockaddr_in *a=(void *)&ss;a->sin_family=fam;
+        a->sin_port=htons(g.sip_sec.local.port_s);n=sizeof *a;
+        if(inet_pton(fam,g.sip_tr.cfg.local_ip,&a->sin_addr)!=1) {close(fd);return false;}
+    }
+    if(bind(fd,(void *)&ss,n)<0) {close(fd);return false;}
+    sip_server_fd=fd;
+    g.sip_tr.cfg.port=g.sip_sec.local.port_s;
+    g.sip_tr.cfg.pcscf_port=remote->port_s;
+    return true;
+}
+
 
 static bool sip_tr_send_cb(const void *msg, size_t len, void *user)
 {
@@ -1872,19 +1893,11 @@ static bool sip_tr_open_from_iil(const struct iil_pdn *p)
     char impu_buf[160] = {0}, impi_buf[160] = {0};
     if (g.ims.identity.ready && g.ims.identity.impi[0]) {
         snprintf(impi_buf, sizeof impi_buf, "%s", g.ims.identity.impi);
-        /* Prefer the verified MSISDN-derived IMPU (the default public identity
-         * a USIM-only subscription registers) over the IMSI-derived temporary
-         * IMPU. The private identity (IMPI) is unchanged and remains the IMSI
-         * for IMS AKA. If no EF_MSISDN was read, fall back to the IMSI-derived
-         * IMPU exactly as before. */
-        if (g.ims.identity.msisdn_impu_valid && g.ims.identity.msisdn_impu[0])
-            snprintf(impu_buf, sizeof impu_buf, "%s", g.ims.identity.msisdn_impu);
-        else if (g.ims.identity.impu[0])
-            snprintf(impu_buf, sizeof impu_buf, "%s", g.ims.identity.impu);
-        else
-            snprintf(impu_buf, sizeof impu_buf, "sip:%s", g.ims.identity.impi);
-        cfg.impi = impi_buf;
+        /* TS24.229 5.1.1.1A/C.2: no ISIM -> temporary IMSI-derived IMPU.
+         * A subscriber MSISDN alone is not a provisioned IMS public identity. */
+        snprintf(impu_buf,sizeof impu_buf,"%s",g.ims.identity.impu);
         cfg.impu = impu_buf;
+        cfg.impi = impi_buf;
     }
     if (!cfg.impu || !cfg.impi) {
         /* No identity yet: leave the transport closed; tick re-opens when the
@@ -1973,19 +1986,10 @@ static bool sip_tr_open_from_ims_pdn_idx(const struct ims_pdn *p, unsigned idx)
     char impu_buf[160] = {0}, impi_buf[160] = {0};
     if (g.ims.identity.ready && g.ims.identity.impi[0]) {
         snprintf(impi_buf, sizeof impi_buf, "%s", g.ims.identity.impi);
-        /* Prefer the verified MSISDN-derived IMPU (the default public identity
-         * a USIM-only subscription registers) over the IMSI-derived temporary
-         * IMPU. The private identity (IMPI) is unchanged and remains the IMSI
-         * for IMS AKA. If no EF_MSISDN was read, fall back to the IMSI-derived
-         * IMPU exactly as before. */
-        if (g.ims.identity.msisdn_impu_valid && g.ims.identity.msisdn_impu[0])
-            snprintf(impu_buf, sizeof impu_buf, "%s", g.ims.identity.msisdn_impu);
-        else if (g.ims.identity.impu[0])
-            snprintf(impu_buf, sizeof impu_buf, "%s", g.ims.identity.impu);
-        else
-            snprintf(impu_buf, sizeof impu_buf, "sip:%s", g.ims.identity.impi);
-        cfg.impi = impi_buf;
+        /* Use the USIM temporary public identity only for registration. */
+        snprintf(impu_buf,sizeof impu_buf,"%s",g.ims.identity.impu);
         cfg.impu = impu_buf;
+        cfg.impi = impi_buf;
     }
     if (!cfg.impu || !cfg.impi) {
         close(sip_tr_fd); sip_tr_fd = -1;
@@ -2020,6 +2024,7 @@ static bool sip_tr_open_from_ims_pdn(const struct ims_pdn *p)
 /* Close the native SIP transport (bearer loss / stop). */
 static void sip_tr_close(void)
 {
+    if(sip_server_fd>=0) {close(sip_server_fd);sip_server_fd=-1;}
     if (g.sip_tr_open) { ims_sip_tr_close(&g.sip_tr); g.sip_tr_open = false; }
     if (sip_tr_fd >= 0) { close(sip_tr_fd); sip_tr_fd = -1; }
     /* A bearer loss invalidates any in-flight SIP AKA challenge AND any
@@ -2119,19 +2124,74 @@ static void sip_rx_diag(const uint8_t *buf, size_t n)
           (code == 480 && retry) ? "true" : "false");
 }
 
+static bool sip_sms_request(const uint8_t *buf,size_t n,int fd,
+                            const struct sockaddr_storage *peer,socklen_t peerlen)
+{
+    if(n<8 || memcmp(buf,"MESSAGE ",8)) return false;
+    if(!ims_sip_tr_registered(&g.sip_tr) || !g.sip_sec_installed) return true;
+    struct ims_sip_sms_request request;
+    struct ims_rp rp;
+    if(!ims_sip_sms_parse(buf,n,&request)) {diag("sms_sip_malformed",NULL);return true;}
+    unsigned code=200;bool decoded=ims_rp_decode(request.body,request.body_len,&rp);
+    uint8_t cause=0;
+    if(!decoded) code=400;
+    else if(rp.type==3 || rp.type==5) {
+        bool applied=sms_service_ims_rp_result(&g.sms,rp.reference,rp.type==5?(rp.cause?rp.cause:111):0);
+        diagf("sms_ims_rp_result","\"reference\":%u,\"type\":%u,\"cause\":%u,\"applied\":%s",
+            rp.reference,rp.type,rp.cause,applied?"true":"false");
+    } else if(rp.type==1) {
+        uint8_t pdu[300];size_t len=1+rp.origin_len+rp.tpdu_len;
+        if(len>sizeof pdu) cause=95;
+        else {
+            pdu[0]=(uint8_t)rp.origin_len;memcpy(pdu+1,rp.origin,rp.origin_len);
+            memcpy(pdu+1+rp.origin_len,rp.tpdu,rp.tpdu_len);
+            if(!sms_service_deliver_ims(&g.sms,pdu,len)) cause=111;
+            explicit_bzero(pdu,sizeof pdu);
+        }
+        code=200;
+    } else code=400;
+    char response[2400];size_t len=ims_sip_sms_response(response,sizeof response,&request,code);
+    if(!len || sendto(fd,response,len,0,(const void *)peer,peerlen)!=(ssize_t)len)
+        diag("sms_sip_response_failed",NULL);
+    if(decoded && rp.type==1) {
+        uint8_t ack[5];size_t alen=ims_rp_reply(ack,rp.reference,cause);
+        char target[256];const char *start=strchr(request.from,'<');
+        const char *end=start?strchr(++start,'>'):NULL;
+        if(!end || end==start || (size_t)(end-start)>=sizeof target) return true;
+        memcpy(target,start,(size_t)(end-start));target[end-start]=0;
+        char msg[IMS_SIP_TR_MAX_MSG];
+        size_t mn=ims_sip_message_build_ex(msg,sizeof msg,g.sip_tr._public_impu,NULL,target,
+            g.sip_tr.cfg.local_ip,g.sip_tr.cfg.port,g.sip_tr.cfg.pcscf,
+            (uint16_t)++g.sip_tr.cseq,ack,alen);
+        if(!mn || !sip_tr_send_cb(msg,mn,NULL)) diag("sms_rp_reply_failed",NULL);
+    }
+    return true;
+}
+
 static void sip_tr_recv(void)
 {
     if (sip_tr_fd < 0 || !g.sip_tr_open) return;
     uint8_t buf[IMS_SIP_TR_MAX_REPLY + 1];
-    unsigned budget = 16;   /* bounded per-wake drain */
+    for(unsigned socket_index=0;socket_index<2;socket_index++) {
+    int read_fd=socket_index?sip_server_fd:sip_tr_fd;
+    if(read_fd<0) continue;
+    unsigned budget = 16;
     while (budget-- > 0) {
-        ssize_t n = recvfrom(sip_tr_fd, buf, sizeof buf, MSG_DONTWAIT, NULL, NULL);
+        struct sockaddr_storage peer={0};socklen_t peerlen=sizeof peer;
+        ssize_t n = recvfrom(read_fd, buf, sizeof buf, MSG_DONTWAIT, (void *)&peer, &peerlen);
         if (n < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) break;  /* drained */
             if (errno == EINTR) continue;
             break;   /* hard error: drop the socket on next tick */
         }
         if (n == 0) break;
+        uint8_t expected[16];
+        void *addr=peer.ss_family==AF_INET6 ? (void *)&((struct sockaddr_in6 *)&peer)->sin6_addr :
+                   (void *)&((struct sockaddr_in *)&peer)->sin_addr;
+        if ((peer.ss_family!=AF_INET && peer.ss_family!=AF_INET6) ||
+            inet_pton(peer.ss_family,g.sip_tr.cfg.pcscf,expected)!=1 ||
+            memcmp(addr,expected,peer.ss_family==AF_INET6?16:4)) continue;
+        if(sip_sms_request(buf,(size_t)n,read_fd,&peer,peerlen)) continue;
         /* Surface the SIP status code + header NAMES only (never values). */
         sip_rx_diag(buf, (size_t)n);
         /* SMS-over-IMS: a SIP response whose CSeq method is MESSAGE is the
@@ -2142,6 +2202,9 @@ static void sip_tr_recv(void)
         int mcode = 0;
         enum ims_sip_tr_msg_ev mev = ims_sip_tr_classify(buf, (size_t)n, &mcode);
         if (mev != IMS_SIP_TR_MSG_NONE) {
+            if(!ims_sip_same_transaction(g.sip_tr.sms_request,g.sip_tr.sms_request_len,buf,(size_t)n)) {
+                diag("sms_ims_response_unmatched",NULL);continue;
+            }
             if (mev == IMS_SIP_TR_MSG_PROVISIONAL) {
                 if (sms_service_ims_pending(&g.sms))
                     diagf("sms_ims_provisional", "\"code\":%d", mcode);
@@ -2159,7 +2222,7 @@ static void sip_tr_recv(void)
          * An unchanged REGISTER must not loop; preserve this across restart.
          * The file records the earliest permitted epoch, never credentials. */
         if (g.sip_tr.phase==IMS_SIP_TR_RETRY_WAIT) {
-            int fd=open("/var/lib/nuxel/ims-register.hold",O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC,0600);
+            int fd=open("/var/lib/nuxel-radio/ims-register.hold",O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC,0600);
             if (fd>=0) {
                 char deadline[64];
                 int z=snprintf(deadline,sizeof deadline,"%llu\n",
@@ -2170,6 +2233,7 @@ static void sip_tr_recv(void)
             } else diag("ims_hold_persist_failed",NULL);
         }
         /* A state change is surfaced below in sip_tr_tick. */
+    }
     }
 }
 
@@ -2227,33 +2291,8 @@ static void sip_tr_tick(uint64_t now)
      * The FMT path (Round 07 verified) now reaches ims_pdn_active() with a
      * real GPRS_IP_CONFIGURATION (2 P-CSCF); previously only the IIL path was
      * wired here, so a working FMT bearer never opened SIP. */
-    /* Round 19 (verified live on libsec-ril.so EFUJ2): the CP does NOT run a
-     * SIP registrar client and does NOT initiate IMS AKA autonomously -- it
-     * only *relays* AKA if an AP IMS service asks (IIL sub 17) and merely
-     * records the AP's SetRegState claim (FMT 22/8). The IMSI-derived IMPU is
-     * answered 480+Retry-After (no 401). The MSISDN-derived IMPU (now supplied
-     * by the owner) is the standards-mandated public identity; pairing it with
-     * the IMSI-derived IMPI yields a legitimate REGISTER that the P-CSCF should
-     * answer with a genuine 401/AKA challenge. TX is permitted when that
-     * verified identity pair is present; the legacy unauth probe stays opt-in. */
-    static const char *allow_unauth = NULL;
-    if (!allow_unauth) allow_unauth = getenv("NUXEL_IMS_ALLOW_UNAUTH_REGISTER");
-    /* The IMS bearer (CID2) + rmnet1 iface/route MUST stay applied so the
-     * SIP transport and P-CSCF remain physically available even while REGISTER
-     * TX is held (the identity gate below only suppresses the REGISTER itself,
-     * never the bearer). */
-    bool bearer = iil_pdn_active(&g.iil_pdn) || ims_pdn_active(&g.ims_pdn);
-    /* REGISTER TX gate: a genuine REGISTER is permitted only when the public
-     * identity is a verified MSISDN-derived IMPU (the standards-mandated
-     * default for a USIM-only subscription, supplied by the owner via the
-     * protected subscriber config) paired with the IMSI-derived IMPI. The
-     * legacy unauthenticated IMSI-derived IMPU probe remains opt-in-only via
-     * NUXEL_IMS_ALLOW_UNAUTH_REGISTER=1 and is never the default. */
-    bool identity_verified = g.ims.identity.msisdn_impu_valid &&
-                             g.ims.identity.msisdn_impu[0] &&
-                             g.ims.identity.impi[0];
-    bool reg_allowed = identity_verified ||
-                       (allow_unauth && *allow_unauth == '1');
+    bool bearer=iil_pdn_active(&g.iil_pdn) || ims_pdn_active(&g.ims_pdn);
+    bool reg_allowed=g.ims.identity.ready && g.ims.identity.impi[0] && g.ims.identity.impu[0];
     if (bearer) {
         if (!g.sip_tr_open) {
             if (iil_pdn_active(&g.iil_pdn)) {
@@ -2275,10 +2314,9 @@ static void sip_tr_tick(uint64_t now)
             enum ims_sip_tr_phase before = g.sip_tr.phase;
             sip_tr_recv();   /* read 401/200 replies before advancing the FSM */
             if (before == IMS_SIP_TR_IDLE) {
-                /* STATE mode: don't send the first REGISTER until the CP has
-                 * acknowledged our IMS_REGISTERED report (modem-aligned). */
+                /* First registration requires fresh, genuine serving-cell data. */
                 bool can_first = fresh && g.ims_instance[0] &&
-                    access("/var/lib/nuxel/ims-register.hold", F_OK)!=0;
+                    access("/var/lib/nuxel-radio/ims-register.hold", F_OK)!=0;
                 if (can_first) {
                     if (!ims_sip_tr_start(&g.sip_tr))
                         diag("sip_tr_start_send_fail", NULL);
@@ -2291,7 +2329,7 @@ static void sip_tr_tick(uint64_t now)
                 sip_tr_usim_challenge(now);
             enum ims_sip_tr_phase after = g.sip_tr.phase;
             if (g.sip_tr.phase != IMS_SIP_TR_RETRY_WAIT ||
-                access("/var/lib/nuxel/ims-register.hold",F_OK)!=0)
+                access("/var/lib/nuxel-radio/ims-register.hold",F_OK)!=0)
                 after = ims_sip_tr_tick(&g.sip_tr, now, true);
             if (after != before)
                 diagf("iil_sip_tr_phase", "\"phase\":\"%s\"",
@@ -2312,15 +2350,6 @@ static void sip_tr_tick(uint64_t now)
                 g.sip_pcscf_answered |= (1u << (g.sip_pcscf_idx & 31));
             if (after == IMS_SIP_TR_RETRY_WAIT)
                 g.sip_pcscf_answered |= (1u << (g.sip_pcscf_idx & 31));
-            /* STATE mode: a 480/503 or a pure failure means the P-CSCF saw our
-             * REGISTER without a matching modem IMS state (or is otherwise
-             * unavailable). Re-issue the CP report (bounded) so the next
-             * REGISTER is sent only after the modem confirms its state. */
-            if (ims_report_state_env() &&
-                after == IMS_SIP_TR_RETRY_WAIT && before != IMS_SIP_TR_RETRY_WAIT) {
-                g.cp_report_state = CP_REPORT_NONE;
-                g.cp_report_deadline_ms = 0;
-            }
             if (after == IMS_SIP_TR_FAILED && before != IMS_SIP_TR_FAILED) {
                 unsigned total = g.ims_pdn.ip.pcscf4_count + g.ims_pdn.ip.pcscf6_count;
                 /* If the CURRENT node already answered (e.g. 480), it is the
@@ -2336,52 +2365,6 @@ static void sip_tr_tick(uint64_t now)
                         sip_tr_open_from_ims_pdn(&g.ims_pdn)) {
                         diag("sip_pcscf_reopen", NULL);
                     }
-                }
-            }
-            /* Bounded one-shot diagnostic (NUXEL_IMS_REPORT_ONESHOT=1): report
-             * IMS REGISTERED to the CP 22/8 ONCE when a bearer/local-IP/P-CSCF
-             * is available, independent of the network REGISTER result. This
-             * is NEVER a registration claim to the network; it is exactly
-             * the same CP state report the stock AP IMS service sends. It can
-             * only be armed explicitly, never affects the SMS gate (which
-             * requires the authoritative native 200), and never auto-retries. */
-            if (!g.cp_oneshot_done) {
-                static const char *oneshot = NULL;
-                if (!oneshot) oneshot = getenv("NUXEL_IMS_REPORT_ONESHOT");
-                if (oneshot && *oneshot == '1') {
-                    g.cp_oneshot_done = true;
-                    radiod_report_ims_reg_to_cp(true);
-                    diagf("cp_ims_reg_oneshot", "\"count\":%u,\"fail\":%u",
-                          g.cp_ims_report_count, g.cp_ims_report_fail);
-                }
-            }
-            /* -- CP IMS-registration report (main=22 sub=8) -------------
-             * PROOF mode (default): only on a genuine native SIP 200.
-             * STATE mode (NUXEL_IMS_REPORT_STATE=1): modem-aligned — report
-             * IMS_REGISTERED and wait for the CP's GEN ack BEFORE the first
-             * REGISTER goes out, so the modem's IMS state and the P-CSCF see
-             * a consistent UE. Bounded (1 s retry x ~8 attempts, then wait
-             * for the next 480 to re-arm); never auto-retries a refused
-             * report indefinitely. */
-            bool report_state_env = ims_report_state_env();
-            if (report_state_env) {
-                if (g.cp_report_state == CP_REPORT_NONE ||
-                    g.cp_report_state == CP_REPORT_FAILED) {
-                    if (now >= g.cp_report_deadline_ms) {
-                        if (radiod_report_ims_reg_to_cp(true)) {
-                            g.cp_report_state = CP_REPORT_SENT;
-                            g.cp_report_deadline_ms = now + 8000;
-                        } else {
-                            g.cp_report_state = CP_REPORT_FAILED;
-                            g.cp_report_deadline_ms = now + 2000;
-                        }
-                    }
-                } else if (g.cp_report_state == CP_REPORT_SENT &&
-                           g.cp_report_deadline_ms && now >= g.cp_report_deadline_ms) {
-                    /* CP did not ack within 8 s: back off, then re-arm once. */
-                    g.cp_report_state = CP_REPORT_FAILED;
-                    g.cp_report_deadline_ms = now + 2000;
-                    diag("cp_ims_reg_report_timeout", NULL);
                 }
             }
             /* Bounded one-shot: ask the CP's own IMS stack to register. The
@@ -2408,29 +2391,13 @@ static void sip_tr_tick(uint64_t now)
                     }
                 }
             }
-            bool cp_acked = (g.cp_report_state == CP_REPORT_ACKED);
-            bool reg = ims_sip_tr_registered(&g.sip_tr);
-            if (!report_state_env) {
-                if (reg != (g.ims.phase == IMS_REGISTERED)) {
-                    ims_service_native_registered(&g.ims, reg);
-                    radiod_report_ims_reg_to_cp(reg);
-                }
-            } else if (reg && g.ims.phase != IMS_REGISTERED) {
-                ims_service_native_registered(&g.ims, true);
+            bool reg=ims_sip_tr_registered(&g.sip_tr) && g.sip_sec_installed;
+            if(reg != (g.ims.phase==IMS_REGISTERED)) {
+                ims_service_native_registered(&g.ims,reg);
+                radiod_report_ims_reg_to_cp(reg);
             }
-            if (reg) g.sip_pcscf_tries = 0;   /* locked onto a serving P-CSCF */
-            /* IMS-SMS gate:
-             *  - PROOF mode: requires the authoritative native 200 (default).
-             *  - STATE mode: requires the CP to have ACKed our IMS_REGISTERED
-             *    report AND our REGISTER to have been transmitted (the modem
-             *    transport is then modem-known and warm). */
-            bool transport_ready = reg ||
-                (report_state_env && cp_acked &&
-                 (before == IMS_SIP_TR_REGISTER_SENT ||
-                  before == IMS_SIP_TR_SECURE_REGISTER_SENT ||
-                  before == IMS_SIP_TR_AUTH_SENT ||
-                  before == IMS_SIP_TR_REGISTERED));
-            g.sms.ims_registered_native = transport_ready;
+            if(reg) g.sip_pcscf_tries=0;
+            g.sms.ims_registered_native=reg && g.sip_tr._public_impu[0];
         }
     } else {
         if (g.sip_tr_open) { sip_tr_close(); diag("sip_tr_close", NULL); }
