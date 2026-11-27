@@ -317,6 +317,29 @@ bool sms_store_get(struct sms_store *s,uint32_t id,struct sms_record *out)
     sqlite3_finalize(p);if (ok) *out=v;return ok;
 }
 
+bool sms_store_peer(struct sms_store *s,uint32_t id,char *out,size_t cap)
+{
+    if (!out || !cap) return false;
+    sqlite3_stmt *p=prepare(s,"SELECT peer FROM messages WHERE id=? AND direction='out'");
+    integer(p,1,id);
+    if (!p) return false;
+    bool ok=false;
+    if (sqlite3_step(p)==SQLITE_ROW) ok=column_text(p,0,out,cap);
+    sqlite3_finalize(p);return ok;
+}
+
+/* Revert a part from 'sending' back to 'queued' after a send that never
+ * reached the network (e.g. the SIP transport refused the MESSAGE). No
+ * message state changes are fabricated; recalc keeps the aggregate truthful. */
+bool sms_store_requeue(struct sms_store *s,uint32_t id,unsigned part)
+{
+    if (!sql(s,"BEGIN IMMEDIATE")) return false;
+    sqlite3_stmt *p=prepare(s,"UPDATE parts SET state='queued' WHERE message=? AND part=? AND state='sending'");
+    integer(p,1,id);integer(p,2,part);
+    if (!done(p) || sqlite3_changes(s->db)!=1 || !recalc(s,id)) return rollback(s);
+    return sql(s,"COMMIT") || rollback(s);
+}
+
 size_t sms_store_list(struct sms_store *s,uint32_t *ids,size_t cap)
 {
     if (!ids || !cap) return 0;

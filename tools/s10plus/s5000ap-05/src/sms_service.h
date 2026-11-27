@@ -22,11 +22,21 @@ struct sms_submit_result_diag {
 };
 typedef void (*sms_result_fn)(const struct sms_submit_result_diag *,void *user);
 
+/* Optional transport-independent SMS-over-IMS submit hook. When set and the
+ * CS domain is unavailable but IMS is registered, the service hands the
+ * segment's SMSC-prefixed PDU to this callback, which encapsulates it in a SIP
+ * MESSAGE (application/vnd.3gpp.sms RP-DATA). Returns true only if the SIP
+ * MESSAGE was fully handed to the transport (a send, NOT a delivery). The
+ * final outcome still arrives as a RP-ACK/RP-ERROR or timeout. */
+typedef bool (*sms_ims_submit_fn)(const char *peer, const uint8_t *tpdu,
+                                  size_t tpdu_len, uint8_t mr, void *user);
+
 struct sms_service {
     struct sms_store store;
     sms_write_fn write;
     sms_notify_fn notify;
     sms_result_fn result_diag;
+    sms_ims_submit_fn ims_submit;
     void *user; /* shared argument for write/notify/result_diag callbacks */
     uint8_t smsc[12],sequence,ready_sequence;
     size_t smsc_len;
@@ -42,6 +52,7 @@ struct sms_service {
 };
 bool sms_service_open(struct sms_service *s,const char *path,sms_write_fn write,sms_notify_fn notify,void *user);
 void sms_service_set_result_diag(struct sms_service *s,sms_result_fn fn);
+void sms_service_set_ims_submit(struct sms_service *s,sms_ims_submit_fn fn);
 void sms_service_close(struct sms_service *s);
 void sms_service_tick(struct sms_service *s,uint64_t now,bool online,bool sim_ready,bool cs_registered,bool ims_registered,bool writable);
 void sms_service_receive(struct sms_service *s,const struct nuxel_sipc_fmt *frame);

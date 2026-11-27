@@ -26,6 +26,8 @@ bool sms_store_fail(struct sms_store *s,uint32_t id,unsigned part,int error,bool
  * are acknowledged but do not create a second message. */
 bool sms_store_receive(struct sms_store *s,const uint8_t *pdu,size_t len,
                        const struct sms_decoded *v,uint32_t *id,bool *changed);
+bool sms_store_peer(struct sms_store *s,uint32_t id,char *out,size_t cap);
+bool sms_store_requeue(struct sms_store *s,uint32_t id,unsigned part);
 bool sms_store_get(struct sms_store *s,uint32_t id,struct sms_record *out);
 size_t sms_store_list(struct sms_store *s,uint32_t *ids,size_t cap);
 /* Truthful aggregate: true only when at least one outbound message has reached

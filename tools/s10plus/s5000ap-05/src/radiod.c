@@ -558,6 +558,30 @@ static void sms_notify(uint32_t id,bool incoming,void *user)
 /* Redacted submission-result metadata. Frame type, payload length,
  * ack_seq, decoded result, modem reference, correlation and resulting state
  * only -- never recipient, body, or PDU bytes. */
+/* SMS-over-IMS submit: encapsulate the stored TP-MTI TPDU in a TS 24.341
+ * SIP MESSAGE (application/vnd.3gpp.sms RP-DATA) over the registered IMS
+ * signalling. Only reached when the SMS service has confirmed an authoritative
+ * IMS registration and no CS transport. Returns true only if the MESSAGE was
+ * fully handed to the SIP transport (a send, NOT a delivery/RP-ACK). */
+static bool sms_ims_submit(const char *peer,const uint8_t *tpdu,size_t tpdu_len,
+                           uint8_t mr,void *user)
+{
+    (void)user;
+    if (!peer || !tpdu || !tpdu_len) return false;
+    if (!g.sip_tr_open || !ims_sip_tr_registered(&g.sip_tr)) return false;
+    /* `peer` is the E.164 destination; build the SIP To URI in the home domain
+     * the P-CSCF serves. The TPDU already carries the real TP-DA, so the SIP
+     * To is the network's SMS-over-IP routing target. */
+    char to[160];
+    const char *dom = strrchr(g.sip_tr.cfg.impu, '@');
+    if (!dom || !dom[1]) return false;
+    int w = snprintf(to, sizeof to, "sip:%s@%s", peer, dom + 1);
+    if (w < 0 || (size_t)w >= sizeof to) return false;
+    bool ok = ims_sip_tr_submit_sms(&g.sip_tr, to, tpdu, tpdu_len, mr);
+    diagf("sms_ims_submit", "\"mr\":%u,\"ok\":%s", mr, ok ? "true" : "false");
+    return ok;
+}
+
 static void sms_result_diag(const struct sms_submit_result_diag *d,void *user)
 {
     (void)user;
@@ -1836,8 +1860,44 @@ static void sip_rx_diag(const uint8_t *buf, size_t n)
      * modem CP runs no SIP (it only tracks IMS_REG state); stock IMS lives in
      * the Android AP client. Surface the distinction for the FSM/failure. */
     bool retry = strstr(mask, "retry") != NULL;
-    diagf("sip_tr_rx", "\"code\":%d,\"headers\":\"%s\",\"p_cscf_no_service\":%s",
-          code, mask, (code == 480 && retry) ? "true" : "false");
+    /* Extra root-cause (non-PII): the response reason phrase (e.g.
+     * "Temporarily Unavailable"), the body length, and the Server product
+     * token. None of these reveal identities; they distinguish a P-CSCF
+     * "no matching IMPU", a security-transport requirement, or a generic
+     * registrar-unavailable answer. */
+    char reason[64]; size_t rl = 0;
+    {
+        size_t k = 8;  /* after "SIP/2.0 " */
+        while (k < 11 && k < n) k++;          /* skip 3-digit code */
+        while (k < n && (buf[k] == ' ')) k++;
+        while (k < n && buf[k] != '\r' && buf[k] != '\n' && rl + 1 < sizeof reason)
+            reason[rl++] = (char)((buf[k] >= 0x20 && buf[k] < 0x7f) ? buf[k] : '.')
+                         , k++;
+        reason[rl] = 0;
+    }
+    unsigned body_len = 0; bool have_cl = false;
+    {
+        const uint8_t *h = memmem(buf, n, "\r\n\r\n", 4);
+        if (h) { const uint8_t *b = h + 4; body_len = (unsigned)(n - (size_t)(b - buf)); }
+        const uint8_t *cl = memmem(buf, n, "\r\nContent-Length:", 17);
+        if (cl) { unsigned v = 0; const uint8_t *q = cl + 17;
+            while (q < buf + n && (*q == ' ' || *q == '\t')) q++;
+            while (q < buf + n && *q >= '0' && *q <= '9') { v = v*10u + (unsigned)(*q-'0'); q++; }
+            body_len = v; have_cl = true; }
+    }
+    char server[48]; server[0] = 0;
+    {
+        const uint8_t *sv = memmem(buf, n, "\r\nServer:", 9);
+        if (sv) { size_t j = 0; const uint8_t *q = sv + 9;
+            while (q < buf + n && (*q == ' ' || *q == '\t')) q++;
+            while (q < buf + n && *q != '\r' && *q != '\n' && j + 1 < sizeof server)
+                server[j++] = (char)((*q >= 0x20 && *q < 0x7f) ? *q : '.'), q++;
+            server[j] = 0; }
+    }
+    diagf("sip_tr_rx", "\"code\":%d,\"reason\":\"%s\",\"headers\":\"%s\","
+          "\"body_len\":%u,\"have_cl\":%s,\"server\":\"%s\",\"p_cscf_no_service\":%s",
+          code, reason, mask, body_len, have_cl ? "true" : "false", server,
+          (code == 480 && retry) ? "true" : "false");
 }
 
 static void sip_tr_recv(void)
@@ -3783,7 +3843,8 @@ int main(int argc, char **argv)
     const char *sms_path=getenv("NUXEL_SMS_DATABASE");
     if (!sms_path || !*sms_path) sms_path="/var/lib/nuxel-radio/sms.sqlite3";
     if (!sms_service_open(&g.sms,sms_path,sms_write,sms_notify,NULL)) diag("sms_storage_unavailable",NULL);
-    else sms_service_set_result_diag(&g.sms,sms_result_diag);
+    else { sms_service_set_result_diag(&g.sms,sms_result_diag);
+           sms_service_set_ims_submit(&g.sms,sms_ims_submit); }
     call_service_init(&g.calls,sms_write,call_notify,NULL);
     ims_service_open(&g.ims,ims_write,ims_state_diag,NULL);
     ims_pdn_open(&g.ims_pdn,ims_pdn_write,NULL);

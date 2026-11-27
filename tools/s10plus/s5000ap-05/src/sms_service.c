@@ -45,6 +45,9 @@ bool sms_service_open(struct sms_service *s,const char *path,sms_write_fn write,
 void sms_service_set_result_diag(struct sms_service *s,sms_result_fn fn)
 { if (s) s->result_diag=fn; }
 
+void sms_service_set_ims_submit(struct sms_service *s,sms_ims_submit_fn fn)
+{ if (s) s->ims_submit=fn; }
+
 static void uncertain(struct sms_service *s)
 {
     if (!s->active) return;
@@ -79,26 +82,62 @@ void sms_service_tick(struct sms_service *s,uint64_t now,bool online,bool sim_re
         return;
     }
     s->ims_registered = ims_registered;
-    /* This writer reaches the CP FMT endpoint only. Stock selects a different
-     * ModemType for IMS; registration alone cannot make this writer an IMS
-     * transport. Keep queued jobs intact until that transport is implemented.
-     * CS domain wire 0 = ConvertDomainToIPC(GetDomain=2). */
-    uint8_t domain_wire;
-    if (cs_registered) domain_wire = 0u;
-    else return;
-    s->selected_domain = domain_wire;
-
-    if (s->active || s->blocked || !s->ready_ack || s->ready_rejected || !s->smsc_len || !sms_store_next(&s->store,&s->job)) return;
-    uint8_t pdu[SMS_MAX_PDU];size_t n=s->smsc_len+s->job.pdu.len;
-    if (n>sizeof pdu) {
-        (void)sms_store_fail(&s->store,s->job.id,s->job.part,-3,false);notify(s,s->job.id,false);return;
+    /* Transport selection, transport-independent and truthful:
+     *   - CS domain (wire 0 == ConvertDomainToIPC(GetDomain=2)) is the legacy
+     *     path; it requires the CP's CS registration AND the FMT writer.
+     *   - SMS-over-IMS (TS 24.341) requires an authoritative IMS registration
+     *     (SIP 200 OK) and the ims_submit hook. The FMT writer is NOT an IMS
+     *     transport, so the CS path is never used to fake IMS.
+     * A job is only dequeued once a real transport is ready; otherwise it
+     * stays durably queued (never a doomed submission). */
+    bool cs_ready = cs_registered && s->ready_ack && !s->ready_rejected &&
+                    s->smsc_len && s->write;
+    bool ims_ready = ims_registered && s->ims_submit;
+    uint8_t domain_wire = 0u;
+    if (cs_ready) {
+        s->selected_domain = domain_wire;
+    } else if (!ims_ready) {
+        return;
+    } else {
+        s->selected_domain = 0xffu;   /* IMS (no CP FMT domain byte) */
     }
-    memcpy(pdu,s->smsc,s->smsc_len);memcpy(pdu+s->smsc_len,s->job.pdu.data,s->job.pdu.len);
-    if (!fmt_sms_send(&f,s->job.part<s->job.total,domain_wire,pdu,n)) return;
-    if (!sms_store_sending(&s->store,s->job.id,s->job.part)) { s->store_errors++;s->blocked=true;return; }
-    s->active=true;s->deadline_ms=now+120000;
-    if (!s->write(&f,&s->sequence,s->user)) uncertain(s);
-    else notify(s,s->job.id,false);
+
+    if (s->active || s->blocked || !sms_store_next(&s->store,&s->job)) return;
+
+    if (cs_ready) {
+        struct fmt_tx_frame f;uint8_t sequence;
+        uint8_t pdu[SMS_MAX_PDU];size_t n=s->smsc_len+s->job.pdu.len;
+        if (n>sizeof pdu) {
+            (void)sms_store_fail(&s->store,s->job.id,s->job.part,-3,false);notify(s,s->job.id,false);return;
+        }
+        memcpy(pdu,s->smsc,s->smsc_len);memcpy(pdu+s->smsc_len,s->job.pdu.data,s->job.pdu.len);
+        if (!fmt_sms_send(&f,s->job.part<s->job.total,domain_wire,pdu,n)) return;
+        if (!sms_store_sending(&s->store,s->job.id,s->job.part)) { s->store_errors++;s->blocked=true;return; }
+        s->active=true;s->deadline_ms=now+120000;
+        if (!s->write(&f,&sequence,s->user)) uncertain(s);
+        else { s->sequence=sequence; notify(s,s->job.id,false); }
+        return;
+    }
+
+    /* IMS path: hand the pure TP-MTI TPDU (already stored WITHOUT an SMSC
+     * prefix) to the SIP MESSAGE builder, which wraps it in RP-DATA addressed
+     * to the originating UE. The TPDU is what the SMSC encodes/decodes. */
+    {
+        uint32_t peer_off = s->job.id ? 0u : 0u; (void)peer_off;
+        char peer[SMS_MAX_PEER];
+        if (!sms_store_peer(&s->store, s->job.id, peer, sizeof peer)) return;
+        if (!sms_store_sending(&s->store,s->job.id,s->job.part)) { s->store_errors++;s->blocked=true;return; }
+        s->active=true; s->deadline_ms=now+120000;
+        if (!s->ims_submit(peer, s->job.pdu.data, s->job.pdu.len,
+                           s->job.pdu.reference, s->user)) {
+            /* Could not push the MESSAGE: revert to queued (no network send
+             * happened) so a later tick can retry after backoff. */
+            (void)sms_store_requeue(&s->store,s->job.id,s->job.part);
+            s->active=false;
+            return;
+        }
+        notify(s,s->job.id,false);
+    }
 }
 
 void sms_service_receive(struct sms_service *s,const struct nuxel_sipc_fmt *f)

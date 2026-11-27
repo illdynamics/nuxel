@@ -5,7 +5,8 @@
 static unsigned failures;
 #define CHECK(c) do { if (!(c)) { fprintf(stderr,"FAIL %d: %s\n",__LINE__,#c);failures++; } } while (0)
 struct mock { struct fmt_tx_frame last;uint8_t seq;unsigned writes,notifications;struct sms_service *service;bool fail;
-              struct sms_submit_result_diag diag;char state[32];unsigned diags; };
+              struct sms_submit_result_diag diag;char state[32];unsigned diags;
+              unsigned ims_calls;bool ims_ok;char ims_peer[64];uint8_t ims_tpdu[256];size_t ims_tpdu_len;uint8_t ims_mr; };
 static bool write_frame(const struct fmt_tx_frame *f,uint8_t *seq,void *user)
 {
     struct mock *m=user;m->last=*f;*seq=m->seq++;m->writes++;
@@ -22,6 +23,14 @@ static void changed(uint32_t id,bool incoming,void *user)
 { (void)id;(void)incoming;((struct mock *)user)->notifications++; }
 static void diag(const struct sms_submit_result_diag *d,void *user)
 { struct mock *m=user;m->diag=*d;snprintf(m->state,sizeof m->state,"%s",d->state ? d->state : "");m->diag.state=m->state;m->diags++; }
+static bool ims_submit(const char *peer,const uint8_t *tpdu,size_t tpdu_len,uint8_t mr,void *user)
+{
+    struct mock *m=user;m->ims_calls++;
+    snprintf(m->ims_peer,sizeof m->ims_peer,"%s",peer);
+    if (tpdu_len>sizeof m->ims_tpdu) return false;
+    memcpy(m->ims_tpdu,tpdu,tpdu_len);m->ims_tpdu_len=tpdu_len;m->ims_mr=mr;
+    return m->ims_ok;
+}
 static void receive(struct sms_service *s,uint8_t main,uint8_t sub,uint8_t type,uint8_t ack,const uint8_t *p,size_t n)
 {
     struct nuxel_sipc_fmt f={.main_cmd=main,.sub_cmd=sub,.cmd_type=type,.ack_seq=ack,.payload=p,.payload_len=(uint32_t)n};
@@ -131,6 +140,52 @@ int main(void)
     incoming[6+sizeof pdu-1]=0x07;
     CHECK(sqlite3_exec(s.store.db,"PRAGMA query_only=ON",NULL,NULL,NULL)==SQLITE_OK);
     receive(&s,4,2,3,0,incoming,sizeof incoming);CHECK(m.last.buf[8]==0x16 && m.last.buf[9]==0x80 && s.store_errors==1);
+    /* ---- SMS-over-IMS dispatch (transport-independent hook) ----
+     * With CS unavailable but IMS registered AND an ims_submit hook set, the
+     * service must hand the PURE TPDU (no SMSC prefix) to the hook, never the
+     * CP FMT writer, and only dequeue when a transport is genuinely ready. */
+    {
+        struct sms_service is; struct mock im={.service=&is};
+        CHECK(sms_service_open(&is,":memory:",write_frame,changed,&im));
+        sms_service_set_ims_submit(&is,ims_submit);
+        /* CP readiness handshake still runs so the store is armed. */
+        sms_service_tick(&is,100,true,true,false,false,true);
+        const uint8_t ackc[]={4,7,3,0,0x80};receive(&is,128,1,2,is.ready_sequence,ackc,sizeof ackc);
+        const uint8_t smscc[]={0};receive(&is,4,10,2,0,smscc,1);
+        uint32_t iid;CHECK(sms_store_queue(&is.store,"+12345678901","ims hello",&iid));
+        /* Not registered: held, no IMS call. */
+        sms_service_tick(&is,200,true,true,false,false,true);
+        CHECK(im.ims_calls==0 && !is.active);
+        /* Registered + hook present, hook OK: dispatched, message -> sending. */
+        im.ims_ok=true;
+        unsigned iw_before=im.writes;
+        sms_service_tick(&is,300,true,true,false,true,true);
+        CHECK(im.ims_calls==1 && is.active);
+        CHECK(im.ims_tpdu_len>0 && im.ims_tpdu_len==is.job.pdu.len);
+        CHECK(im.ims_tpdu[0]==is.job.pdu.data[0]); /* pure TPDU, no SMSC */
+        CHECK(!strcmp(im.ims_peer,"+12345678901"));
+        struct sms_record ir;CHECK(sms_store_get(&is.store,iid,&ir) && !strcmp(ir.state,"sending"));
+        CHECK(im.writes==iw_before); /* never went through the CP FMT writer */
+        /* A refused MESSAGE (send failed) requeues the part, no fake success. */
+        uint8_t ref=is.job.pdu.reference;
+        sms_service_close(&is);
+        struct sms_service is2; struct mock im2={.service=&is2};
+        CHECK(sms_service_open(&is2,":memory:",write_frame,changed,&im2));
+        sms_service_set_ims_submit(&is2,ims_submit);
+        sms_service_tick(&is2,100,true,true,false,false,true);
+        receive(&is2,128,1,2,is2.ready_sequence,ackc,sizeof ackc);
+        receive(&is2,4,10,2,0,smscc,1);
+        (void)ref;
+        uint32_t iid2;CHECK(sms_store_queue(&is2.store,"+12345678901","ims refuse",&iid2));
+        im2.ims_ok=false; /* transport refuses */
+        sms_service_tick(&is2,200,true,true,false,true,true);
+        CHECK(im2.ims_calls==1 && !is2.active);
+        struct sms_record ir2;
+        uint32_t ids[8];size_t nids=sms_store_list(&is2.store,ids,8);
+        CHECK(nids>=1 && sms_store_get(&is2.store,iid2,&ir2) && !strcmp(ir2.state,"queued"));
+        sms_service_close(&is2);
+    }
+
     sms_service_close(&s);
     printf("SMS service durability/correlation: %s (%u failures)\n",failures ? "FAIL" : "PASS",failures);
     return failures ? 1 : 0;
