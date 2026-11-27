@@ -63,11 +63,14 @@ int main(void)
     assert(memmem(captured, captured_len, "Authorization:", 14) != NULL);
 
     assert(memmem(captured,captured_len,"nonce=\"\", response=\"\"",strlen("nonce=\"\", response=\"\"")));
-    /* Registrar minimum is a concrete correction, not an unchanged retry. */
-    const char *short_interval="SIP/2.0 423 Interval Too Brief\r\nmin-expires: 3600\r\nContent-Length: 0\r\n\r\n";
-    reply(&t,(const uint8_t *)short_interval,strlen(short_interval));
-    assert(t.phase==IMS_SIP_TR_REGISTER_SENT && t.expires_s==3600);
+    /* REGISTER expiry must start at the KPN registrar minimum (3600s) so the
+     * initial REGISTER is not answered 423 "Interval Too Brief". */
     assert(strstr((char *)captured,"expires=3600"));
+    /* Registrar minimum is a concrete correction, not an unchanged retry. */
+    const char *short_interval="SIP/2.0 423 Interval Too Brief\r\nmin-expires: 7200\r\nContent-Length: 0\r\n\r\n";
+    reply(&t,(const uint8_t *)short_interval,strlen(short_interval));
+    assert(t.phase==IMS_SIP_TR_REGISTER_SENT && t.expires_s==7200);
+    assert(strstr((char *)captured,"expires=7200"));
     /* 2. feed 401 AKAv1-MD5 -> CHALLENGED, realm/nonce recorded. */
     static const char ch401[] =
         "SIP/2.0 401 Unauthorized\r\n"

@@ -72,7 +72,7 @@ bool ims_sip_tr_open(struct ims_sip_tr *t, const struct ims_sip_tr_cfg *cfg,
     uint8_t random[16];
     if(getentropy(random,sizeof random)) return false;
     for(unsigned i=0;i<sizeof random;i++) snprintf(t->call_id+2*i,3,"%02x",random[i]);
-    t->expires_s=600;
+    t->expires_s=3600; /* KPN Min-Expires is 3600s (1h): start at the registrar minimum to avoid a spurious 423 "Interval Too Brief" on the initial REGISTER (RFC 3261 10.2.1.1 default is also 3600). */
     /* Carry over a network-imposed hold so re-opening the bearer/socket does
      * NOT bypass a registrar Retry-After (the hold is absolute monotonic ms,
      * so it remains valid across the re-open). RES/digest material is never
