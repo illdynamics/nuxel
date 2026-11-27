@@ -169,6 +169,9 @@ struct radiod_ctx {
     bool sip_param_sent;        /* SetSipParam fired once per P-CSCF discovery */
     struct ims_sip_tr sip_tr;   /* native SIP/IMS transport + registration FSM */
     bool sip_tr_open;           /* transport opened (P-CSCF + local IP known) */
+    unsigned sip_pcscf_idx;     /* current P-CSCF index from the PCO list */
+    unsigned sip_pcscf_tries;   /* consecutive 480s on the current P-CSCF */
+    unsigned sip_pcscf_answered; /* bitmask: P-CSCF idx that sent ANY response */
     /* Native SIP 401 AKAv1-MD5 -> USIM AKA bridge state. When the SIP FSM
      * enters CHALLENGED, the 401 nonce is base64(RAND||AUTN); radiod decodes
      * it, submits the USIM AKA (SEC 5/9), and passes RES back via
@@ -934,6 +937,22 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
                   "\"ims_ip\":\"%s\",\"pcscf\":\"%s\"",
                   g.ims_pdn.ip_ready ? "true" : "false",
                   ip.pcscf4_count + ip.pcscf6_count, ims_ip, pc);
+            /* All discovered P-CSCFs (network infrastructure, not secret) so
+             * a failover decision is evidence-based. */
+            {
+                char all[200]; size_t off = 0; all[0] = 0;
+                unsigned total = ip.pcscf6_count + ip.pcscf4_count;
+                for (unsigned k = 0; k < total && off + 48 < sizeof all; k++) {
+                    char t[64] = {0};
+                    if (k < ip.pcscf6_count) inet_ntop(AF_INET6, ip.pcscf6[k], t, sizeof t);
+                    else inet_ntop(AF_INET, ip.pcscf4[k - ip.pcscf6_count], t, sizeof t);
+                    if (!t[0]) continue;
+                    int w = snprintf(all + off, sizeof all - off, "%s%s",
+                                     off ? "," : "", t);
+                    if (w > 0) off += (size_t)w;
+                }
+                diagf("ims_pcscf_list", "\"count\":%u,\"list\":\"%s\"", total, all);
+            }
             /* Attach the CID-2 IMS bearer to rmnet1 so the native SIP
              * transport can actually source traffic from the IMS IPv6. */
             if (g.write_enabled && ims_ip[0])
@@ -1718,18 +1737,23 @@ fail:
  * (the Round 07 verified FMT path). This is the mirror of sip_tr_open_from_iil
  * for the FMT bearer that now reaches ims_pdn_active() with a real CID-2
  * GPRS_IP_CONFIGURATION (2 P-CSCF). The FMT ip is carried in fmt_rx_ip.pcscf6. */
-static bool sip_tr_open_from_ims_pdn(const struct ims_pdn *p)
+static bool sip_tr_open_from_ims_pdn_idx(const struct ims_pdn *p, unsigned idx)
 {
     if (!p || !p->ip_ready || !p->pcscf_ready) return false;
     int fam = 0;
     char pcscf[64] = {0}, local[64] = {0};
-    if (p->ip.ipv6_valid && p->ip.pcscf6_count > 0) {
+    unsigned n6 = p->ip.pcscf6_count, n4 = p->ip.pcscf4_count, total = n6 + n4;
+    if (!total) return false;
+    if (idx >= total) idx = 0;
+    if (p->ip.ipv6_valid && n6 > 0) {
         fam = AF_INET6;
-        inet_ntop(AF_INET6, p->ip.pcscf6[0], pcscf, sizeof pcscf);
+        unsigned k = idx < n6 ? idx : 0;
+        inet_ntop(AF_INET6, p->ip.pcscf6[k], pcscf, sizeof pcscf);
         inet_ntop(AF_INET6, p->ip.ipv6, local, sizeof local);
-    } else if (p->ip.ipv4_valid && p->ip.pcscf4_count > 0) {
+    } else if (p->ip.ipv4_valid && n4 > 0) {
         fam = AF_INET;
-        inet_ntop(AF_INET, p->ip.pcscf4[0], pcscf, sizeof pcscf);
+        unsigned k = idx < n4 ? idx : 0;
+        inet_ntop(AF_INET, p->ip.pcscf4[k], pcscf, sizeof pcscf);
         inet_ntop(AF_INET, p->ip.ipv4, local, sizeof local);
     }
     if (fam == 0 || !pcscf[0] || !local[0]) {
@@ -1797,6 +1821,9 @@ fail2:
     close(sip_tr_fd); sip_tr_fd = -1;
     return false;
 }
+
+static bool sip_tr_open_from_ims_pdn(const struct ims_pdn *p)
+{ return sip_tr_open_from_ims_pdn_idx(p, g.sip_pcscf_idx); }
 
 /* Close the native SIP transport (bearer loss / stop). */
 static void sip_tr_close(void)
@@ -2026,14 +2053,49 @@ static void sip_tr_tick(uint64_t now)
             if (after != before)
                 diagf("iil_sip_tr_phase", "\"phase\":\"%s\"",
                       ims_sip_tr_phase_name(after));
+            /* P-CSCF liveness handling (TS 24.229 PCO P-CSCF list). Live
+             * evidence this round: ::116 answers well-formed REGISTERs with
+             * a SIP 480 (it IS a reachable P-CSCF), while ::17 is silent on
+             * 5060 (it is NOT a UDP responder). A 480 therefore means "this
+             * node is the serving P-CSCF but will not serve this REGISTER",
+             * NOT "wrong node" -> do not rotate away from a node that
+             * answers. Conversely a timeout (FAILED with no 480) means the
+             * node is dead: rotate to the next discovered P-CSCF. Bounded. */
+            /* Mark the current P-CSCF as responding if the FSM left the
+             * sent state for anything but a pure timeout FAILED-from-sent with
+             * no reply. A 480/401/2xx all prove the node answered. */
+            if (after != IMS_SIP_TR_REGISTER_SENT && after != IMS_SIP_TR_AUTH_SENT &&
+                after != IMS_SIP_TR_RETRY_WAIT)
+                g.sip_pcscf_answered |= (1u << (g.sip_pcscf_idx & 31));
+            if (after == IMS_SIP_TR_RETRY_WAIT)
+                g.sip_pcscf_answered |= (1u << (g.sip_pcscf_idx & 31));
+            if (after == IMS_SIP_TR_FAILED && before != IMS_SIP_TR_FAILED) {
+                unsigned total = g.ims_pdn.ip.pcscf4_count + g.ims_pdn.ip.pcscf6_count;
+                /* If the CURRENT node already answered (e.g. 480), it is the
+                 * serving P-CSCF: a later timeout is transient, do not leave
+                 * the node that answers for one that is silent. */
+                bool current_answered = (g.sip_pcscf_answered & (1u << (g.sip_pcscf_idx & 31))) != 0;
+                if (total > 1 && !current_answered) {
+                    g.sip_pcscf_idx = (g.sip_pcscf_idx + 1) % total;
+                    diagf("sip_pcscf_failover_dead", "\"idx\":%u,\"total\":%u",
+                          g.sip_pcscf_idx, total);
+                    sip_tr_close();
+                    if (ims_pdn_active(&g.ims_pdn) &&
+                        sip_tr_open_from_ims_pdn(&g.ims_pdn)) {
+                        diag("sip_pcscf_reopen", NULL);
+                    }
+                }
+            }
             /* Authoritative native SIP 200 OK -> IMS REGISTERED (never from a
              * modem relay/ack). Drives the SMS-transport readiness gate. */
             bool reg = ims_sip_tr_registered(&g.sip_tr);
             if (reg != (g.ims.phase == IMS_REGISTERED))
                 ims_service_native_registered(&g.ims, reg);
+            if (reg) g.sip_pcscf_tries = 0;   /* locked onto a serving P-CSCF */
         }
     } else {
         if (g.sip_tr_open) { sip_tr_close(); diag("sip_tr_close", NULL); }
+        g.sip_pcscf_idx = 0; g.sip_pcscf_tries = 0; g.sip_pcscf_answered = 0;   /* fresh epoch */
         /* Bearer loss: release the CID-2 iface binding (rmnet0 untouched). */
         radiod_ims_iface_down();
         /* Bearer loss invalidates any prior native registration. */
