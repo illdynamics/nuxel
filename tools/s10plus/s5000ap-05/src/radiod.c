@@ -1558,7 +1558,14 @@ static bool sip_tr_open_from_iil(const struct iil_pdn *p)
     char impu_buf[160] = {0}, impi_buf[160] = {0};
     if (g.ims.identity.ready && g.ims.identity.impi[0]) {
         snprintf(impi_buf, sizeof impi_buf, "%s", g.ims.identity.impi);
-        if (g.ims.identity.impu[0])
+        /* Prefer the verified MSISDN-derived IMPU (the default public identity
+         * a USIM-only subscription registers) over the IMSI-derived temporary
+         * IMPU. The private identity (IMPI) is unchanged and remains the IMSI
+         * for IMS AKA. If no EF_MSISDN was read, fall back to the IMSI-derived
+         * IMPU exactly as before. */
+        if (g.ims.identity.msisdn_impu_valid && g.ims.identity.msisdn_impu[0])
+            snprintf(impu_buf, sizeof impu_buf, "%s", g.ims.identity.msisdn_impu);
+        else if (g.ims.identity.impu[0])
             snprintf(impu_buf, sizeof impu_buf, "%s", g.ims.identity.impu);
         else
             snprintf(impu_buf, sizeof impu_buf, "sip:%s", g.ims.identity.impi);
@@ -1638,7 +1645,14 @@ static bool sip_tr_open_from_ims_pdn(const struct ims_pdn *p)
     char impu_buf[160] = {0}, impi_buf[160] = {0};
     if (g.ims.identity.ready && g.ims.identity.impi[0]) {
         snprintf(impi_buf, sizeof impi_buf, "%s", g.ims.identity.impi);
-        if (g.ims.identity.impu[0])
+        /* Prefer the verified MSISDN-derived IMPU (the default public identity
+         * a USIM-only subscription registers) over the IMSI-derived temporary
+         * IMPU. The private identity (IMPI) is unchanged and remains the IMSI
+         * for IMS AKA. If no EF_MSISDN was read, fall back to the IMSI-derived
+         * IMPU exactly as before. */
+        if (g.ims.identity.msisdn_impu_valid && g.ims.identity.msisdn_impu[0])
+            snprintf(impu_buf, sizeof impu_buf, "%s", g.ims.identity.msisdn_impu);
+        else if (g.ims.identity.impu[0])
             snprintf(impu_buf, sizeof impu_buf, "%s", g.ims.identity.impu);
         else
             snprintf(impu_buf, sizeof impu_buf, "sip:%s", g.ims.identity.impi);

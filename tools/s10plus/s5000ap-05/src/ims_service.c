@@ -10,6 +10,7 @@
  * registration and an IMS SMS transport, this service must hold SMS closed.
  */
 #include "ims_service.h"
+#include "ims_msisdn.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -36,6 +37,19 @@ bool ims_identity_from_usim(struct ims_identity *out, const uint8_t *imsi,
     snprintf(out->impi,sizeof out->impi,"%.*s@%s",(int)len,(const char *)imsi,out->domain);
     snprintf(out->impu,sizeof out->impu,"sip:%s",out->impi);
     out->ready=true;
+    return true;
+}
+
+bool ims_identity_prefer_msisdn(struct ims_identity *out, const char *digits)
+{
+    if (!out || !out->ready) return false;
+    if (!digits || !digits[0]) return false;
+    if (!ims_msisdn_impu(digits, out->domain, out->msisdn_impu,
+                         sizeof out->msisdn_impu)) return false;
+    out->msisdn_impu_valid = true;
+    /* Prefer the MSISDN-derived IMPU for presentation; the private identity
+     * (IMPI) stays the IMSI-derived value that IMS AKA uses as the digest
+     * username. Never copy the MSISDN into the IMSI-derived impu field. */
     return true;
 }
 

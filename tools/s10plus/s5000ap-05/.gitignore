@@ -45,3 +45,4 @@ test_oes_cert
 /test_ims_init
 /test_ims_pdn
 /test_ims_service
+/test_ims_msisdn

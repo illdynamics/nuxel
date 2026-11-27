@@ -27,12 +27,24 @@ static void test_identity(void)
     assert(!strcmp(id.impu,"sip:234150999999999@ims.mnc015.mcc234.3gppnetwork.org"));
     assert(ims_identity_from_usim(&id,imsi,15,3));
     assert(!strcmp(id.domain,"ims.mnc150.mcc234.3gppnetwork.org"));
+    /* MSISDN-derived public identity must be preferred for presentation but
+     * must never clobber the IMSI-derived private identity (AKA username). */
+    assert(ims_identity_prefer_msisdn(&id,"31612345678"));
+    assert(id.msisdn_impu_valid);
+    assert(!strcmp(id.msisdn_impu,"sip:+31612345678@ims.mnc150.mcc234.3gppnetwork.org"));
+    assert(!strcmp(id.impi,"234150999999999@ims.mnc150.mcc234.3gppnetwork.org"));
+    assert(!strcmp(id.impu,"sip:234150999999999@ims.mnc150.mcc234.3gppnetwork.org"));
+    assert(!ims_identity_prefer_msisdn(&id,""));
+    assert(!ims_identity_prefer_msisdn(&id,"12a45"));
     assert(!ims_identity_from_usim(&id,imsi,15,0) && !id.ready && !id.impi[0]);
     assert(!ims_identity_from_usim(&id,(const uint8_t *)"23415x",6,2));
     assert(!ims_identity_from_usim(&id,imsi,16,2));
     assert(!ims_identity_from_usim(&id,NULL,15,2));
+    ims_identity_clear(&id);
+    assert(!ims_identity_prefer_msisdn(&id,"31612345678"));
     assert(!ims_identity_from_usim(&id,imsi,5,2));
     ims_identity_clear(&id);
+    assert(!ims_identity_prefer_msisdn(&id,"31612345678"));
     for (size_t i=0;i<sizeof id;i++) assert(!((uint8_t *)&id)[i]);
 }
 static void test_auth(void)

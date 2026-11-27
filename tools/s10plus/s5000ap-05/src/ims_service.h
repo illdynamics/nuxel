@@ -19,11 +19,20 @@ typedef void (*ims_auth_fn)(const struct fmt_rx_usim_auth *result, void *user);
 struct ims_identity {
     bool ready;
     char domain[64], impi[96], impu[100];
+    /* MSISDN-derived public identity, when EF_MSISDN was read successfully.
+     * Empty until proven by an actual EF_MSISDN read; NEVER fabricated. */
+    bool msisdn_impu_valid;
+    char msisdn_impu[100];
 };
 /* TS 23.003 13.2/13.3/13.4B. MNC length must come from subscription data,
  * never guessed from IMSI length. Output is cleared on invalid input. */
 bool ims_identity_from_usim(struct ims_identity *out, const uint8_t *imsi,
                             size_t len, unsigned mnc_digits);
+/* Replace the public identity with the MSISDN-based IMPU
+ * (sip:+<msisdn>@<domain>) when `digits` is a verified E.164 MSISDN read from
+ * the subscriber's own EF_MSISDN. The private identity (IMPI) is unchanged —
+ * IMS AKA digest uses the IMSI-derived private identity, never the MSISDN. */
+bool ims_identity_prefer_msisdn(struct ims_identity *out, const char *digits);
 void ims_identity_clear(struct ims_identity *out);
 
 enum ims_phase {

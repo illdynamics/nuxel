@@ -44,7 +44,7 @@ $CC "${CFLAGS[@]}" -Isrc -o test_sms_store tests/test_sms_store.c src/sms_store.
 $CC "${CFLAGS[@]}" -Isrc -o test_sms_service tests/test_sms_service.c src/sms_service.c src/sms_store.c src/sms_pdu.c src/fmt_sms.c src/fmt_tx.c -lsqlite3
 $CC "${CFLAGS[@]}" -Isrc -o test_fmt_call tests/test_fmt_call.c src/fmt_call.c src/fmt_tx.c
 $CC "${CFLAGS[@]}" -Isrc -o test_call_service tests/test_call_service.c src/call_service.c src/fmt_call.c src/fmt_tx.c
-$CC "${CFLAGS[@]}" -Isrc -o test_ims_service tests/test_ims_service.c src/ims_service.c src/fmt_tx.c src/fmt_rx.c
+$CC "${CFLAGS[@]}" -Isrc -o test_ims_service tests/test_ims_service.c src/ims_service.c src/ims_msisdn.c src/fmt_tx.c src/fmt_rx.c
 $CC "${CFLAGS[@]}" -Isrc -o test_ims_pdn tests/test_ims_pdn.c src/ims_pdn.c src/fmt_tx.c src/fmt_rx.c
 $CC "${CFLAGS[@]}" -Isrc -o test_ims_init tests/test_ims_init.c src/ims_init.c src/fmt_tx.c src/fmt_rx.c
 $CC "${CFLAGS[@]}" -Isrc -o test_ims_security tests/test_ims_security.c src/ims_security.c
@@ -56,6 +56,7 @@ $CC "${CFLAGS[@]}" -Isrc -o test_ims_iil_rx tests/test_ims_iil_rx.c src/ims_iil_
 $CC "${CFLAGS[@]}" -Isrc -o test_iil_pdn tests/test_iil_pdn.c src/iil_pdn.c src/ims_iil.c src/ims_iil_rx.c src/fmt_tx.c
 $CC "${CFLAGS[@]}" -Isrc -o test_iil_auth tests/test_iil_auth.c src/iil_auth.c src/ims_iil.c src/fmt_tx.c src/fmt_rx.c src/data_session.c
 $CC "${CFLAGS[@]}" -Isrc -o test_ims_sdm tests/test_ims_sdm.c src/ims_sdm.c src/fmt_tx.c src/fmt_rx.c
+$CC "${CFLAGS[@]}" -Isrc -o test_ims_msisdn tests/test_ims_msisdn.c src/ims_msisdn.c
 
 $CC "${CFLAGS[@]}" -Isrc -o test_mobile_data tests/test_mobile_data.c src/mobile_data.c src/fmt_tx.c src/fmt_rx.c
 ./test_mobile_data
@@ -92,6 +93,7 @@ echo "=== run Stage-06 MBIM<->SIPC serialization tests ==="
 ./test_iil_pdn
 ./test_iil_auth
 ./test_ims_sdm
+./test_ims_msisdn
 echo "=== run Stage-06 recovered QBR item dictionary tests ==="
 ./test_qbr_items
 echo "=== run Stage-06 recovered CP-NV record/MD5/policy tests ==="
@@ -117,7 +119,7 @@ $CLANG -O1 -g -Wall -Wextra -Werror -fsanitize=address,undefined -fno-sanitize-r
 python3 tests/fuzz_sipc5.py ./test_sipc5_fmt_asan --asan --iters=3000
 
 # Both serialization directions, FSM, and NV/backup transactions.
-for suite in fmt_tx fmt_rx data_session rfs_nv efs_nv oes_cert fmt_sms sms_pdu sms_store sms_service fmt_call call_service mobile_data ims_service ims_pdn ims_init ims_security ims_sms ims_sip ims_iil ims_sip_tr; do
+for suite in fmt_tx fmt_rx data_session rfs_nv efs_nv oes_cert fmt_sms sms_pdu sms_store sms_service fmt_call call_service mobile_data ims_service ims_pdn ims_init ims_security ims_sms ims_sip ims_iil ims_sip_tr ims_sdm ims_msisdn; do
     libs=()
     case "$suite" in
         mobile_data) sources=(src/mobile_data.c src/fmt_tx.c src/fmt_rx.c) ;;
@@ -132,7 +134,7 @@ for suite in fmt_tx fmt_rx data_session rfs_nv efs_nv oes_cert fmt_sms sms_pdu s
         sms_service) sources=(src/sms_service.c src/sms_store.c src/sms_pdu.c src/fmt_sms.c src/fmt_tx.c);libs=(-lsqlite3) ;;
         fmt_call) sources=(src/fmt_call.c src/fmt_tx.c) ;;
         call_service) sources=(src/call_service.c src/fmt_call.c src/fmt_tx.c) ;;
-        ims_service) sources=(src/ims_service.c src/fmt_tx.c src/fmt_rx.c) ;;
+        ims_service) sources=(src/ims_service.c src/ims_msisdn.c src/fmt_tx.c src/fmt_rx.c) ;;
         ims_pdn) sources=(src/ims_pdn.c src/fmt_tx.c src/fmt_rx.c) ;;
         ims_init) sources=(src/ims_init.c src/fmt_tx.c src/fmt_rx.c) ;;
         ims_security) sources=(src/ims_security.c) ;;
@@ -141,6 +143,7 @@ for suite in fmt_tx fmt_rx data_session rfs_nv efs_nv oes_cert fmt_sms sms_pdu s
         ims_iil) sources=(src/ims_iil.c) ;;
         ims_sip_tr) sources=(src/ims_sip_tr.c src/ims_sip.c src/ims_sms.c src/nv_items.c) ;;
         ims_sdm) sources=(src/ims_sdm.c src/fmt_tx.c src/fmt_rx.c) ;;
+        ims_msisdn) sources=(src/ims_msisdn.c) ;;
     esac
     "$CLANG" -O1 -g -Wall -Wextra -Werror -fsanitize=address,undefined \
         -fno-sanitize-recover=all -std=gnu11 -Isrc -o "test_${suite}_asan" \
