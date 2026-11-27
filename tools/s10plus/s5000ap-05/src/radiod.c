@@ -172,6 +172,10 @@ struct radiod_ctx {
     bool sip_param_sent;        /* SetSipParam fired once per P-CSCF discovery */
     struct ims_sip_tr sip_tr;   /* native SIP/IMS transport + registration FSM */
     bool sip_tr_open;           /* transport opened (P-CSCF + local IP known) */
+    /* Last IMS registration state REPORTED to the CP (main=22 sub=8/7).
+     * -1 = unknown (no report yet); 0 = deregistered reported; 1 = registered
+     * reported. Guards one CP report per genuine transition, never a loop. */
+    int cp_ims_reported;
     unsigned sip_pcscf_idx;     /* current P-CSCF index from the PCO list */
     unsigned sip_pcscf_tries;   /* consecutive 480s on the current P-CSCF */
     unsigned sip_pcscf_answered; /* bitmask: P-CSCF idx that sent ANY response */
@@ -209,6 +213,7 @@ static void begin_data_session(const char *apn);
 static int setup_session_bus(void);
 static void radiod_sip_param_from_pcscf(const struct iil_pdn *p);
 static void radiod_ims_iface_apply(const char *ims_ip, const char *pcscf);
+static void radiod_report_ims_reg_to_cp(bool registered);
 static void radiod_ims_iface_down(void);
 
 /* ------------------------------------------------------------------ */
@@ -1473,6 +1478,44 @@ static bool ims_sdm_write(const struct fmt_tx_frame *f, uint8_t *seq, void *user
 }
 
 
+/* Report the authoritative AP-side IMS registration state to the CP.
+ *
+ * The modem does not start SIP registration itself (the stock path reports
+ * its AP IMS service's result back via IpcTxImsReqSetRegState, main=22 sub=8,
+ * 6-byte payload). The recovered layout (vendor RIL 60889dd7
+ * IpcTxImsReqSetRegState @0x34d230 + IpcModem::SetImsRegState @0x2fbe88) is
+ * implemented by fmt_tx_ims_set_reg_state(). This is the production caller
+ * that was missing: without it the CP never learns that our REGISTER reached
+ * a genuine 200, so SMS-over-IMS remains inhibited regardless of the SIP
+ * FSM. A deregistration uses the vendor's dedicated main=22 sub=7 message.
+ *
+ * Bounded: exactly one report per genuine transition (g.cp_ims_reported
+ * records what was last reported). Idempotent across ticks. Never fabricates
+ * registration: it is only called from the native-200 transition in the
+ * SIP transport tick. */
+static void radiod_report_ims_reg_to_cp(bool registered)
+{
+    int want = registered ? 1 : 0;
+    if (g.cp_ims_reported == want) return;
+    if (!g.cp_online || !g.write_enabled) return;
+    if (!g.sim_ready_seen) return;
+    struct fmt_tx_frame f;
+    bool sent = false;
+    if (registered) {
+        sent = fmt_tx_ims_set_reg_state(&f, FMT_TX_IMS_REGSTATUS_REGISTERED,
+                                        IMS_NETWORK_TYPE_LTE,
+                                        IMS_NETWORK_TYPE_LTE) &&
+               radiod_write_fmt(&f);
+    } else {
+        sent = fmt_tx_ims_deregistration(&f) && radiod_write_fmt(&f);
+    }
+    if (!sent) return;           /* retry next transition; no runaway loop */
+    g.cp_ims_reported = want;
+    diagf("cp_ims_reg_report", "\"registered\":%s,\"wire\":\"%s\"",
+          registered ? "true" : "false",
+          registered ? "22/8" : "22/7");
+}
+
 /* Fire IpcTxSetSipParam (main=3 CDMA_DATA sub=19) with a discovered P-CSCF
  * and the IMSI-derived private identity. This is the modem-internal IMS
  * stack's SIP configuration; it supplies WHERE to send REGISTER (P-CSCF) and
@@ -2117,8 +2160,16 @@ static void sip_tr_tick(uint64_t now)
             /* Authoritative native SIP 200 OK -> IMS REGISTERED (never from a
              * modem relay/ack). Drives the SMS-transport readiness gate. */
             bool reg = ims_sip_tr_registered(&g.sip_tr);
-            if (reg != (g.ims.phase == IMS_REGISTERED))
+            if (reg != (g.ims.phase == IMS_REGISTERED)) {
                 ims_service_native_registered(&g.ims, reg);
+                /* Report the authoritative AP-side IMS registration state to
+                 * the CP (IpcTxImsReqSetRegState main=22 sub=8). Without this
+                 * the CP continues to inhibit SMS-over-IMS even after a real
+                 * SIP 200, because it has no knowledge of our AP registration.
+                 * Exactly one report per genuine transition (state-guarded);
+                 * deregistration uses the vendor's dedicated main=22 sub=7. */
+                radiod_report_ims_reg_to_cp(reg);
+            }
             if (reg) g.sip_pcscf_tries = 0;   /* locked onto a serving P-CSCF */
             /* Authoritative native registration is the ONLY IMS-SMS gate; the
              * modem's IIL relay is not proof. Drive it each tick so a genuine

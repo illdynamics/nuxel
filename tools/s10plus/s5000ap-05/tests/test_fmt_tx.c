@@ -227,6 +227,26 @@ int main(void)
         longp[102]='a'; longp[103]=0; CHECK(!fmt_tx_set_sip_param(&g, longp, "u", NULL, 0, 2));
     }
 
+    /* IpcTxImsReqSetRegState main=22 sub=8 type=3, 6-byte payload (vendor
+     * 0x34d230 / IpcModem::SetImsRegState 0x2fbe88). This is the production
+     * report Nuxel sends to the CP after a genuine native SIP 200. */
+    {
+        struct fmt_tx_frame g;
+        CHECK(fmt_tx_ims_set_reg_state(&g, FMT_TX_IMS_REGSTATUS_REGISTERED,
+                                       14u, 14u));
+        CHECK(g.len == 13);
+        CHECK(g.main_cmd == 22 && g.sub_cmd == 8 && g.cmd_type == 3);
+        CHECK(g.buf[0] == 13 && g.buf[1] == 0);  /* total_len LE 13 */
+        CHECK(g.buf[7+0] == 1);            /* ImsRegStatus REGISTERED */
+        CHECK(g.buf[7+1] == 1);            /* service flags */
+        CHECK(g.buf[7+2] == 14);           /* NetworkType LTE */
+        CHECK(g.buf[7+3] == 0);            /* EcmpState */
+        CHECK(g.buf[7+4] == 6);            /* EpdgAvailableState (LTE) */
+        CHECK(g.buf[7+5] == 0);            /* reserved */
+        CHECK(fmt_tx_ims_deregistration(&g));
+        CHECK(g.main_cmd == 22 && g.sub_cmd == 7);
+    }
+
     printf("FMT vendor golden vectors: %s (%d failures)\n", failures ? "FAIL" : "PASS", failures);
     return failures ? 1 : 0;
 }
