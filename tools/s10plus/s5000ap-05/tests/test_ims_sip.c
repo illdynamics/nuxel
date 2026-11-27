@@ -47,6 +47,31 @@ int main(void)
     assert(strstr(buf,"utran-cell-id-3gpp") == NULL);
     assert(strstr(buf,"utran-cell-id-3gpp=00000000") == NULL);
 
+    /* Security-first REGISTER (TS 33.203 7.1): REQUIRE sec-agree ONLY when a
+     * complete ipsec-3gpp offer is present (some P-CSCFs 480 a plaintext
+     * initial REGISTER). The default path above MUST stay Require-free. */
+    {
+        const char *off =
+            "alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;mod=trans;"
+            "spi-c=4096;spi-s=4097;port-c=5062;port-s=5064";
+        size_t sn=ims_sip_register_build_secure(buf,sizeof buf,
+            "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
+            "user@ims.mnc008.mcc204.3gppnetwork.org",
+            "2001:db8::1","2001:db8::2",5062,off,NULL,NULL);
+        assert(sn>0);
+        assert(strstr(buf,"Require: sec-agree"));
+        assert(strstr(buf,"Proxy-Require: sec-agree"));
+        assert(strstr(buf,"Security-Client: ipsec-3gpp;alg=hmac-sha-1-96"));
+        /* No security offer: NEVER assert sec-agree (would be invalid). */
+        sn=ims_sip_register_build_secure(buf,sizeof buf,
+            "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
+            "user@ims.mnc008.mcc204.3gppnetwork.org",
+            "2001:db8::1","2001:db8::2",5062,NULL,NULL,NULL);
+        assert(sn>0);
+        assert(strstr(buf,"Require: sec-agree")==NULL);
+        assert(strstr(buf,"Proxy-Require: sec-agree")==NULL);
+    }
+
     /* A real ECI is emitted only when supplied via ex2. */
     size_t cn=ims_sip_register_build_ex2(buf,sizeof buf,
         "sip:user@ims.mnc008.mcc204.3gppnetwork.org",

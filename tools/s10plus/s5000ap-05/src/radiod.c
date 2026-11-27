@@ -176,6 +176,9 @@ struct radiod_ctx {
      * -1 = unknown (no report yet); 0 = deregistered reported; 1 = registered
      * reported. Guards one CP report per genuine transition, never a loop. */
     int cp_ims_reported;
+    uint32_t cp_ims_report_count;   /* successful 22/8 and 22/7 sends */
+    uint32_t cp_ims_report_fail;    /* refused writes */
+    bool     cp_oneshot_done;       /* env-gated one-shot diagnostic fired */
     unsigned sip_pcscf_idx;     /* current P-CSCF index from the PCO list */
     unsigned sip_pcscf_tries;   /* consecutive 480s on the current P-CSCF */
     unsigned sip_pcscf_answered; /* bitmask: P-CSCF idx that sent ANY response */
@@ -214,6 +217,19 @@ static int setup_session_bus(void);
 static void radiod_sip_param_from_pcscf(const struct iil_pdn *p);
 static void radiod_ims_iface_apply(const char *ims_ip, const char *pcscf);
 static void radiod_report_ims_reg_to_cp(bool registered);
+/* Opt-in security-first initial REGISTER (TS 33.203 7.1). Off by default: the
+ * Round-18 probe on this P-CSCF answered 400 to Require+Proxy-Require sec-agree,
+ * so we never assert it unless explicitly requested. When requested, the build
+ * fails closed to the default offer-less path if no Security-Client is present. */
+static bool ims_security_first_env(void)
+{
+    static int cached = -1;
+    if (cached < 0) {
+        const char *v = getenv("NUXEL_IMS_SECURITY_FIRST");
+        cached = (v && *v == '1') ? 1 : 0;
+    }
+    return cached == 1;
+}
 static void radiod_ims_iface_down(void);
 
 /* ------------------------------------------------------------------ */
@@ -1509,7 +1525,8 @@ static void radiod_report_ims_reg_to_cp(bool registered)
     } else {
         sent = fmt_tx_ims_deregistration(&f) && radiod_write_fmt(&f);
     }
-    if (!sent) return;           /* retry next transition; no runaway loop */
+    if (!sent) { g.cp_ims_report_fail++; return; } /* no runaway loop */
+    g.cp_ims_report_count++;
     g.cp_ims_reported = want;
     diagf("cp_ims_reg_report", "\"registered\":%s,\"wire\":\"%s\"",
           registered ? "true" : "false",
@@ -1747,6 +1764,8 @@ static bool sip_tr_open_from_iil(const struct iil_pdn *p)
         .sec_offer = "alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;mod=trans;spi-c=4096;spi-s=4097;port-c=5062;port-s=5064",
         /* Only a REAL serving ECI is passed; empty -> parameter omitted. */
         .cell_id = g.serving_cell_valid && g.serving_cell_id[0] ? g.serving_cell_id : NULL,
+        /* Opt-in (NUXEL_IMS_SECURITY_FIRST=1): Require/Proxy-Require sec-agree. */
+        .security_first = ims_security_first_env(),
     };
     /* Private/public identity: use the IMSI-derived IMPI when available. */
     char impu_buf[160] = {0}, impi_buf[160] = {0};
@@ -1842,6 +1861,8 @@ static bool sip_tr_open_from_ims_pdn_idx(const struct ims_pdn *p, unsigned idx)
         .sec_offer = "alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;mod=trans;spi-c=4096;spi-s=4097;port-c=5062;port-s=5064",
         /* Only a REAL serving ECI is passed; empty -> parameter omitted. */
         .cell_id = g.serving_cell_valid && g.serving_cell_id[0] ? g.serving_cell_id : NULL,
+        /* Opt-in (NUXEL_IMS_SECURITY_FIRST=1): Require/Proxy-Require sec-agree. */
+        .security_first = ims_security_first_env(),
     };
     char impu_buf[160] = {0}, impi_buf[160] = {0};
     if (g.ims.identity.ready && g.ims.identity.impi[0]) {
@@ -1874,8 +1895,21 @@ fail2:
     return false;
 }
 
+/* Optional fixed P-CSCF index for a controlled diagnostic (NUXEL_IMS_PCSCF_IDX).
+ * Default: the liveness-driven g.sip_pcscf_idx. Bounded to the discovered
+ * count; an out-of-range value falls back to 0. */
+static unsigned sip_pcscf_index(const struct ims_pdn *p)
+{
+    const char *v = getenv("NUXEL_IMS_PCSCF_IDX");
+    if (v && *v) {
+        unsigned n = p ? p->ip.pcscf4_count + p->ip.pcscf6_count : 0;
+        unsigned k = (unsigned)strtoul(v, NULL, 10);
+        if (n && k < n) return k;
+    }
+    return g.sip_pcscf_idx;
+}
 static bool sip_tr_open_from_ims_pdn(const struct ims_pdn *p)
-{ return sip_tr_open_from_ims_pdn_idx(p, g.sip_pcscf_idx); }
+{ return sip_tr_open_from_ims_pdn_idx(p, sip_pcscf_index(p)); }
 
 /* Close the native SIP transport (bearer loss / stop). */
 static void sip_tr_close(void)
@@ -2160,6 +2194,23 @@ static void sip_tr_tick(uint64_t now)
             /* Authoritative native SIP 200 OK -> IMS REGISTERED (never from a
              * modem relay/ack). Drives the SMS-transport readiness gate. */
             bool reg = ims_sip_tr_registered(&g.sip_tr);
+            /* Bounded one-shot diagnostic (NUXEL_IMS_REPORT_ONESHOT=1): report
+             * IMS REGISTERED to the CP 22/8 ONCE when a bearer/local-IP/P-CSCF
+             * is available, independent of the network REGISTER result. This
+             * is NEVER a registration claim to the network; it is exactly
+             * the same CP state report the stock AP IMS service sends. It can
+             * only be armed explicitly, never affects the SMS gate (which
+             * requires the authoritative native 200), and never auto-retries. */
+            if (!g.cp_oneshot_done) {
+                static const char *oneshot = NULL;
+                if (!oneshot) oneshot = getenv("NUXEL_IMS_REPORT_ONESHOT");
+                if (oneshot && *oneshot == '1') {
+                    g.cp_oneshot_done = true;
+                    radiod_report_ims_reg_to_cp(true);
+                    diagf("cp_ims_reg_oneshot", "\"count\":%u,\"fail\":%u",
+                          g.cp_ims_report_count, g.cp_ims_report_fail);
+                }
+            }
             if (reg != (g.ims.phase == IMS_REGISTERED)) {
                 ims_service_native_registered(&g.ims, reg);
                 /* Report the authoritative AP-side IMS registration state to
@@ -2182,8 +2233,12 @@ static void sip_tr_tick(uint64_t now)
         /* Bearer loss: release the CID-2 iface binding (rmnet0 untouched). */
         radiod_ims_iface_down();
         /* Bearer loss invalidates any prior native registration. */
-        if (g.ims.modem_confirmed_registered)
+        if (g.ims.modem_confirmed_registered) {
             ims_service_native_registered(&g.ims, false);
+            /* Tell the CP deregistration too, so it tears down IMS-SMS on the
+             * same transition (bounded/deduped by radiod_report_ims_reg_to_cp). */
+            radiod_report_ims_reg_to_cp(false);
+        }
         g.sms.ims_registered_native = false;
     }
 }
@@ -3394,14 +3449,20 @@ static int method_get_ims_status(sd_bus_message *m, void *u, sd_bus_error *e)
     (void)u; (void)e;
     const char *keys[]={"state","reason","usim_identity_ready","profile_phase",
         "cid_attached","ip_ready","pcscf_ready","context_ready","init_phase",
-        "auth_pending","registered","sms_transport"};
+        "auth_pending","registered","sms_transport",
+        "cp_ims_report_count","cp_ims_report_fail","cp_ims_reported"};
+    static char cnt[16],fail[16],rep[8];
+    snprintf(cnt,sizeof cnt,"%u",g.cp_ims_report_count);
+    snprintf(fail,sizeof fail,"%u",g.cp_ims_report_fail);
+    snprintf(rep,sizeof rep,"%d",g.cp_ims_reported);
     const char *vals[]={ims_phase_name(g.ims.phase),
         g.ims.last_reason ? g.ims.last_reason : "not-started",
         g.ims.identity.ready ? "true" : "false",ims_pdn_phase_name(g.ims_pdn.phase),
         g.ims_pdn.attached ? "true" : "false",g.ims_pdn.ip_ready ? "true" : "false",
         g.ims_pdn.pcscf_ready ? "true" : "false",ims_pdn_active(&g.ims_pdn) ? "true" : "false",
         ims_init_phase_name(g.ims_init.phase),g.ims.auth_pending ? "true" : "false",
-        ims_service_registered(&g.ims) ? "true" : "false","unavailable"};
+        ims_service_registered(&g.ims) ? "true" : "false","unavailable",
+        cnt,fail,rep};
     sd_bus_message *reply=NULL;
     int r=sd_bus_message_new_method_return(m,&reply);
     if (r>=0) r=sd_bus_message_open_container(reply,'a',"{ss}");

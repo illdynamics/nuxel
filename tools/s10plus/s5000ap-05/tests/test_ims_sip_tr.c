@@ -220,6 +220,41 @@ int main(void)
                == IMS_SIP_TR_MSG_NONE);
     }
 
+    /* Security-first profile: the FIRST REGISTER asserts sec-agree and the FSM
+     * uses SECURE_REGISTER_SENT; a 401 with a complete ipsec-3gpp
+     * Security-Server still transitions to CHALLENGED (AKA path intact). */
+    {
+        struct ims_sip_tr_cfg sc = {
+            .impu = "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
+            .impi = "user@ims.mnc008.mcc204.3gppnetwork.org",
+            .pcscf = "2001:db8::1",
+            .local_ip = "2001:db8::2",
+            .port = 5062, .pcscf_port = 5060,
+            .sec_offer = "alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;mod=trans;"
+                         "spi-c=4096;spi-s=4097;port-c=5062;port-s=5064",
+            .security_first = true,
+        };
+        struct ims_sip_tr u;
+        assert(ims_sip_tr_open(&u, &sc, &io, NULL, NULL));
+        reset_capture();
+        assert(ims_sip_tr_start(&u));
+        assert(u.phase == IMS_SIP_TR_SECURE_REGISTER_SENT);
+        assert(strstr((const char *)captured, "Require: sec-agree") != NULL);
+        assert(strstr((const char *)captured, "Proxy-Require: sec-agree") != NULL);
+        assert(strstr((const char *)captured, "Security-Client: ipsec-3gpp") != NULL);
+        static const char sc401[] =
+            "SIP/2.0 401 Unauthorized\r\n"
+            "WWW-Authenticate: Digest realm=\"ims.mnc008.mcc204.3gppnetwork.org\", "
+            "nonce=\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\", "
+            "algorithm=AKAv1-MD5, qop=\"auth\"\r\n"
+            "Security-Server: ipsec-3gpp;alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;"
+            "mod=trans;spi-c=4097;spi-s=4096;port-c=5064;port-s=5062\r\n"
+            "Content-Length: 0\r\n\r\n";
+        ims_sip_tr_feed(&u, (const uint8_t *)sc401, sizeof sc401 - 1);
+        assert(u.phase == IMS_SIP_TR_CHALLENGED);
+        ims_sip_tr_close(&u);
+    }
+
     ims_sip_tr_close(&t);
     puts("IMS SIP transport FSM: PASS");
     return 0;

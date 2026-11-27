@@ -109,11 +109,46 @@ size_t ims_sip_register_build_ex(char *out, size_t cap, const char *impu,
                                       port, sec_offer, imei, NULL);
 }
 
+static size_t ims_sip_register_build_core(char *out, size_t cap,
+                                          const char *impu, const char *impi,
+                                          const char *pcscf, const char *local_ip,
+                                          uint16_t port, const char *sec_offer,
+                                          const char *imei, const char *cell_id,
+                                          bool require_sec_agree);
+
 size_t ims_sip_register_build_ex2(char *out, size_t cap, const char *impu,
                                   const char *impi, const char *pcscf,
                                   const char *local_ip, uint16_t port,
                                   const char *sec_offer, const char *imei,
                                   const char *cell_id)
+{
+    return ims_sip_register_build_core(out, cap, impu, impi, pcscf, local_ip,
+                                       port, sec_offer, imei, cell_id, false);
+}
+
+/* Security-first initial REGISTER (TS 33.203 7.1 / TS 24.229 5.1.2A). Some
+ * P-CSCFs refuse a plaintext initial REGISTER (answering 480) and require the
+ * UE to assert sec-agree + a valid Security-Client offer before they issue the
+ * 401/407 AKA challenge. This variant adds `Require: sec-agree` and
+ * `Proxy-Require: sec-agree` alongside the canonical ipsec-3gpp Security-Client
+ * offer. The offer/proxy MUST be self-consistent; callers only use this when a
+ * complete ipsec-3gpp offer with real SPI/port values is supplied. */
+size_t ims_sip_register_build_secure(char *out, size_t cap, const char *impu,
+                                     const char *impi, const char *pcscf,
+                                     const char *local_ip, uint16_t port,
+                                     const char *sec_offer, const char *imei,
+                                     const char *cell_id)
+{
+    return ims_sip_register_build_core(out, cap, impu, impi, pcscf, local_ip,
+                                       port, sec_offer, imei, cell_id, true);
+}
+
+static size_t ims_sip_register_build_core(char *out, size_t cap,
+                                          const char *impu, const char *impi,
+                                          const char *pcscf, const char *local_ip,
+                                          uint16_t port, const char *sec_offer,
+                                          const char *imei, const char *cell_id,
+                                          bool require_sec_agree)
 {
     if (!out || !impu || !impi || !pcscf || !local_ip) return 0;
     /* Accept impu with or without the "sip:" scheme; derive (a) the full SIP
@@ -219,6 +254,13 @@ size_t ims_sip_register_build_ex2(char *out, size_t cap, const char *impu,
             { if (!addf(&r,"Security-Client: %s\r\n", sec_offer)) return 0; }
         else
             { if (!addf(&r,"Security-Client: ipsec-3gpp;%s\r\n", sec_offer)) return 0; }
+    }
+    /* TS 33.203 7.1: when this variant is requested, assert sec-agree so the
+     * P-CSCF MUST negotiate integrity/confidentiality (requires the full
+     * Security-Client offer to be present). */
+    if (require_sec_agree && sec_offer && *sec_offer) {
+        if (!addf(&r,"Require: sec-agree\r\n")) return 0;
+        if (!addf(&r,"Proxy-Require: sec-agree\r\n")) return 0;
     }
     /* P-Preferred-Identity: control the *public* identity presented, separate
      * from the private IMPI used for digest. This is the UE-selected IMPU. */

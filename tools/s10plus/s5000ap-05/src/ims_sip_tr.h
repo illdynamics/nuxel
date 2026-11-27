@@ -46,6 +46,7 @@ extern "C" {
 enum ims_sip_tr_phase {
     IMS_SIP_TR_IDLE = 0,
     IMS_SIP_TR_REGISTER_SENT,   /* initial REGISTER out, awaiting 401/2xx */
+    IMS_SIP_TR_SECURE_REGISTER_SENT, /* sec-agree REGISTER out, awaiting 401/2xx */
     IMS_SIP_TR_CHALLENGED,      /* 401 AKAv1-MD5 received; awaiting USIM RES */
     IMS_SIP_TR_AUTH_SENT,       /* authenticated REGISTER out, awaiting 2xx */
     IMS_SIP_TR_REGISTERED,      /* 200 OK received (authoritative) */
@@ -81,6 +82,9 @@ struct ims_sip_tr_cfg {
     const char *cell_id;     /* REAL serving ECI (hex) for utran-cell-id-3gpp,
                               * or NULL when unavailable (parameter omitted;
                               * never fabricated). */
+    bool        security_first; /* emit Require/Proxy-Require: sec-agree on the
+                                 * initial REGISTER (TS 33.203 7.1). Only set
+                                 * when sec_offer is a complete ipsec-3gpp offer. */
 };
 
 struct ims_sip_tr {

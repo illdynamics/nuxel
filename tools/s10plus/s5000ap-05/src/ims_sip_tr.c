@@ -91,8 +91,8 @@ void ims_sip_tr_close(struct ims_sip_tr *t)
 const char *ims_sip_tr_phase_name(enum ims_sip_tr_phase ph)
 {
     static const char *const n[] = {
-        "idle","register-sent","challenged","auth-sent","registered",
-        "dereg-sent","failed","retry-wait"
+        "idle","register-sent","secure-register-sent","challenged","auth-sent",
+        "registered","dereg-sent","failed","retry-wait"
     };
     return (ph <= IMS_SIP_TR_RETRY_WAIT) ? n[ph] : "unknown";
 }
@@ -116,9 +116,20 @@ static bool send_register(struct ims_sip_tr *t, bool auth)
     /* Route the REGISTER at the P-CSCF but use the IMPU domain as the SIP URI
      * target. The codec builds "REGISTER sip:<impu>"; we then compute the
      * Authorization from the same fields. */
-    size_t n = ims_sip_register_build_ex2(out, sizeof out,
-        t->cfg.impu, t->cfg.impi, t->cfg.pcscf, t->cfg.local_ip,
-        t->cfg.port, t->cfg.sec_offer, NULL, t->cfg.cell_id);
+    /* First (unauthenticated) REGISTER: when the caller has enabled
+     * security-first, assert sec-agree + Security-Client so a P-CSCF that
+     * requires IPsec from the first packet issues the 401 challenge. The
+     * retransmit of the SAME registration (SECURE_REGISTER_SENT) keeps the
+     * identical security surface. */
+    bool secure_first = t->cfg.security_first &&
+                        t->cfg.sec_offer && *t->cfg.sec_offer;
+    size_t n = secure_first
+        ? ims_sip_register_build_secure(out, sizeof out,
+              t->cfg.impu, t->cfg.impi, t->cfg.pcscf, t->cfg.local_ip,
+              t->cfg.port, t->cfg.sec_offer, NULL, t->cfg.cell_id)
+        : ims_sip_register_build_ex2(out, sizeof out,
+              t->cfg.impu, t->cfg.impi, t->cfg.pcscf, t->cfg.local_ip,
+              t->cfg.port, t->cfg.sec_offer, NULL, t->cfg.cell_id);
     if (n == 0) return false;
     /* Insert Authorization before the trailing CRLF CRLF for authenticated
      * retry. The codec emits Content-Length: 0\r\n\r\n at the end; find it. */
@@ -169,7 +180,8 @@ bool ims_sip_tr_start(struct ims_sip_tr *t)
     /* A carried-over hold must still be respected: never send early. */
     if (t->next_action_ms) return false;
     if (!send_register(t, false)) return false;
-    t->phase = IMS_SIP_TR_REGISTER_SENT;
+    t->phase = (t->cfg.security_first && t->cfg.sec_offer && *t->cfg.sec_offer)
+                   ? IMS_SIP_TR_SECURE_REGISTER_SENT : IMS_SIP_TR_REGISTER_SENT;
     t->attempt = 0;
     t->deadline_ms = 0; /* set by the caller's tick on transition; fill here too */
     return true;
@@ -292,6 +304,7 @@ void ims_sip_tr_feed(struct ims_sip_tr *t, const uint8_t *msg, size_t len)
     if (code == 0) return;
     switch (t->phase) {
     case IMS_SIP_TR_REGISTER_SENT:
+    case IMS_SIP_TR_SECURE_REGISTER_SENT:
     case IMS_SIP_TR_AUTH_SENT:
         if (code == 401 || code == 407) {
             if (nonce_and_realm(t, msg, len)) {
@@ -456,6 +469,7 @@ enum ims_sip_tr_phase ims_sip_tr_tick(struct ims_sip_tr *t, uint64_t now_ms, boo
         }
         break;
     case IMS_SIP_TR_REGISTER_SENT:
+    case IMS_SIP_TR_SECURE_REGISTER_SENT:
     case IMS_SIP_TR_AUTH_SENT:
         if (!t->deadline_ms) t->deadline_ms = now_ms + SREG_TIMEOUT_MS;
         if (t->deadline_ms && now_ms >= t->deadline_ms) {
@@ -463,7 +477,8 @@ enum ims_sip_tr_phase ims_sip_tr_tick(struct ims_sip_tr *t, uint64_t now_ms, boo
             if (++t->attempt >= SREG_ATTEMPT_LIMIT) {
                 t->phase = IMS_SIP_TR_FAILED;
             } else {
-                t->phase = IMS_SIP_TR_REGISTER_SENT;
+                t->phase = (t->cfg.security_first && t->cfg.sec_offer && *t->cfg.sec_offer)
+                               ? IMS_SIP_TR_SECURE_REGISTER_SENT : IMS_SIP_TR_REGISTER_SENT;
                 t->deadline_ms = now_ms + SREG_RETRY_MS;
                 if (!send_register(t, false)) t->phase = IMS_SIP_TR_FAILED;
             }
@@ -486,7 +501,8 @@ enum ims_sip_tr_phase ims_sip_tr_tick(struct ims_sip_tr *t, uint64_t now_ms, boo
             /* Hold already cleared by the top-of-tick hold check; send. */
             t->next_action_ms = 0;
             if (!send_register(t, false)) { t->phase = IMS_SIP_TR_FAILED; break; }
-            t->phase = IMS_SIP_TR_REGISTER_SENT;
+            t->phase = (t->cfg.security_first && t->cfg.sec_offer && *t->cfg.sec_offer)
+                           ? IMS_SIP_TR_SECURE_REGISTER_SENT : IMS_SIP_TR_REGISTER_SENT;
         }
         break;
     case IMS_SIP_TR_REGISTERED:

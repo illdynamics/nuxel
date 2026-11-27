@@ -53,6 +53,15 @@ size_t ims_sip_register_build_ex2(char *out, size_t cap,
                                   const char *pcscf, const char *local_ip,
                                   uint16_t port, const char *sec_offer,
                                   const char *imei, const char *cell_id);
+/* Security-first initial REGISTER: adds `Require: sec-agree` +
+ * `Proxy-Require: sec-agree` to a REGISTER that already carries a complete
+ * ipsec-3gpp Security-Client offer. Used for P-CSCFs that reject a plaintext
+ * initial REGISTER (480) before the AKA challenge (TS 33.203 7.1). */
+size_t ims_sip_register_build_secure(char *out, size_t cap, const char *impu,
+                                     const char *impi, const char *pcscf,
+                                     const char *local_ip, uint16_t port,
+                                     const char *sec_offer, const char *imei,
+                                     const char *cell_id);
 /* Parse a 401/407 WWW-Authenticate challenge. Only AKAv1-MD5/AKAv2-MD5 and
  * qop=auth without integrity are accepted for IMS; MD5-only challenges are
  * rejected (IMS requires AKA). `nonce`/`realm`/`cnonce` are zero-terminated
