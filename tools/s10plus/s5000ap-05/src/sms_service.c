@@ -63,10 +63,18 @@ void sms_service_tick(struct sms_service *s,uint64_t now,bool online,bool sim_re
     if (!s || !s->store.db) return;
     if (!online || !sim_ready) {
         uncertain(s);s->ready_sent=false;s->ready_ack=false;s->ready_rejected=false;
-        s->smsc_len=0;s->setup_attempts=0;s->next_setup_ms=0;s->online=false;return;
+        s->smsc_len=0;s->setup_attempts=0;s->next_setup_ms=0;s->online=false;
+        s->ims_await_ack=false;s->ims_deadline_ms=0;return;
     }
     s->online=true;
-    if (s->active && now>=s->deadline_ms) uncertain(s);
+    if (s->active && now>=s->deadline_ms) { uncertain(s);s->ims_await_ack=false;s->ims_deadline_ms=0; }
+    /* An SMS-over-IMS MESSAGE whose SIP transaction result never arrived by
+     * the send deadline is uncertain: fail it closed (never resend blindly). */
+    if (s->active && s->ims_await_ack && s->ims_deadline_ms && now>=s->ims_deadline_ms) {
+        (void)sms_store_fail(&s->store,s->job.id,s->job.part,-2,true);
+        s->ims_await_ack=false;s->ims_deadline_ms=0;s->active=false;s->blocked=true;
+        notify(s,s->job.id,false);
+    }
     if (!writable) return;
     struct fmt_tx_frame f;uint8_t sequence;
     if (!s->ready_sent && now>=s->next_setup_ms && s->setup_attempts<5) {
@@ -90,9 +98,19 @@ void sms_service_tick(struct sms_service *s,uint64_t now,bool online,bool sim_re
      *     transport, so the CS path is never used to fake IMS.
      * A job is only dequeued once a real transport is ready; otherwise it
      * stays durably queued (never a doomed submission). */
-    bool cs_ready = cs_registered && s->ready_ack && !s->ready_rejected &&
-                    s->smsc_len && s->write;
-    bool ims_ready = ims_registered && s->ims_submit;
+    /* CS submit readiness = CS domain registered AND the CP DeviceReady
+     * handshake accepted. The SMSC address is NOT a CS precondition: the CMS
+     * submit with a zero-length SMSC lets the CP's own SMSC complete the
+     * RP-Destination-Address (always true on LTE). Requiring a separately
+     * echoed SMSC here previously made cs_ready always false, so no transport
+     * could ever be selected even once CS registered. */
+    bool cs_ready = cs_registered && s->ready_ack && !s->ready_rejected && s->write;
+    /* SMS-over-IMS requires an AUTHORITATIVE native SIP 200 OK to our REGISTER,
+     * not merely a modem IIL claim (the modem relays its registration state).
+     * This makes a real AP-side IMS registration a hard prerequisite for the
+     * IMS transport, so a good SMS-over-IP MESSAGE is never sent while the
+     * REGISTER is still the P-CSCF's 480. */
+    bool ims_ready = ims_registered && s->ims_submit && s->ims_registered_native;
     uint8_t domain_wire = 0u;
     if (cs_ready) {
         s->selected_domain = domain_wire;
@@ -127,8 +145,10 @@ void sms_service_tick(struct sms_service *s,uint64_t now,bool online,bool sim_re
         if (!sms_store_peer(&s->store, s->job.id, peer, sizeof peer)) return;
         if (!sms_store_sending(&s->store,s->job.id,s->job.part)) { s->store_errors++;s->blocked=true;return; }
         s->active=true; s->deadline_ms=now+120000;
+        s->ims_await_ack=true; s->ims_deadline_ms=now+45000;
         if (!s->ims_submit(peer, s->job.pdu.data, s->job.pdu.len,
                            s->job.pdu.reference, s->user)) {
+            s->ims_await_ack=false; s->ims_deadline_ms=0;
             /* Could not push the MESSAGE: revert to queued (no network send
              * happened) so a later tick can retry after backoff. */
             (void)sms_store_requeue(&s->store,s->job.id,s->job.part);
@@ -192,5 +212,47 @@ bool sms_service_resolve(struct sms_service *s,uint32_t id,const char *outcome)
     if (!sms_store_resolve(&s->store,id,outcome)) return false;
     s->blocked=sms_store_blocked(&s->store);
     notify(s,id,false);
+    return true;
+}
+
+bool sms_service_ims_pending(const struct sms_service *s)
+{ return s && s->active && s->ims_await_ack; }
+
+/* Consume the SIP MESSAGE transaction result for the in-flight SMS-over-IMS
+ * submission. This is deliberately separate from the CP FMT result
+ * correlation: a SIP 2xx proves the MESSAGE reached the network (accepted for
+ * delivery), NOT that the recipient received an SMS and NOT that an RP-ACK was
+ * returned. We record "submitted" and let the timeout/STATUS-REPORT decide
+ * anything stronger. Only the numeric SIP code is passed in; no SIP text. */
+bool sms_service_ims_result(struct sms_service *s, bool accepted, int sip_code)
+{
+    if (!s || !s->store.db) return false;
+    /* Gate on the IMS transaction state alone: `active` is a shared flag that
+     * an unrelated CP-path result may have already cleared. */
+    if (!s->ims_await_ack) return false;
+    if (accepted) {
+        /* The part may already have been marked by an unrelated path; only a
+         * still-`sending` part is advanced here (the store update is guarded on
+         * state IN('sending','delivered')). Either way the IMS transaction is
+         * now resolved and the guard cleared so a later tick can proceed. */
+        if (sms_store_submit(&s->store, s->job.id, s->job.part,
+                             s->job.pdu.reference, 0)) {
+            notify(s, s->job.id, false);
+        }
+        s->ims_await_ack=false; s->ims_deadline_ms=0; s->active=false;
+        s->blocked = sms_store_blocked(&s->store);
+        return true;
+    }
+    /* Non-2xx final: the network refused the MESSAGE. Fail the part with the
+     * SIP status as the error and do not auto-retransmit (a client error will
+     * recur; a transient 5xx is left to the operator/durable queue policy). */
+    int err = (sip_code > 0 && sip_code < 0x8000) ? sip_code : -4;
+    if (!sms_store_fail(&s->store, s->job.id, s->job.part, err, false)) {
+        s->store_errors++; s->blocked = true;
+    } else {
+        s->blocked = sms_store_blocked(&s->store);
+    }
+    s->ims_await_ack=false; s->ims_deadline_ms=0; s->active=false;
+    notify(s, s->job.id, false);
     return true;
 }

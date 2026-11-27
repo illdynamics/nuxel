@@ -147,6 +147,36 @@ int main(void)
     assert(blen>0 && ims_base64_decode(b64out,blen,dec,sizeof dec,&dlen));
     assert(dlen==32 && !memcmp(dec,randautn,32));
 
+    /* Bounded SIP response parser: code, CSeq method, body length. */
+    {
+        struct ims_sip_response r;
+        const char *ok=
+            "SIP/2.0 200 OK\r\n"
+            "Via: SIP/2.0/UDP [2001:db8::2]:5062;branch=z9hG4bKmsg7\r\n"
+            "CSeq: 1 MESSAGE\r\n"
+            "Content-Type: application/vnd.3gpp.sms\r\n"
+            "Content-Length: 2\r\n\r\n\x02\x07";
+        assert(ims_sip_response_parse(ok, strlen(ok), &r));
+        assert(r.code==200 && !strcmp(r.cseq_method,"MESSAGE"));
+        assert(r.have_content_length && r.body_len==2);
+        const char *reg=
+            "SIP/2.0 480 Temporarily Unavailable\r\n"
+            "Via: SIP/2.0/UDP [2001:db8::2]:5062;branch=z9hG4bKnuxel\r\n"
+            "CSeq: 1 register\r\n"
+            "Retry-After: 180\r\n"
+            "Content-Length: 0\r\n\r\n";
+        assert(ims_sip_response_parse(reg, strlen(reg), &r));
+        assert(r.code==480 && !strcmp(r.cseq_method,"REGISTER") && r.body_len==0);
+        /* No Content-Length: body length is what follows the header terminator. */
+        const char *no_cl="SIP/2.0 503 Service Unavailable\r\nCSeq: 9 MESSAGE\r\n\r\nabc";
+        assert(ims_sip_response_parse(no_cl, strlen(no_cl), &r));
+        assert(r.code==503 && r.body_len==3 && !r.have_content_length);
+        /* Truncated / non-response inputs are rejected. */
+        assert(!ims_sip_response_parse("SIP/2.0", 7, &r));
+        assert(!ims_sip_response_parse("MESSAGE sip:x SIP/2.0\r\n", 22, &r));
+        assert(!ims_sip_response_parse("", 0, &r));
+    }
+
     puts("IMS SIP wire codec: PASS");
     return 0;
 }

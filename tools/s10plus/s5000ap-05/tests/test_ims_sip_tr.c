@@ -198,6 +198,28 @@ int main(void)
         ims_sip_tr_close(&a);
     }
 
+    /* ---- SMS-over-IMS response classification (TS 24.341) ----
+     * Only a response whose CSeq method is MESSAGE is an SMS transaction
+     * result; a REGISTER reply (incl. REGISTER 480) is NEVER an SMS result. */
+    {
+        int code=0;
+        const char *msg200="SIP/2.0 200 OK\r\nCSeq: 1 MESSAGE\r\nContent-Length: 0\r\n\r\n";
+        assert(ims_sip_tr_classify((const uint8_t *)msg200, strlen(msg200), &code)
+               == IMS_SIP_TR_MSG_ACCEPTED && code==200);
+        const char *msg503="SIP/2.0 503 Service Unavailable\r\nCSeq: 1 MESSAGE\r\n\r\n";
+        assert(ims_sip_tr_classify((const uint8_t *)msg503, strlen(msg503), &code)
+               == IMS_SIP_TR_MSG_REJECTED && code==503);
+        const char *msg100="SIP/2.0 100 Trying\r\nCSeq: 1 MESSAGE\r\n\r\n";
+        assert(ims_sip_tr_classify((const uint8_t *)msg100, strlen(msg100), &code)
+               == IMS_SIP_TR_MSG_PROVISIONAL && code==100);
+        const char *reg480="SIP/2.0 480 Temporarily Unavailable\r\nCSeq: 1 REGISTER\r\n\r\n";
+        assert(ims_sip_tr_classify((const uint8_t *)reg480, strlen(reg480), &code)
+               == IMS_SIP_TR_MSG_NONE);
+        const char *noreq="MESSAGE sip:x@y SIP/2.0\r\nCSeq: 1 MESSAGE\r\n\r\n";
+        assert(ims_sip_tr_classify((const uint8_t *)noreq, strlen(noreq), &code)
+               == IMS_SIP_TR_MSG_NONE);
+    }
+
     ims_sip_tr_close(&t);
     puts("IMS SIP transport FSM: PASS");
     return 0;

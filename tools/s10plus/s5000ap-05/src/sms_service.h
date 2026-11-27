@@ -48,7 +48,18 @@ struct sms_service {
     /* Registration observation only. The CP FMT writer is not an IMS
      * transport; ModemType 8 must never be serialized as a domain byte. */
     bool ims_registered;
+    /* Authoritative native SIP 200 OK to OUR REGISTER, distinct from the
+     * modem's IIL relay. Set by the caller (radiod) each tick; the IMS
+     * transport is selected only when this is true. */
+    bool ims_registered_native;
     uint8_t selected_domain;
+    /* In-flight SMS-over-IMS submission. The SIP MESSAGE result is correlated
+     * separately from the CP FMT submission result: the IMS hook send only
+     * proves the MESSAGE left the UE. `ims_await_ack` is cleared by
+     * sms_service_ims_result() (SIP 2xx accepted) or by the send deadline
+     * (uncertain). It never advances the CP correlation `sequence`. */
+    bool ims_await_ack;
+    uint64_t ims_deadline_ms;
 };
 bool sms_service_open(struct sms_service *s,const char *path,sms_write_fn write,sms_notify_fn notify,void *user);
 void sms_service_set_result_diag(struct sms_service *s,sms_result_fn fn);
@@ -59,4 +70,14 @@ void sms_service_receive(struct sms_service *s,const struct nuxel_sipc_fmt *fram
 /* Resolve one unresolved outbound message without resending it. Re-derives the
  * blocked flag from the remaining store contents. */
 bool sms_service_resolve(struct sms_service *s,uint32_t id,const char *outcome);
+/* Consume a SIP MESSAGE transaction result for the in-flight SMS-over-IMS
+ * submission. accepted=true on a 2xx (SIP accepted; the message is "submitted",
+ * NOT delivered — only a STATUS-REPORT proves delivery). accepted=false on a
+ * non-2xx final (the message is "failed" with the SIP code as error). Returns
+ * true only when it applied to an in-flight IMS submission. Caller passes an
+ * opaque SIP result (a status code) only; the service never sees SIP text. */
+bool sms_service_ims_result(struct sms_service *s,bool accepted,int sip_code);
+/* True while a SIP MESSAGE has been sent but its transaction result has not
+ * yet been observed (used to classify stray/late replies). */
+bool sms_service_ims_pending(const struct sms_service *s);
 #endif

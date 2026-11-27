@@ -94,6 +94,19 @@ size_t ims_sip_message_build_ex(char *out, size_t cap,
                                 const char *to, const char *local_ip,
                                 uint16_t local_port, const char *route_uri,
                                 uint16_t tag, const void *body, size_t body_len);
+/* Bounded parse of a SIPS response. Extracts the status class (1..6; 0 if the
+ * datagram is not a SIPS response), the numeric status code (0 if absent), the
+ * CSeq method token (up to 15 bytes; empty if absent) and the body length
+ * (from Content-Length when present, else the bytes after the header
+ * terminator). Only the request-correlating fields (code + CSeq method) are
+ * surfaced; no identities, tags or bodies are retained. */
+struct ims_sip_response {
+    int      code;              /* 100..699, or 0 when not a SIPS response */
+    char     cseq_method[16];   /* "MESSAGE"/"REGISTER"/..; empty if absent */
+    unsigned body_len;
+    bool     have_content_length;
+};
+bool ims_sip_response_parse(const void *msg, size_t len, struct ims_sip_response *out);
 /* Companion base64 helpers used by challenge/nonce framing. */
 size_t ims_base64_encode(const uint8_t *in, size_t in_len, char *out, size_t cap);
 bool   ims_base64_decode(const char *in, size_t in_len, uint8_t *out, size_t cap, size_t *out_len);

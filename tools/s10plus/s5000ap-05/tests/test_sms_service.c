@@ -141,49 +141,87 @@ int main(void)
     CHECK(sqlite3_exec(s.store.db,"PRAGMA query_only=ON",NULL,NULL,NULL)==SQLITE_OK);
     receive(&s,4,2,3,0,incoming,sizeof incoming);CHECK(m.last.buf[8]==0x16 && m.last.buf[9]==0x80 && s.store_errors==1);
     /* ---- SMS-over-IMS dispatch (transport-independent hook) ----
-     * With CS unavailable but IMS registered AND an ims_submit hook set, the
-     * service must hand the PURE TPDU (no SMSC prefix) to the hook, never the
-     * CP FMT writer, and only dequeue when a transport is genuinely ready. */
+     * The IMS transport is selected ONLY on an authoritative native SIP 200
+     * (ims_registered_native), independent of the modem IIL claim, and the CS
+     * path no longer requires a separately-echoed SMSC. A SIP MESSAGE is
+     * correlated back through sms_service_ims_result() (never the CP path). */
     {
         struct sms_service is; struct mock im={.service=&is};
         CHECK(sms_service_open(&is,":memory:",write_frame,changed,&im));
         sms_service_set_ims_submit(&is,ims_submit);
-        /* CP readiness handshake still runs so the store is armed. */
         sms_service_tick(&is,100,true,true,false,false,true);
         const uint8_t ackc[]={4,7,3,0,0x80};receive(&is,128,1,2,is.ready_sequence,ackc,sizeof ackc);
-        const uint8_t smscc[]={0};receive(&is,4,10,2,0,smscc,1);
+        /* Intentionally NO SMSC readback: CS readiness must not depend on it. */
         uint32_t iid;CHECK(sms_store_queue(&is.store,"+12345678901","ims hello",&iid));
-        /* Not registered: held, no IMS call. */
-        sms_service_tick(&is,200,true,true,false,false,true);
-        CHECK(im.ims_calls==0 && !is.active);
-        /* Registered + hook present, hook OK: dispatched, message -> sending. */
+
+        /* A modem IIL registration claim alone must NOT open the IMS path. */
+        sms_service_tick(&is,150,true,true,false,true,true);
+        CHECK(im.ims_calls==0 && !is.active && is.job.id==0 && !is.ims_registered_native);
+
+        /* Only authoritative native SIP 200 makes IMS ready. */
+        is.ims_registered_native=true;
         im.ims_ok=true;
         unsigned iw_before=im.writes;
         sms_service_tick(&is,300,true,true,false,true,true);
-        CHECK(im.ims_calls==1 && is.active);
+        CHECK(im.ims_calls==1 && is.active && is.ims_await_ack);
         CHECK(im.ims_tpdu_len>0 && im.ims_tpdu_len==is.job.pdu.len);
         CHECK(im.ims_tpdu[0]==is.job.pdu.data[0]); /* pure TPDU, no SMSC */
         CHECK(!strcmp(im.ims_peer,"+12345678901"));
         struct sms_record ir;CHECK(sms_store_get(&is.store,iid,&ir) && !strcmp(ir.state,"sending"));
         CHECK(im.writes==iw_before); /* never went through the CP FMT writer */
-        /* A refused MESSAGE (send failed) requeues the part, no fake success. */
-        uint8_t ref=is.job.pdu.reference;
-        sms_service_close(&is);
+
+        /* A duplicate tick while the MESSAGE is outstanding must not resend. */
+        sms_service_tick(&is,350,true,true,false,true,true);
+        CHECK(im.ims_calls==1);
+
+        /* SIP 2xx to the MESSAGE: accepted -> submitted (NOT delivered). An
+         * unrelated CP FMT submit result must not touch the IMS transaction
+         * state (the two transports are correlated independently). */
+        uint8_t ims_submit_echo[5]={2,0,0,0,0};
+        ims_submit_echo[3]=is.job.pdu.reference;
+        receive(&is,4,1,2,is.sequence,ims_submit_echo,sizeof ims_submit_echo);
+        CHECK(is.ims_await_ack);
+        CHECK(sms_service_ims_result(&is,true,200) && !is.active && !is.ims_await_ack);
+        CHECK(sms_store_get(&is.store,iid,&ir) && !strcmp(ir.state,"submitted"));
+        CHECK(!sms_service_ims_result(&is,true,200)); /* idempotent: none pending */
+
+        /* SIP non-2xx final: rejected -> failed with the SIP code, no resend. */
+        uint32_t iid_r;CHECK(sms_store_queue(&is.store,"+12345678901","ims reject",&iid_r));
+        sms_service_tick(&is,400,true,true,false,true,true);CHECK(is.active && is.ims_await_ack);
+        CHECK(sms_service_ims_result(&is,false,503) && !is.active);
+        struct sms_record irr;CHECK(sms_store_get(&is.store,iid_r,&irr) && !strcmp(irr.state,"failed"));
+        sms_service_tick(&is,500,true,true,false,true,true);CHECK(!is.active); /* blocked, no auto-resend */
+
+        /* A MESSAGE that is never answered fails closed at the send deadline
+         * (never a blind retransmit). */
+        struct sms_service is3; struct mock im3={.service=&is3};
+        CHECK(sms_service_open(&is3,":memory:",write_frame,changed,&im3));
+        sms_service_set_ims_submit(&is3,ims_submit);
+        sms_service_tick(&is3,100,true,true,false,false,true);
+        receive(&is3,128,1,2,is3.ready_sequence,ackc,sizeof ackc);
+        is3.ims_registered_native=true; im3.ims_ok=true;
+        uint32_t iid3;CHECK(sms_store_queue(&is3.store,"+12345678901","ims timeout",&iid3));
+        sms_service_tick(&is3,300,true,true,false,true,true);CHECK(is3.active && is3.ims_await_ack);
+        sms_service_tick(&is3,1000,true,true,false,true,true);CHECK(is3.active); /* before deadline */
+        sms_service_tick(&is3,300+45001,true,true,false,true,true);
+        CHECK(!is3.active && !is3.ims_await_ack && is3.blocked);
+        struct sms_record ir3;CHECK(sms_store_get(&is3.store,iid3,&ir3) && !strcmp(ir3.state,"unknown"));
+        CHECK(sms_service_ims_result(&is3,true,200)==false); /* no late apply */
+        sms_service_close(&is3);
+
+        /* A refused send (hook returns false) requeues, no fake success. */
         struct sms_service is2; struct mock im2={.service=&is2};
         CHECK(sms_service_open(&is2,":memory:",write_frame,changed,&im2));
         sms_service_set_ims_submit(&is2,ims_submit);
         sms_service_tick(&is2,100,true,true,false,false,true);
         receive(&is2,128,1,2,is2.ready_sequence,ackc,sizeof ackc);
-        receive(&is2,4,10,2,0,smscc,1);
-        (void)ref;
+        is2.ims_registered_native=true; im2.ims_ok=false;
         uint32_t iid2;CHECK(sms_store_queue(&is2.store,"+12345678901","ims refuse",&iid2));
-        im2.ims_ok=false; /* transport refuses */
         sms_service_tick(&is2,200,true,true,false,true,true);
-        CHECK(im2.ims_calls==1 && !is2.active);
-        struct sms_record ir2;
-        uint32_t ids[8];size_t nids=sms_store_list(&is2.store,ids,8);
-        CHECK(nids>=1 && sms_store_get(&is2.store,iid2,&ir2) && !strcmp(ir2.state,"queued"));
+        CHECK(im2.ims_calls==1 && !is2.active && !is2.ims_await_ack);
+        struct sms_record ir2;CHECK(sms_store_get(&is2.store,iid2,&ir2) && !strcmp(ir2.state,"queued"));
         sms_service_close(&is2);
+        sms_service_close(&is);
     }
 
     sms_service_close(&s);

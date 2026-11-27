@@ -1951,6 +1951,25 @@ static void sip_tr_recv(void)
         if (n == 0) break;
         /* Surface the SIP status code + header NAMES only (never values). */
         sip_rx_diag(buf, (size_t)n);
+        /* SMS-over-IMS: a SIP response whose CSeq method is MESSAGE is the
+         * transaction result for an outstanding SMS submission. Classify it
+         * and hand only the accepted/rejected outcome + numeric code to the
+         * SMS service. This never touches the REGISTER FSM (different method),
+         * so a REGISTER 480 and a MESSAGE reply cannot be confused. */
+        int mcode = 0;
+        enum ims_sip_tr_msg_ev mev = ims_sip_tr_classify(buf, (size_t)n, &mcode);
+        if (mev != IMS_SIP_TR_MSG_NONE) {
+            if (mev == IMS_SIP_TR_MSG_PROVISIONAL) {
+                if (sms_service_ims_pending(&g.sms))
+                    diagf("sms_ims_provisional", "\"code\":%d", mcode);
+            } else {
+                bool accepted = mev == IMS_SIP_TR_MSG_ACCEPTED;
+                bool applied = sms_service_ims_result(&g.sms, accepted, mcode);
+                diagf("sms_ims_sip_result", "\"code\":%d,\"accepted\":%s,\"applied\":%s",
+                      mcode, accepted ? "true" : "false", applied ? "true" : "false");
+            }
+            continue;   /* consumed; not a REGISTER reply */
+        }
         /* Feed exactly one datagram; the FSM parse is bounded. Never log body. */
         ims_sip_tr_feed(&g.sip_tr, buf, (size_t)n);
         /* A state change is surfaced below in sip_tr_tick. */
@@ -2101,6 +2120,10 @@ static void sip_tr_tick(uint64_t now)
             if (reg != (g.ims.phase == IMS_REGISTERED))
                 ims_service_native_registered(&g.ims, reg);
             if (reg) g.sip_pcscf_tries = 0;   /* locked onto a serving P-CSCF */
+            /* Authoritative native registration is the ONLY IMS-SMS gate; the
+             * modem's IIL relay is not proof. Drive it each tick so a genuine
+             * network 200 (and only that) enables the SIP MESSAGE transport. */
+            g.sms.ims_registered_native = reg;
         }
     } else {
         if (g.sip_tr_open) { sip_tr_close(); diag("sip_tr_close", NULL); }
@@ -2110,6 +2133,7 @@ static void sip_tr_tick(uint64_t now)
         /* Bearer loss invalidates any prior native registration. */
         if (g.ims.modem_confirmed_registered)
             ims_service_native_registered(&g.ims, false);
+        g.sms.ims_registered_native = false;
     }
 }
 

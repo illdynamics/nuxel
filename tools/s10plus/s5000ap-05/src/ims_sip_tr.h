@@ -181,6 +181,23 @@ bool ims_sip_tr_submit_sms(struct ims_sip_tr *t, const char *to,
                            const uint8_t *tpdu, size_t tpdu_len,
                            uint8_t rp_ref);
 
+/* Classification of a SIP response that is NOT a REGISTER transaction reply.
+ * Used to advance the SMS-over-IMS submission (TS 24.341): a MESSAGE's
+ * SIP transaction result tells only that the request reached the network; a
+ * 2xx to a MESSAGE is a provisional "accepted for delivery", never a proven
+ * SMS delivery (only a STATUS-REPORT proves recipient delivery). NON-REGISTER
+ * responses are ignored by the REGISTER FSM. */
+enum ims_sip_tr_msg_ev {
+    IMS_SIP_TR_MSG_NONE = 0,   /* not a response / not a MESSAGE reply */
+    IMS_SIP_TR_MSG_ACCEPTED,   /* 2xx to the MESSAGE (SIP transaction accepted) */
+    IMS_SIP_TR_MSG_REJECTED,   /* non-2xx final (>=300) to the MESSAGE */
+    IMS_SIP_TR_MSG_PROVISIONAL /* 1xx to the MESSAGE */
+};
+/* Parse `msg`; when it is a final/provisional response to a MESSAGE (the CSeq
+ * method is MESSAGE) return the classification and set *code. Any response to
+ * a different method (e.g. REGISTER) or a non-response returns NONE. */
+enum ims_sip_tr_msg_ev ims_sip_tr_classify(const uint8_t *msg, size_t len, int *code);
+
 /* True only in REGISTERED (authoritative 200 OK), never in CHALLENGED/AUTH_SENT. */
 bool ims_sip_tr_registered(const struct ims_sip_tr *t);
 const char *ims_sip_tr_phase_name(enum ims_sip_tr_phase ph);

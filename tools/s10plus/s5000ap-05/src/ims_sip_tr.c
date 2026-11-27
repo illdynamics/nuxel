@@ -503,3 +503,18 @@ enum ims_sip_tr_phase ims_sip_tr_tick(struct ims_sip_tr *t, uint64_t now_ms, boo
     }
     return t->phase;
 }
+
+enum ims_sip_tr_msg_ev ims_sip_tr_classify(const uint8_t *msg, size_t len, int *code)
+{
+    struct ims_sip_response r;
+    if (!ims_sip_response_parse(msg, len, &r)) return IMS_SIP_TR_MSG_NONE;
+    if (code) *code = r.code;
+    /* Only a response whose CSeq method is MESSAGE belongs to a submission
+     * transaction. REGISTER replies are handled by the registration FSM and
+     * must never be mistaken for an SMS result. */
+    if (strcmp(r.cseq_method, "MESSAGE") != 0) return IMS_SIP_TR_MSG_NONE;
+    if (r.code >= 100 && r.code < 200) return IMS_SIP_TR_MSG_PROVISIONAL;
+    if (r.code >= 200 && r.code < 300) return IMS_SIP_TR_MSG_ACCEPTED;
+    if (r.code >= 300) return IMS_SIP_TR_MSG_REJECTED;
+    return IMS_SIP_TR_MSG_NONE;
+}

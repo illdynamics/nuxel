@@ -418,3 +418,72 @@ size_t ims_sip_message_build_ex(char *out, size_t cap,
     if (!addn(&b,body,body_len)) return 0;
     return b.len;
 }
+
+/* Find a header value by case-insensitive name in a SIPS response; bounded. */
+static const uint8_t *ragain_header(const uint8_t *msg, size_t len, const char *name,
+                                    size_t *vlen)
+{
+    size_t nlen = strlen(name);
+    if (len < nlen + 2) return NULL;
+    const uint8_t *end = msg + len;
+    const uint8_t *le = memchr(msg, '\n', len);
+    if (!le) return NULL;
+    const uint8_t *p = le + 1;
+    while (p + nlen + 1 < end) {
+        const uint8_t *e = memchr(p, '\n', (size_t)(end - p));
+        if (!e) break;
+        size_t llen = (size_t)(e - p);
+        if (llen >= nlen + 1 && p[nlen] == ':' &&
+            strncasecmp((const char *)p, name, nlen) == 0) {
+            const uint8_t *v = p + nlen + 1;
+            while (v < e && (*v == ' ' || *v == '\t')) v++;
+            size_t vl = (size_t)(e - v);
+            if (vl && v[vl - 1] == '\r') vl--;
+            if (vlen) *vlen = vl;
+            return v;
+        }
+        p = e + 1;
+    }
+    return NULL;
+}
+
+bool ims_sip_response_parse(const void *msg, size_t len, struct ims_sip_response *out)
+{
+    if (!msg || !out) return false;
+    const uint8_t *b = (const uint8_t *)msg;
+    out->code = 0;
+    out->cseq_method[0] = 0;
+    out->body_len = 0;
+    out->have_content_length = false;
+    if (len < 12 || memcmp(b, "SIP/2.0 ", 8) != 0) return false;
+    if (b[8] < '1' || b[8] > '6' || b[9] < '0' || b[9] > '9' ||
+        b[10] < '0' || b[10] > '9') return false;
+    out->code = (b[8] - '0') * 100 + (b[9] - '0') * 10 + (b[10] - '0');
+    /* CSeq: "<seq> <METHOD>" — take the method token after the first SP. */
+    size_t vl = 0;
+    const uint8_t *c = ragain_header(b, len, "CSeq", &vl);
+    if (c) {
+        size_t i = 0;
+        while (i < vl && (c[i] == ' ' || c[i] == '\t')) i++;
+        while (i < vl && c[i] >= '0' && c[i] <= '9') i++;
+        while (i < vl && (c[i] == ' ' || c[i] == '\t')) i++;
+        size_t j = 0;
+        while (i < vl && j + 1 < sizeof out->cseq_method &&
+               ((c[i] >= 'A' && c[i] <= 'Z') || (c[i] >= 'a' && c[i] <= 'z')))
+            out->cseq_method[j++] = (char)toupper(c[i++]);
+        out->cseq_method[j] = 0;
+    }
+    const uint8_t *hdr_end = memmem(b, len, "\r\n\r\n", 4);
+    const uint8_t *body = hdr_end ? hdr_end + 4 : NULL;
+    const uint8_t *cl = ragain_header(b, len, "Content-Length", &vl);
+    if (cl) {
+        unsigned v = 0;
+        for (size_t i = 0; i < vl && cl[i] >= '0' && cl[i] <= '9' && i < 9; i++)
+            v = v * 10u + (unsigned)(cl[i] - '0');
+        out->body_len = v;
+        out->have_content_length = true;
+    } else if (body) {
+        out->body_len = (unsigned)(len - (size_t)(body - b));
+    }
+    return true;
+}
