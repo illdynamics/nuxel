@@ -59,8 +59,38 @@ static void test_registration(void)
     uint8_t buf[16]; memset(buf,0,sizeof buf);
     buf[0]=16; buf[4]=112; buf[5]=7; buf[6]=3; buf[7]=1; buf[8]=2;
     struct iil_rx_event e; iil_rx_parse(buf, 16, &e, NULL);
-    int st = iil_rx_registration(&e, NULL);
+    int st = iil_rx_registration(&e, NULL, NULL, 0);
     assert(st == 1);
+
+    /* Registration with an operator-provisioned IMPU at payload[10..]:
+     * payload[10] = IMPU length, payload[11..] = IMPU bytes. Build the full
+     * header so payload_len >= 11 + len. */
+    static const char impu[] = "sip:+31612345678@ims.mnc008.mcc204.3gppnetwork.org";
+    size_t impu_len = strlen(impu);
+    uint8_t b2[256]; memset(b2, 0, sizeof b2);
+    size_t total = 7 + 11 + impu_len;
+    b2[0] = (uint8_t)(total & 0xff); b2[1] = (uint8_t)(total >> 8);
+    b2[4] = 112; b2[5] = 7; b2[6] = 3;
+    b2[7] = 1;            /* status */
+    b2[7 + 10] = (uint8_t)impu_len;   /* payload[10] */
+    memcpy(b2 + 7 + 11, impu, impu_len);
+    struct iil_rx_event e2; iil_rx_parse(b2, total, &e2, NULL);
+    char out[256] = {0};
+    st = iil_rx_registration(&e2, NULL, out, sizeof out);
+    assert(st == 1);
+    assert(strcmp(out, impu) == 0);
+
+    /* IMPU length 0 -> empty output, still reports status (status=2). */
+    uint8_t b3[32]; memset(b3, 0, sizeof b3);
+    size_t total3 = 7 + 11;   /* payload_len = 11, payload[10]=0 */
+    b3[0] = (uint8_t)(total3 & 0xff); b3[1] = (uint8_t)(total3 >> 8);
+    b3[4] = 112; b3[5] = 7; b3[6] = 3;
+    b3[7] = 2;            /* status */
+    b3[7 + 10] = 0;       /* IMPU length 0 */
+    struct iil_rx_event e3; iil_rx_parse(b3, total3, &e3, NULL);
+    char out3[16] = "X";
+    st = iil_rx_registration(&e3, NULL, out3, sizeof out3);
+    assert(st == 2 && out3[0] == 0);
 }
 
 static void test_parameters(void)

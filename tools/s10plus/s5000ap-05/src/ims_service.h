@@ -33,6 +33,10 @@ bool ims_identity_from_usim(struct ims_identity *out, const uint8_t *imsi,
  * the subscriber's own EF_MSISDN. The private identity (IMPI) is unchanged —
  * IMS AKA digest uses the IMSI-derived private identity, never the MSISDN. */
 bool ims_identity_prefer_msisdn(struct ims_identity *out, const char *digits);
+/* Adopt an operator/modem-provisioned IMPU (full public SIP/tel identity) as
+ * reported by the modem's IIL registration event. Accepted only when printable
+ * and bounded; the IMSI-derived IMPI (private identity) is unchanged. */
+bool ims_identity_prefer_impu(struct ims_identity *out, const char *impu);
 void ims_identity_clear(struct ims_identity *out);
 
 enum ims_phase {

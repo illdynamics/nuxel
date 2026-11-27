@@ -697,15 +697,24 @@ static void dispatch_fmt(uint8_t ch, const struct nuxel_sipc_fmt *f)
             break;
         }
         case IIL_SUB_REGISTRATION: {
-            int st = iil_rx_registration(&ev, NULL);
+            char impu[160] = {0};
+            int st = iil_rx_registration(&ev, NULL, impu, sizeof impu);
             if (st >= 0) {
                 bool reg = (st == 1);      /* 1=REGISTERED, 2=REGISTERING */
-                diagf("iil_registration", "\"status\":%d,\"registered\":%s",
-                      st, reg ? "true" : "false");
+                /* Adopt an operator/modem-provisioned IMPU BEFORE any state
+                 * assertion, but only surface the boolean (never the value). */
+                bool impu_adopted = false;
+                if (g.ims.identity.ready && impu[0] &&
+                    ims_identity_prefer_impu(&g.ims.identity, impu)) {
+                    impu_adopted = true;
+                }
+                diagf("iil_registration", "\"status\":%d,\"registered\":%s,\"impu_adopted\":%s",
+                      st, reg ? "true" : "false", impu_adopted ? "true" : "false");
                 /* Trust an authoritative modem-relayed registration to drive
                  * the IMS service state (bearer-relayed REGISTERED). */
                 if (reg) ims_service_native_registered(&g.ims, true);
             }
+            explicit_bzero(impu, sizeof impu);
             break;
         }
         case IIL_SUB_PREFERENCE: {

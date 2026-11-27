@@ -113,14 +113,36 @@ bool iil_rx_isim_auth(const struct iil_rx_event *e,
  *   payload[8..9] u16
  *   payload[10]  IMPU length (0=none), IMPU at payload[11..]
  *   (payload[267] SmsOverIpFormat in the full frame)
- * `registered` is true for ImsRegStatus==1 (REGISTERED); 2 is REGISTERING. */
-int iil_rx_registration(const struct iil_rx_event *e, int *status)
+ * `registered` is true for ImsRegStatus==1 (REGISTERED); 2 is REGISTERING.
+ *
+ * The IMPU is the modem/operator-provisioned public identity; it is PUBLIC,
+ * not a secret/PII credential, but we still never log its full value and only
+ * copy it into a bounded caller buffer. A length of 0 or an out-of-range
+ * length leaves *impu empty and is NOT an error (status is still reported). */
+int iil_rx_registration(const struct iil_rx_event *e, int *status,
+                        char *impu, size_t impu_cap)
 {
     if (!e || e->main_cmd != IIL_MAIN_IIL || e->sub_cmd != IIL_SUB_REGISTRATION)
         return -1;
     if (e->payload_len < 1) return -1;
     int st = e->payload[0];
     if (status) *status = st;
+
+    if (impu && impu_cap) impu[0] = 0;
+    /* Best-effort IMPU decode: payload[10] = length, payload[11..] = bytes. */
+    if (impu && impu_cap && e->payload_len >= 11) {
+        uint8_t ilen = e->payload[10];
+        if (ilen > 0 && (size_t)ilen < impu_cap &&
+            11u + (size_t)ilen <= e->payload_len) {
+            memcpy(impu, e->payload + 11, ilen);
+            impu[ilen] = 0;
+            /* Accept only printable SIP-ish bytes; reject NUL/control. */
+            for (size_t i = 0; i < ilen; i++) {
+                unsigned char c = (unsigned char)impu[i];
+                if (c < 0x20 || c > 0x7e) { impu[0] = 0; break; }
+            }
+        }
+    }
     return st;
 }
 

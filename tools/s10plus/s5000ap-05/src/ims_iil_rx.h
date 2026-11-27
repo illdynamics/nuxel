@@ -93,8 +93,12 @@ bool iil_rx_isim_auth(const struct iil_rx_event *e,
 
 /* IpcRxIilRegistration (sub 7): IMS registration status. Returns the
  * ImsRegStatus byte (payload[0]) or -1 if not a Registration event.
- * 1=REGISTERED, 2=REGISTERING, 3=NOT_REGISTERED, (vendor clamps 1..5). */
-int iil_rx_registration(const struct iil_rx_event *e, int *status);
+ * 1=REGISTERED, 2=REGISTERING, 3=NOT_REGISTERED, (vendor clamps 1..5).
+ * Optionally copies the operator/modem-provisioned IMPU (public identity,
+ * NOT a secret/PII credential) from payload[10+1..] into `impu` (bounded,
+ * printable-only). The IMPU is never logged in full by the caller. */
+int iil_rx_registration(const struct iil_rx_event *e, int *status,
+                        char *impu, size_t impu_cap);
 
 /* IpcRxIilPreference: SMS-over-IP preference/format from the network. */
 bool iil_rx_preference(const struct iil_rx_event *e, uint8_t *sms_over_ip_fmt);

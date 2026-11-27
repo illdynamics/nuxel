@@ -53,6 +53,28 @@ bool ims_identity_prefer_msisdn(struct ims_identity *out, const char *digits)
     return true;
 }
 
+/* Adopt an operator/modem-provisioned public identity (IMPU) directly, as
+ * reported by the modem's IIL registration event. `impu` is already a full
+ * SIP URI ("sip:...@...") or bare userpart? The modem emits the IMPU exactly
+ * as the operator configured it (typically a full sip:/tel: URI). We only
+ * accept a non-empty, printable, bounded value and store it as the preferred
+ * MSISDN-independent operator IMPU; the private identity (IMPI) is unchanged.
+ * This is a PUBLIC identity, not a secret/PII credential, but it is still
+ * never logged in full by the caller. */
+bool ims_identity_prefer_impu(struct ims_identity *out, const char *impu)
+{
+    if (!out || !out->ready || !impu || !impu[0]) return false;
+    size_t n = strlen(impu);
+    if (n == 0 || n >= sizeof out->msisdn_impu) return false;
+    for (size_t i = 0; i < n; i++) {
+        unsigned char c = (unsigned char)impu[i];
+        if (c < 0x20 || c > 0x7e) return false;   /* printable-only */
+    }
+    memcpy(out->msisdn_impu, impu, n + 1);
+    out->msisdn_impu_valid = true;
+    return true;
+}
+
 static void auth_complete(struct ims_service *s, const struct fmt_rx_usim_auth *r)
 {
     ims_auth_fn done=s->auth_done; void *user=s->auth_user;
