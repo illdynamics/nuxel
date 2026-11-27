@@ -11,7 +11,7 @@ int main(void)
         "sip:user@ims.mnc008.mcc204.3gppnetwork.org",
         "user@ims.mnc008.mcc204.3gppnetwork.org",
         "2001:db8::1","2001:db8::2",5062,
-        "ipsec-3gpp;alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;mod=trans;spi-c=4096;spi-s=4097;port-c=5062;port-s=5064");
+        "alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;mod=trans;spi-c=4096;spi-s=4097;port-c=5062;port-s=5064");
     assert(n>0 && n<sizeof buf);
     /* R-URI must be the registrar/home domain, not the full IMPU and never a
      * doubled "sip:sip:" (a malformed R-URI the live P-CSCF answered 403). */
@@ -19,8 +19,21 @@ int main(void)
     assert(strstr(buf,"sip:sip:")==NULL);
     assert(strstr(buf,"From: <sip:user@ims.mnc008.mcc204.3gppnetwork.org>"));
     assert(strstr(buf,"To: <sip:user@ims.mnc008.mcc204.3gppnetwork.org>"));
-    assert(strstr(buf,"Contact: <sip:user@[2001:db8::2]:5062>"));
-    assert(strstr(buf,"Security-Client: ipsec-3gpp"));
+    /* Contact MUST be a parseable SIP URI with an explicit transport, a
+     * syntactically valid +sip.instance URN (RFC 5626) and the MMTEL ICSI
+     * (TS 24.229 7.2A). It must NOT be the malformed bracketed-IPv6 form. */
+    assert(strstr(buf,"Contact: <sip:user@ims.mnc008.mcc204.3gppnetwork.org;transport=udp>"));
+    assert(strstr(buf,"Contact: <sip:user@[2001:db8::2]") == NULL);
+    assert(strstr(buf,"+sip.instance=\"<urn:gsma:imei:"));
+    assert(strstr(buf,"urn%3Aurn-7%3A3gpp-service.ims.icsi.mmtel"));
+    assert(strstr(buf,"Security-Client: alg=")); /* RFC 3329 key=value token list */
+    assert(strstr(buf,"Security-Client: alg=hmac-sha-1-96"));
+    /* Round 18 live: the KPN P-CSCF answers 400 Bad Request when the first
+     * REGISTER asserts Require/Proxy-Require: sec-agree. The request must
+     * therefore carry only the Security-Client OFFER (no Require headers). */
+    assert(strstr(buf,"Require: sec-agree") == NULL);
+    assert(strstr(buf,"Proxy-Require: sec-agree") == NULL);
+    assert(strstr(buf,"P-Preferred-Identity: <sip:user@ims.mnc008.mcc204.3gppnetwork.org>"));
     assert(strstr(buf,"Route:")==NULL);
     assert(strstr(buf,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD"));
 

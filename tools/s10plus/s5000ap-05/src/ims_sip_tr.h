@@ -51,6 +51,10 @@ enum ims_sip_tr_phase {
     IMS_SIP_TR_REGISTERED,      /* 200 OK received (authoritative) */
     IMS_SIP_TR_DEREG_SENT,      /* deregister in flight */
     IMS_SIP_TR_FAILED,
+    IMS_SIP_TR_RETRY_WAIT,      /* 480/503 + Retry-After: back off until the
+                                 * network-supplied interval elapses, then a
+                                 * fresh REGISTER (does NOT fail permanently;
+                                 * Retry-After is the registrar's own gate). */
 };
 
 /* Transport callbacks (injectable for host tests; real UDP in production). */
@@ -92,6 +96,10 @@ struct ims_sip_tr {
     enum ims_sip_tr_phase phase;
     uint8_t attempt;
     uint64_t deadline_ms;
+    /* Retry-After (seconds) from a 480/503; used to schedule the next
+     * REGISTER instead of a fixed retry. Capped to keep the loop bounded. */
+    uint32_t retry_after_s;
+    uint8_t  retry_waits;       /* consecutive Retry-After waits (bounded) */
 
     char realm[IMS_SIP_TR_REALM_MAX];
     char nonce[IMS_SIP_TR_NONCE_MAX];   /* base64(RAND||AUTN) from 401 */

@@ -109,8 +109,19 @@ size_t ims_sip_register_build(char *out, size_t cap, const char *impu,
     if (!addf(&r,"To: <%s>\r\n", impu_uri)) return 0;
     if (!addf(&r,"Call-ID: nuxel-%x@%s\r\n", (unsigned)(uintptr_t)out, local_ip)) return 0;
     if (!addf(&r,"CSeq: 1 REGISTER\r\n")) return 0;
-    if (!addf(&r,"Contact: <sip:%s@[%s]:%u>;+sip.instance=\"<urn:gsma:imei:nuxel>\";expires=600000\r\n",
-              cuser, local_ip, port)) return 0;
+    /* Contact MUST be a valid SIP URI. The previous form
+     * "sip:<user>@[<ipv6>]:<port>" is not a parseable SIP/SIPS URI once the
+     * bracketed IPv6 literal is present (RFC 3261 19.1.1 requires the host in
+     * a URI, no [] unless inside authority with an explicit scheme; the CP
+     * P-CSCF rejects malformed Contact). Use the IMPU domain as the URI host
+     * (a stock-observed form) with an explicit UDP transport, plus a
+     * syntactically valid +sip.instance URN (RFC 5626 4.1) and the
+     * IMS communication service identifier for MMTEL. `transport=udp` names
+     * the signaling to which the ipsec-3gpp Security-Client applies.
+     * The local IP stays in the Via (the UE's real reachable address). */
+    if (!addf(&r,"Contact: <sip:%s@%s;transport=udp>;+sip.instance=\"<urn:gsma:imei:00000000-000000-0>\";"
+              "+g.3gpp.icsi-ref=\"urn%%3Aurn-7%%3A3gpp-service.ims.icsi.mmtel\";expires=600000\r\n",
+              cuser, ruri)) return 0;
     /* The INVITE/REGISTER is sent directly to the P-CSCF address (outbound
      * proxy) on the transport; no Route header is needed and adding one that
      * points at the same P-CSCF caused the CP/P-CSCF to reject the request.
@@ -118,8 +129,25 @@ size_t ims_sip_register_build(char *out, size_t cap, const char *impu,
      *  "user unavailable" for an unknown IMPU instead of 403.) */
     /* Netherlands LTE (KPN) is FDD, not TDD. A wrong access type is rejected. */
     if (!addf(&r,"P-Access-Network-Info: 3GPP-E-UTRAN-FDD;utran-cell-id-3gpp=00000000\r\n")) return 0;
-    if (sec_offer && *sec_offer) { if (!addf(&r,"Security-Client: %s\r\n", sec_offer)) return 0; }
-    if (!addf(&r,"Supported: path, 100rel\r\n")) return 0;
+    /* TS 33.203 7.1 / TS 24.229 5.1.2A: the first REGISTER in an IMS access
+     * network carries an ipsec-3gpp Security-Client offer and the
+     * Require/Proxy-Require: sec-agree headers so the P-CSCF returns the
+     * 401 with Security-Server instead of treating the registration as
+     * unauthenticated. */
+    /* Round 18 live evidence: the KPN P-CSCF returns 400 Bad Request when the
+     * first REGISTER carries "Require: sec-agree" + "Proxy-Require: sec-agree"
+     * together with Security-Client (it does not accept IPsec-3gpp negotiation
+     * this way). Dropping the two Require headers but keeping Security-Client
+     * makes the request parse cleanly (-> 480 Retry-After), so the offer alone
+     * is transmitted here and sec-agree is asserted only when continuing after
+     * a 401 that advertises Security-Server (handled by the FSM). */
+    if (sec_offer && *sec_offer) {
+        if (!addf(&r,"Security-Client: %s\r\n", sec_offer)) return 0;
+    }
+    /* P-Preferred-Identity: control the *public* identity presented, separate
+     * from the private IMPI used for digest. This is the UE-selected IMPU. */
+    if (!addf(&r,"P-Preferred-Identity: <%s>\r\n", impu_uri)) return 0;
+    if (!addf(&r,"Supported: path, outbound, 100rel\r\n")) return 0;
     if (!addf(&r,"Allow: REGISTER, MESSAGE, OPTIONS\r\n")) return 0;
     if (!addf(&r,"Content-Length: 0\r\n\r\n")) return 0;
     return r.len;

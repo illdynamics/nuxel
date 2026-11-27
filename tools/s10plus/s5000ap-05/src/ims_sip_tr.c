@@ -75,9 +75,9 @@ const char *ims_sip_tr_phase_name(enum ims_sip_tr_phase ph)
 {
     static const char *const n[] = {
         "idle","register-sent","challenged","auth-sent","registered",
-        "dereg-sent","failed"
+        "dereg-sent","failed","retry-wait"
     };
-    return (ph <= IMS_SIP_TR_FAILED) ? n[ph] : "unknown";
+    return (ph <= IMS_SIP_TR_RETRY_WAIT) ? n[ph] : "unknown";
 }
 
 bool ims_sip_tr_registered(const struct ims_sip_tr *t)
@@ -224,6 +224,22 @@ static bool nonce_and_realm(struct ims_sip_tr *t, const uint8_t *msg, size_t len
     return true;
 }
 
+/* Parse Retry-After (delta-seconds, RFC 3261 20.38). Bounded 0..86400;
+ * returns 0 if absent/unparseable so the caller falls back to its default. */
+static uint32_t retry_after_seconds(const uint8_t *msg, size_t len)
+{
+    size_t vlen = 0;
+    const uint8_t *v = header(msg, len, "Retry-After", &vlen);
+    if (!v || vlen == 0) return 0;
+    uint32_t secs = 0;
+    for (size_t i = 0; i < vlen && i < 10; i++) {
+        if (v[i] < '0' || v[i] > '9') break;
+        secs = secs * 10u + (uint32_t)(v[i] - '0');
+    }
+    if (secs > 86400u) secs = 86400u;
+    return secs;
+}
+
 void ims_sip_tr_feed(struct ims_sip_tr *t, const uint8_t *msg, size_t len)
 {
     if (!t || !msg || len == 0 || len > IMS_SIP_TR_MAX_REPLY) return;
@@ -243,7 +259,17 @@ void ims_sip_tr_feed(struct ims_sip_tr *t, const uint8_t *msg, size_t len)
             }
         } else if (code >= 200 && code < 300) {
             t->phase = IMS_SIP_TR_REGISTERED;
-        } else if (code == 403 || code == 404 || code == 500 || code == 503) {
+            t->retry_waits = 0;
+        } else if (code == 480 || code == 503) {
+            /* "Temporarily Unavailable" from the registrar (typically with
+             * Retry-After). This is a service-unavailability response, NOT a
+             * definitive subscription/permanent failure: honor the interval
+             * and try a fresh REGISTER afterwards (bounded). */
+            t->retry_after_s = retry_after_seconds(msg, len);
+            if (t->retry_after_s == 0) t->retry_after_s = 180u;
+            t->deadline_ms = 0;   /* tick schedules from now */
+            t->phase = IMS_SIP_TR_RETRY_WAIT;
+        } else if (code == 403 || code == 404 || code == 500) {
             t->phase = IMS_SIP_TR_FAILED;
         }
         break;
@@ -354,6 +380,18 @@ enum ims_sip_tr_phase ims_sip_tr_tick(struct ims_sip_tr *t, uint64_t now_ms, boo
                 t->deadline_ms = now_ms + SREG_RETRY_MS;
                 if (!send_register(t, false)) t->phase = IMS_SIP_TR_FAILED;
             }
+        }
+        break;
+    case IMS_SIP_TR_RETRY_WAIT:
+        if (!t->deadline_ms)
+            t->deadline_ms = now_ms + (uint64_t)t->retry_after_s * 1000u;
+        if (now_ms >= t->deadline_ms) {
+            if (t->retry_waits >= 8u) { t->phase = IMS_SIP_TR_FAILED; break; }
+            t->retry_waits++;
+            t->attempt = 0;
+            t->deadline_ms = 0;
+            if (!send_register(t, false)) { t->phase = IMS_SIP_TR_FAILED; break; }
+            t->phase = IMS_SIP_TR_REGISTER_SENT;
         }
         break;
     case IMS_SIP_TR_REGISTERED:

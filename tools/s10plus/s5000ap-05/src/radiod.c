@@ -1461,6 +1461,29 @@ static bool sip_tr_send_cb(const void *msg, size_t len, void *user)
         if (inet_pton(AF_INET6, g.sip_tr.cfg.pcscf, &a->sin6_addr) != 1) return false;
         plen = sizeof *a;
     }
+    /* Privacy-safe outbound field-name mask (header names only; no URIs,
+     * identities or auth material). Used only while diagnosing a parser-level
+     * CP rejection (e.g. 400 Bad Request) of the REGISTER. */
+    if (len > 12 && memcmp(msg, "REGISTER ", 9) == 0) {
+        const char *b = (const char *)msg; size_t n = len; char mask[256]; size_t ml = 0;
+        static const char *const names[] = {"Via","Max-Forwards","From","To","Call-ID","CSeq",
+            "Contact","Require","Proxy-Require","Security-Client","P-Preferred-Identity",
+            "P-Access-Network-Info","Supported","Allow","Content-Length"};
+        size_t i = 0;
+        while (i < n) {
+            size_t e = i; while (e < n && b[e] != '\n') e++;
+            for (size_t k = 0; k < sizeof names/sizeof names[0]; k++) {
+                size_t nl = strlen(names[k]);
+                if (e > i + nl && b[i+nl] == ':' && memcmp(b+i, names[k], nl) == 0) {
+                    int w = snprintf(mask+ml, sizeof mask-ml, "%s%s", ml?",":"", names[k]);
+                    if (w>0 && (size_t)w < sizeof mask-ml) ml += (size_t)w;
+                    break;
+                }
+            }
+            i = e + 1;
+        }
+        diagf("sip_tr_tx_mask", "\"len\":%d,\"fields\":\"%s\"", (int)len, mask);
+    }
     ssize_t w = sendto(sip_tr_fd, msg, len, 0, (struct sockaddr *)&peer, plen);
     return w == (ssize_t)len;
 }
@@ -1512,7 +1535,12 @@ static bool sip_tr_open_from_iil(const struct iil_pdn *p)
         .impu = NULL, .impi = NULL,
         .pcscf = pcscf, .local_ip = local,
         .port = port, .pcscf_port = 5060,
-        .sec_offer = "ipsec-3gpp;alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;mod=trans;spi-c=4096;spi-s=4097;port-c=5062;port-s=5064",
+        /* TS 33.203 7.1 ipsec-3gpp Security-Client offer. The vendor value the CP
+         * exposes is alg=hmac-sha-1-96, ealg=null|aes-cbc, prot=esp,
+         * mod=trans with explicit SPIs/ports. Use the canonical key=value
+         * grammar the P-CSCF parses (alg/ealg/prot/mod/spi/port) rather than
+         * the earlier malformed single-token string. */
+        .sec_offer = "alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;mod=trans;spi-c=4096;spi-s=4097;port-c=5062;port-s=5064",
     };
     /* Private/public identity: use the IMSI-derived IMPI when available. */
     char impu_buf[160] = {0}, impi_buf[160] = {0};
@@ -1588,7 +1616,12 @@ static bool sip_tr_open_from_ims_pdn(const struct ims_pdn *p)
         .impu = NULL, .impi = NULL,
         .pcscf = pcscf, .local_ip = local,
         .port = port, .pcscf_port = 5060,
-        .sec_offer = "ipsec-3gpp;alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;mod=trans;spi-c=4096;spi-s=4097;port-c=5062;port-s=5064",
+        /* TS 33.203 7.1 ipsec-3gpp Security-Client offer. The vendor value the CP
+         * exposes is alg=hmac-sha-1-96, ealg=null|aes-cbc, prot=esp,
+         * mod=trans with explicit SPIs/ports. Use the canonical key=value
+         * grammar the P-CSCF parses (alg/ealg/prot/mod/spi/port) rather than
+         * the earlier malformed single-token string. */
+        .sec_offer = "alg=hmac-sha-1-96;ealg=aes-cbc;prot=esp;mod=trans;spi-c=4096;spi-s=4097;port-c=5062;port-s=5064",
     };
     char impu_buf[160] = {0}, impi_buf[160] = {0};
     if (g.ims.identity.ready && g.ims.identity.impi[0]) {
@@ -1628,6 +1661,56 @@ static void sip_tr_close(void)
  * feed them to the registration FSM. This is the missing receive path: the
  * FSM previously only SENT REGISTER and never read the network's 401/200
  * replies, so it could never actually register. Non-blocking, bounded. */
+/* Privacy-safe summary of a SIP response: status code plus the set of header
+ * NAMES present (never values, never PII/identities/URIs). Bounded; used only
+ * for root-cause diagnosis of registration rejections. */
+static void sip_rx_diag(const uint8_t *buf, size_t n)
+{
+    if (n < 12 || memcmp(buf, "SIP/2.0 ", 8) != 0 ||
+        buf[8] < '1' || buf[8] > '6') {
+        diagf("sip_tr_rx", "\"len\":%d,\"not_sip\":true", (int)n);
+        return;
+    }
+    int code = (buf[8]-'0')*100 + (buf[9]-'0')*10 + (buf[10]-'0');
+    char mask[192]; mask[0] = 0; size_t ml = 0;
+    static const struct { const char *name; const char *tag; } want[] = {
+        {"Via", "via"}, {"WWW-Authenticate", "www-auth"},
+        {"Proxy-Authenticate", "proxy-auth"}, {"Security-Server", "sec-srv"},
+        {"Security-Client", "sec-cli"}, {"Retry-After", "retry"},
+        {"Reason", "reason"}, {"Unsupported", "unsupported"},
+        {"Warning", "warning"}, {"P-Charging-Vector", "pcv"},
+        {"Require", "require"}, {"Server", "server"},
+    };
+    size_t i = 9;
+    while (i < n) {
+        size_t e = i;
+        while (e < n && buf[e] != '\n') e++;
+        size_t llen = e - i;
+        if (llen && buf[e-1] == '\r') llen--;
+        if (!llen) break;                 /* end of headers */
+        for (size_t k = 0; k < sizeof want / sizeof want[0]; k++) {
+            size_t nl = strlen(want[k].name);
+            if (llen >= nl + 1 && buf[i+nl] == ':' &&
+                memcmp(buf+i, want[k].name, nl) == 0) {
+                int w = snprintf(mask+ml, sizeof mask - ml, "%s%s",
+                                 ml ? "," : "", want[k].tag);
+                if (w > 0 && (size_t)w < sizeof mask - ml) ml += (size_t)w;
+                break;
+            }
+        }
+        i = e + 1;
+    }
+    /* Retry-After pre-challenge is the KPN P-CSCF's authoritative "no IMS
+     * service for this origin" answer (Round 18: identical 480 in <0.1 s for
+     * every standards-compliant REGISTER variant: correct Contact URI,
+     * sip.instance, sec-agree+Security-Client, icsi-ref, bare OPTIONS). The
+     * modem CP runs no SIP (it only tracks IMS_REG state); stock IMS lives in
+     * the Android AP client. Surface the distinction for the FSM/failure. */
+    bool retry = strstr(mask, "retry") != NULL;
+    diagf("sip_tr_rx", "\"code\":%d,\"headers\":\"%s\",\"p_cscf_no_service\":%s",
+          code, mask, (code == 480 && retry) ? "true" : "false");
+}
+
 static void sip_tr_recv(void)
 {
     if (sip_tr_fd < 0 || !g.sip_tr_open) return;
@@ -1641,13 +1724,8 @@ static void sip_tr_recv(void)
             break;   /* hard error: drop the socket on next tick */
         }
         if (n == 0) break;
-        /* Surface only the SIP status code (no body → no PII/auth material). */
-        if (n >= 12 && memcmp(buf, "SIP/2.0 ", 8) == 0 &&
-            buf[8] >= '1' && buf[8] <= '6')
-            diagf("sip_tr_rx", "\"code\":%d", (buf[8]-'0')*100 +
-                  (buf[9]-'0')*10 + (buf[10]-'0'));
-        else
-            diagf("sip_tr_rx", "\"len\":%d,\"not_sip\":true", (int)n);
+        /* Surface the SIP status code + header NAMES only (never values). */
+        sip_rx_diag(buf, (size_t)n);
         /* Feed exactly one datagram; the FSM parse is bounded. Never log body. */
         ims_sip_tr_feed(&g.sip_tr, buf, (size_t)n);
         /* A state change is surfaced below in sip_tr_tick. */
