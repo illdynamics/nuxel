@@ -93,6 +93,12 @@ if gtk4_dep.found() and adwaita_dep.found()
       app_sources += 'nuxel-phone-data/nuxel-phone-data.c'
       app_includes += include_directories('nuxel-phone-data')
     endif
+    # Messages and Dialer reach the native SMS/voice backend through the
+    # Radio1 client (nl.nuxel.Radio1 / nl.nuxel.Radio1Bridge); it is shared C11
+    # code with no extra dependency beyond GIO.
+    if app_name == 'nuxel-dialer' or app_name == 'nuxel-messages'
+      app_sources += 'nuxel-phone-data/nuxel-radio-client.c'
+    endif
 
     executable(app_name, app_sources,
       dependencies: deps,

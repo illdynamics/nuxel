@@ -120,7 +120,18 @@ static int sb_printf(sbuf *b, const char *fmt, ...)
     if ((size_t)n >= sizeof tmp) return -1;
     return sb_puts(b, tmp);
 }
-static char *sb_take(sbuf *b) { char *p = b->p; b->p = NULL; b->n = b->cap = 0; return p; }
+/* Hand the buffer to the caller.  An empty string must be returned as a real
+ * "" allocation: sb_reserve() is lazy, so a zero-length buffer has p == NULL,
+ * and the old sb_take() returned NULL for it.  Every JSON reader treats a NULL
+ * string as a parse error, so any store containing an empty value ("email":
+ * "") failed to load and the address book silently came back empty. */
+static char *sb_take(sbuf *b)
+{
+    char *p = b->p;
+    if (!p) p = xstrdup("");
+    b->p = NULL; b->n = b->cap = 0;
+    return p;
+}
 static void sb_free(sbuf *b) { free(b->p); b->p = NULL; b->n = b->cap = 0; }
 
 /* ====================================================================== */
@@ -318,6 +329,34 @@ static Json *json_parse_value(const char **p)
 /* numbers                                                                */
 /* ====================================================================== */
 
+/* True when `who` resolves to E.164 digits (international "+" form or a bare
+ * digit run of at least 5 digits).  A person's name, a malformed or partial
+ * entry never does, so callers use this — not the permissive dialled-digit
+ * normaliser — before treating a text value as a telephone number. */
+static int looks_like_number(const char *who)
+{
+    if (!who || !*who) return 0;
+    size_t n = 0;
+    for (const char *p = who; *p; p++) {
+        if (isdigit((unsigned char)*p)) { n++; continue; }
+        /* Written-number separators are fine ("+31 6 1234 5678"), but a letter
+         * or any other character means this is not a telephone number. */
+        if (*p == '+' || *p == ' ' || *p == '-' || *p == '(' || *p == ')' ||
+            *p == '.' || *p == '/' || *p == '\t')
+            continue;
+        return 0;
+    }
+    return n >= 5;
+}
+
+/* 1 when `who` is an actual telephone address (E.164/international or a bare
+ * digit run of >= 5 digits) rather than a SIM storage alpha name.  Public so an
+ * importer can avoid creating a numberless "thread" for a name-only record. */
+int nuxel_phone_is_number(const char *who)
+{
+    return looks_like_number(who);
+}
+
 int nuxel_phone_normalize_number(char *dst, size_t dstsz, const char *src)
 {
     if (!dst || dstsz == 0) return -1;
@@ -370,6 +409,10 @@ int nuxel_phone_normalize_number(char *dst, size_t dstsz, const char *src)
 
 int nuxel_phone_number_match(const char *a, const char *b)
 {
+    /* Two addresses only ever match as numbers.  A contact name ("Bob Smith")
+     * must never match a phone number because both contain digits, and two
+     * different names must never match each other. */
+    if (!looks_like_number(a) || !looks_like_number(b)) return 0;
     char na[NUXEL_NUMBER_MAX * 2], nb[NUXEL_NUMBER_MAX * 2];
     if (nuxel_phone_normalize_number(na, sizeof na, a) != 0) return 0;
     if (nuxel_phone_normalize_number(nb, sizeof nb, b) != 0) return 0;
@@ -380,8 +423,10 @@ int nuxel_phone_number_match(const char *a, const char *b)
     const char *da = na, *db = nb;
     if (*da == '+') da++;
     if (*db == '+') db++;
-    if (da[0] == '0') da++;
-    if (db[0] == '0') db++;
+    /* Only strip the trunk 0 from a WITHOUT-'+' value: in +31... the leading
+     * digit is the country code, not a trunk prefix. */
+    if (na[0] != '+' && da[0] == '0') da++;
+    if (nb[0] != '+' && db[0] == '0') db++;
     if (strcmp(da, db) == 0) return 1;
 
     /* Different country-code prefixes: accept when the shorter number is a
@@ -456,6 +501,36 @@ static void make_id(char *dst, size_t dstsz, const char *prefix)
 {
     static unsigned counter = 0;
     snprintf(dst, dstsz, "%s-%lld-%u", prefix, (long long)nuxel_phone_now(), ++counter);
+}
+
+/* Add a contact preserving an alphabetic "phone" field verbatim (SIM phonebook
+ * storage locations carry a name plus an optional number; callers that read one
+ * pass the name in BOTH fields when the storage holds no number).  Real phone
+ * numbers are still normalised.  Returns a borrowed pointer or NULL. */
+static const NuxelContact *insert_contact_bulk(NuxelPhoneStore *s, const char *name,
+                                               const char *phone, const char *email)
+{
+    if (!s) return NULL;
+    if (grow((void **)&s->contacts, &s->cap_contacts, sizeof(NuxelContact), s->n_contacts + 1) != 0)
+        return NULL;
+    NuxelContact *c = &s->contacts[s->n_contacts];
+    memset(c, 0, sizeof *c);
+    make_id(c->id, sizeof c->id, "contact");
+    copy_str(c->name, sizeof c->name, (name && *name) ? name : "Unknown");
+    if (phone && *phone) {
+        int has_digit = 0;
+        for (const char *p = phone; *p; p++) if (isdigit((unsigned char)*p)) { has_digit = 1; break; }
+        char norm[NUXEL_NUMBER_MAX];
+        if (has_digit && nuxel_phone_normalize_number(norm, sizeof norm, phone) == 0)
+            copy_str(c->phone, sizeof c->phone, norm);
+        else
+            copy_str(c->phone, sizeof c->phone, phone);
+    }
+    copy_str(c->email, sizeof c->email, email ? email : "");
+    derive_avatar_color(c->name, c->avatar_color, sizeof c->avatar_color);
+    c->updated_at = nuxel_phone_now();
+    s->n_contacts++;
+    return c;
 }
 
 NuxelContact *nuxel_phone_add_contact(NuxelPhoneStore *s, const char *name,
@@ -597,6 +672,108 @@ NuxelMessage *nuxel_phone_add_message(NuxelPhoneStore *s, const char *peer,
     m->at = nuxel_phone_now();
     s->n_messages++;
     return m;
+}
+
+const char *nuxel_phone_contact_name(NuxelPhoneStore *s, const char *number)
+{
+    if (!s || !number) return NULL;
+    NuxelContact *c = nuxel_phone_find_contact_by_number(s, number);
+    if (!c || !c->name[0]) return NULL;
+    /* A record whose "name" is literally its own number carries no real
+     * contact name; callers should then fall back to the number themselves. */
+    if (c->phone[0] && strcmp(c->name, c->phone) == 0) return NULL;
+    return c->name;
+}
+
+size_t nuxel_phone_merge_contacts(NuxelPhoneStore *dst, const NuxelPhoneStore *src)
+{
+    if (!dst || !src) return 0;
+    size_t added = 0;
+    for (size_t i = 0; i < src->n_contacts; i++) {
+        const NuxelContact *sc = &src->contacts[i];
+        int exists = 0;
+        if (sc->phone[0] && nuxel_phone_find_contact_by_number(dst, sc->phone)) exists = 1;
+        if (!exists) {
+            for (size_t j = 0; j < dst->n_contacts; j++) {
+                if (strcasecmp(dst->contacts[j].name, sc->name) == 0) { exists = 1; break; }
+            }
+        }
+        if (exists) continue;
+        /* Copy rather than re-add: nuxel_phone_add_contact() would normalise an
+         * alphabetic "phone" into nothing and lose the name->number mapping the
+         * SIM storage map gave us.  insert_contact_bulk() normalises only real
+         * phone numbers. */
+        const NuxelContact *ins = insert_contact_bulk(dst, sc->name, sc->phone, sc->email);
+        if (!ins) continue;
+        added++;
+    }
+    return added;
+}
+
+/* Same conversation participant: normalised number match, or (for a SIM
+ * storage location whose "peer" is the contact's alpha name) a
+ * case-insensitive name match. */
+static int same_peer(const char *a, const char *b)
+{
+    if (!a || !b) return 0;
+    if (nuxel_phone_number_match(a, b)) return 1;
+    return strcasecmp(a, b) == 0;
+}
+
+static int name_is_alphabetic(const char *name)
+{
+    if (!name) return 0;
+    for (const char *p = name; *p; p++)
+        if (isalpha((unsigned char)*p)) return 1;
+    return 0;
+}
+
+int nuxel_phone_import_sim_messages(NuxelPhoneStore *dst, const NuxelPhoneStore *src,
+                                    int with_contacts, size_t *added_messages,
+                                    size_t *added_contacts)
+{
+    if (!dst || !src) return -1;
+    if (added_messages) *added_messages = 0;
+    if (added_contacts) *added_contacts = 0;
+    size_t m_added = 0, c_added = 0;
+    for (size_t i = 0; i < src->n_messages; i++) {
+        const NuxelMessage *sm = &src->messages[i];
+        int exists = 0;
+        for (size_t j = 0; j < dst->n_messages; j++) {
+            const NuxelMessage *dm = &dst->messages[j];
+            if (strcmp(dm->direction, sm->direction) == 0 &&
+                strcmp(dm->body, sm->body) == 0 && same_peer(dm->peer, sm->peer)) { exists = 1; break; }
+        }
+        if (exists) continue;
+        NuxelMessage *nm = nuxel_phone_add_message(dst, sm->peer, sm->body,
+                                                   sm->direction, sm->state);
+        if (!nm) continue;
+        if (sm->at > 0) nm->at = sm->at;
+        m_added++;
+        if (with_contacts && sm->peer[0] && name_is_alphabetic(sm->peer)) {
+            NuxelContact *hit = nuxel_phone_find_contact_by_number(dst, sm->peer);
+            if (!hit) {
+                if (insert_contact_bulk(dst, sm->peer, sm->peer, "")) c_added++;
+            } else if (strcasecmp(hit->name, sm->peer) != 0 && !name_is_alphabetic(hit->name)) {
+                /* The SIM storage maps this alpha name onto an address the
+                 * address book already knows: fill in the missing name, never
+                 * create a duplicate and never discard the number. */
+                copy_str(hit->name, sizeof hit->name, sm->peer);
+            }
+        }
+    }
+    /* The SIM's own phonebook records carry the name->number mapping; merge
+     * them into the address book (never modifying or removing an existing
+     * record).  Name-only records are kept because they are the only source of
+     * a name for some SIM entries; they are hidden from threads until a number
+     * is known. */
+    if (with_contacts) {
+        size_t merged = nuxel_phone_merge_contacts(dst, src);
+        if (merged > 0) c_added += merged;
+    }
+    if (added_messages) *added_messages = m_added;
+    if (added_contacts) *added_contacts = c_added;
+    return (int)m_added;
 }
 
 size_t nuxel_phone_thread_count(NuxelPhoneStore *s, const char *peer)

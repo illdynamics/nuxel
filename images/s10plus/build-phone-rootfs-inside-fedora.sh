@@ -199,13 +199,21 @@ gcc $CFLAGS_COMMON $(pkg-config --cflags gtk+-3.0 webkit2gtk-4.1) \
 # dependency-free nuxel-phone-data layer and are installed into the image.
 mkdir -p "$B/native-apps"
 for _app in nuxel-contacts nuxel-messages nuxel-dialer; do
+  # Messages and Dialer additionally link the Radio1 client (shared C11 GIO
+  # code that resolves the per-user Radio1 and the system-bus Radio1Bridge).
+  _radio_src=""
+  case "$_app" in
+    nuxel-messages|nuxel-dialer)
+      _radio_src=/nuxel/shell/nuxel-shell/nuxel-phone-data/nuxel-radio-client.c ;;
+  esac
   gcc -O2 -Wall -Wextra -Wno-unused-parameter -std=gnu11 \
-      $(pkg-config --cflags gtk4 libadwaita-1) \
+      $(pkg-config --cflags gtk4 libadwaita-1 json-glib-1.0) \
       -I /nuxel/shell/nuxel-shell/nuxel-phone-data \
       -o "$B/native-apps/$_app" \
       "/nuxel/shell/nuxel-shell/$_app/main.c" \
       /nuxel/shell/nuxel-shell/nuxel-phone-data/nuxel-phone-data.c \
-      $(pkg-config --libs gtk4 libadwaita-1)
+      $_radio_src \
+      $(pkg-config --libs gtk4 libadwaita-1 json-glib-1.0)
   test -x "$B/native-apps/$_app" || { echo "ERROR: native app $_app missing" >&2; exit 1; }
 done
 

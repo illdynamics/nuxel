@@ -76,6 +76,11 @@ static void test_numbers(void)
     check("match: formatted vs plain", nuxel_phone_number_match("+31 6 1234 5678", "+31612345678") == 1, NULL);
     check("match: different numbers", nuxel_phone_number_match("+31612345678", "+31612345999") == 0, NULL);
     check("match: short numbers do not suffix-match", nuxel_phone_number_match("112", "9112") == 0, NULL);
+    /* Contact names are never telephone numbers (SIM import stores a name in
+     * an otherwise number field): a name must not match itself as a number. */
+    check("match: a contact name is not a number", nuxel_phone_number_match("Bob Smith", "Bob Smith") == 0, NULL);
+    check("match: a name never matches a number", nuxel_phone_number_match("Bob Smith", "+15550177") == 0, NULL);
+    check("match: separators are still numbers", nuxel_phone_number_match("+31 6 1234 5678", "+31612345678") == 1, NULL);
 }
 
 static void test_contacts(void)
@@ -107,6 +112,21 @@ static void test_contacts(void)
     n = nuxel_phone_search_contacts(&s, "", out, 8);
     check("empty query lists everything", n == 3, NULL);
 
+    /* A full round trip through the writer must load again.  Regression: an
+     * empty quoted value ("email": "") made sb_take() hand back NULL, the
+     * reader treated that as a parse error, and every written store silently
+     * reloaded as empty. */
+    {
+        NuxelPhoneStore rt; nuxel_phone_store_init(&rt);
+        char *json = NULL;
+        check("store serialises", nuxel_phone_store_to_json(&s, &json) == 0 && json != NULL, NULL);
+        check("store with empty email reloads", json &&
+              nuxel_phone_store_from_json(&rt, json) == 0 && rt.n_contacts == s.n_contacts, NULL);
+        check("empty string value parses", nuxel_phone_store_from_json(&rt, "{\"email\":\"\"}") == 0, NULL);
+        check("empty array element parses", nuxel_phone_store_from_json(&rt, "{\"c\":[\"\"]}") == 0, NULL);
+        nuxel_phone_store_free(&rt);
+        free(json);
+    }
     check("delete removes", nuxel_phone_delete_contact(&s, a->id) == 0 && s.n_contacts == 2, NULL);
     check("delete unknown id fails cleanly", nuxel_phone_delete_contact(&s, "nope") == -1, NULL);
     nuxel_phone_store_free(&s);
@@ -247,6 +267,56 @@ static void test_capabilities(void)
     check_contains("summary mentions data", label, "Data: available");
 }
 
+static void test_sim_import(void)
+{
+    NuxelPhoneStore phone, sim;
+    nuxel_phone_store_init(&phone);
+    nuxel_phone_store_init(&sim);
+    nuxel_phone_add_contact(&phone, "Alice Johnson", "+31612345678", "");
+    nuxel_phone_add_contact(&phone, "Existing Person", "+15550188", "");
+    nuxel_phone_add_message(&phone, "+31612345678", "hello", "out", "submitted");
+
+    /* A SIM mirror holds one duplicate of a phone message, two SIM-only ones,
+     * and an alpha-named peer (the SIM's storage maps a contact name). */
+    nuxel_phone_add_message(&sim, "+31612345678", "hello", "out", "submitted");
+    nuxel_phone_add_message(&sim, "+15550199", "from sim one", "in", "received");
+    nuxel_phone_add_message(&sim, "+15550188", "from sim two", "in", "received");
+    nuxel_phone_add_message(&sim, "+15550177", "from sim named", "in", "received");
+    nuxel_phone_add_contact(&sim, "Bob Smith", "+15550177", "");
+    nuxel_phone_add_contact(&sim, "Carol Davis", "+15550177", "");
+    check("sim import: three distinct SIM messages added",
+          nuxel_phone_import_sim_messages(&phone, &sim, 1, NULL, NULL) == 3, NULL);
+    check("sim import: phone message not duplicated",
+          nuxel_phone_thread_count(&phone, "+31612345678") == 1, NULL);
+    /* The SIM's alpha name is mapped onto the number it belongs to (the SIM
+     * storage reader supplies a real number once PB_CMD/EF_ADN is wired); the
+     * address book must then show that name and never create a duplicate. */
+    nuxel_phone_merge_contacts(&phone, &sim);
+    check("sim import: existing number keeps its name",
+          nuxel_phone_find_contact_by_number(&phone, "+15550188") != NULL &&
+          strcmp(nuxel_phone_find_contact_by_number(&phone, "+15550188")->name,
+                 "Existing Person") == 0, NULL);
+    {
+        NuxelContact *bob = nuxel_phone_find_contact_by_number(&phone, "+15550177");
+        check("sim import: alpha SIM name resolves to the number",
+              bob != NULL && strcmp(bob->name, "Bob Smith") == 0, bob ? bob->name : "(none)");
+    }
+    check("sim import: phone count unchanged by naming", phone.n_contacts == 3, NULL);
+    check("sim import: idempotent second run adds nothing",
+          nuxel_phone_import_sim_messages(&phone, &sim, 1, NULL, NULL) == 0, NULL);
+    check("sim import: source store untouched", sim.n_messages == 4, NULL);
+
+    NuxelPhoneStore book;
+    nuxel_phone_store_init(&book);
+    nuxel_phone_add_contact(&book, "Alice Johnson", "0612345678", "");
+    size_t added = nuxel_phone_merge_contacts(&phone, &book);
+    check("merge contacts: national-form duplicate not re-added", added == 0, NULL);
+    check("merge contacts: existing kept", book.n_contacts == 1 && phone.n_contacts >= 2, NULL);
+    nuxel_phone_store_free(&book);
+    nuxel_phone_store_free(&phone);
+    nuxel_phone_store_free(&sim);
+}
+
 int main(void)
 {
     char dir[] = "/tmp/nuxel-phone-data-test-XXXXXX";
@@ -259,6 +329,7 @@ int main(void)
     test_vcard_roundtrip();
     test_json_store(dir);
     test_capabilities();
+    test_sim_import();
 
     printf("\n%d checks, %d failure(s)\n", checks, failures);
     rmdir(dir);
