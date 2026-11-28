@@ -1,11 +1,15 @@
 [Desktop Entry]
 Name=Messages
 Comment=Send and receive SMS messages
-Exec=/usr/bin/nuxel-sandbox --cgroup nuxel-messages /usr/bin/nuxel-messages
+Exec=/usr/bin/nuxel-messages
+# Launched by the Home launcher as the session user directly: the SMS
+# path is Radio1 on the per-user session bus (the same bus the desktop
+# notifier lives on).  The sandbox wrapper is not used for this app.
 Icon=messages
 Terminal=false
 Type=Application
 Categories=GTK;GNOME;Telephony;Chat;
 Keywords=sms;message;text;
 StartupNotify=true
-DBusActivatable=true
+DBusActivatable=false
+DebugID=nuxel-messages-v095-sim-import

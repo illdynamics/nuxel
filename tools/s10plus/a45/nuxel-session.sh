@@ -386,6 +386,13 @@ if [ -S "$USER_BUS" ]; then
   # starting an already-active unit is a no-op).
   systemctl --no-block start nuxel-consent-agent.service 2>/dev/null || \
     say "consent agent unavailable; permission prompts will be denied"
+  # PWNAGE-R34: the per-user Radio1 bridge must be live before Home launches
+  # nuxel-messages/nuxel-dialer.  The two session buses use EXTERNAL auth, so
+  # uid-1000 apps cannot join the root compositor bus where radiod lives; the
+  # bridge (root) republishes the Radio1 vtable as nl.nuxel.Radio1Bridge on
+  # the system bus.  Starting it is a no-op if it is already active.
+  systemctl --no-block start nuxel-radio-bridge.service 2>/dev/null || \
+    say "radio bridge unavailable; SMS apps will show the radio as unreachable"
 fi
 # PULSE_SERVER is exported here (and published to D-Bus activation above) so
 # Flatpak/Electron apps that inherit the session environment can enumerate the

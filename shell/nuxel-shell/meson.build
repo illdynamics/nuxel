@@ -1,5 +1,5 @@
 project('nuxel-shell', 'c',
-  version: '0.8.9-beta',
+  version: '0.9.5-beta',
   meson_version: '>= 0.60.0',
   default_options: ['warning_level=2', 'c_std=c11'],
 )
@@ -92,6 +92,12 @@ if gtk4_dep.found() and adwaita_dep.found()
     if app_name == 'nuxel-dialer' or app_name == 'nuxel-contacts' or app_name == 'nuxel-messages'
       app_sources += 'nuxel-phone-data/nuxel-phone-data.c'
       app_includes += include_directories('nuxel-phone-data')
+    endif
+    # Messages and Dialer reach the native SMS/voice backend through the
+    # Radio1 client (nl.nuxel.Radio1 / nl.nuxel.Radio1Bridge); it is shared C11
+    # code with no extra dependency beyond GIO.
+    if app_name == 'nuxel-dialer' or app_name == 'nuxel-messages'
+      app_sources += 'nuxel-phone-data/nuxel-radio-client.c'
     endif
 
     executable(app_name, app_sources,

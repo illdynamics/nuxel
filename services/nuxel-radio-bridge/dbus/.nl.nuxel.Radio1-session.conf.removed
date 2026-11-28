@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+  <!-- Session-bus policy for the per-user Radio1 bridge (nuxel-radio-bridge).
+       Installed to /etc/dbus-1/session.d/.  The bridge runs as root and owns
+       nl.nuxel.Radio1 on /run/user/1000/bus; nuxel-messages (uid nuxel) is the
+       only session app that needs to talk to it.  Radio1's own vtable still
+       checks the real caller's EUID for private methods. -->
+  <policy user="root">
+    <allow own="nl.nuxel.Radio1"/>
+    <allow send_destination="nl.nuxel.Radio1"/>
+    <allow receive_sender="nl.nuxel.Radio1"/>
+  </policy>
+  <policy user="nuxel">
+    <allow send_destination="nl.nuxel.Radio1"/>
+    <allow receive_sender="nl.nuxel.Radio1"/>
+  </policy>
+  <policy context="default">
+    <deny own="nl.nuxel.Radio1"/>
+    <deny send_destination="nl.nuxel.Radio1"/>
+    <deny receive_sender="nl.nuxel.Radio1"/>
+  </policy>
+</busconfig>

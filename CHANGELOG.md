@@ -1,5 +1,35 @@
 # Changelog
 
+## v0.9.5-beta — SMS final acceptance: SIM import/sync, contact-name resolution, honest VoLTE audit (2026-11-28)
+
+- **Messages**: conversations open the complete thread; an "All stored messages"
+  list under the thread and an explicit All-messages tab make every stored
+  logical SMS reachable (17/17 verified on device against `sms.sqlite3`).
+  "Import SIM" and "Sync" merge SIM-mirror messages plus the SIM phonebook
+  mirror into the local store/address book additively and idempotently — no
+  record is ever deleted and the physical SIM is never written. Conversation
+  titles resolve to contact names (numbers remain visible underneath); the
+  new-message composer resolves recipients from the address book and validates
+  the number before any submission. The legacy ModemManager/thread-file path
+  that duplicated history is gone; the native snapshot is the only model.
+- **Contacts**: restyled to the Nuxel design language (Maps/Snekbyte/Firewall
+  tokens) with "Back up all" writing timestamped copies of both stores.
+- **nuxel-phone-data data-loss fix** (root cause of "names never resolve" and
+  of Contacts appearing empty): the JSON reader's `sb_take()` returned NULL for
+  any empty string, so every store containing `"email": ""` failed to load.
+  Round-trip regression tests added (90 checks). Contact-number matching no
+  longer treats alpha SIM names as numbers.
+- **SMS/notification/IMS subsystem**: this release documents the Round 34.5
+  work that is deployed on the handset (notification-storm elimination,
+  notification-centre hardening, Radio1Bridge caller-EUID guard, native SMS
+  over IMS). The deployed S5000AP sources are **not present on `main`** — main
+  no longer carries `tools/s10plus/s5000ap-05` or the notifications hub version
+  that runs on the phone — so the GitHub Release builds and publishes the
+  main-tree image, while the handset keeps the locally installed binaries
+  listed in `sms34.5.md` §13.
+- **VoLTE**: source-level readiness audit and dependency-ordered roadmap in
+  `volte-report.md` (no voice signalling implemented in this release).
+
 ## v0.9.1-beta — PenGuru Beak userspace integration (candidate; live acceptance pending)
 
 - Added a single user-owned `beak.json` configuration shared by PenGuru Squad and Nuxel Settings: Qwen ASR selected, VAD and interruption enabled, RNNoise requested, Piper talkback enabled. Continuous foreground listening remains explicit opt-in.

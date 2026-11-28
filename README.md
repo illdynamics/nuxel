@@ -2,6 +2,16 @@
 ![Repo Views](https://komarev.com/ghpvc/?username=illdynamics-nuxel&label=Repo+Views&color=blue)
 ![Nuxel](./assets/nuxel-og-image.png)
 
+**v0.9.5-beta** — SMS final acceptance. Messages shows every stored logical SMS
+(conversations, per-thread history, All messages), with add-only SIM import/sync
+for messages and contacts and contact-name resolution throughout; Contacts is
+restyled to the Nuxel design language; a data-loss bug that prevented contact /
+message stores from reloading is fixed. Native VoLTE readiness and the
+implementation roadmap are in [`volte-report.md`](volte-report.md); the Round
+34.5 acceptance record is in [`sms34.5.md`](sms34.5.md). See
+[`docs/releases/v0.9.5-beta.md`](docs/releases/v0.9.5-beta.md) for scope and the
+known constraint that `main` does not carry the deployed S5000AP radio sources.
+
 **v0.9.1-beta candidate** — PenGuru Squad Beak integration, shared voice settings and staged download controls; full on-device voice acceptance remains open.
 
 PenGuru Squad is an opt-in local AI subsystem deployed on the S10+ over Wi-Fi
@@ -221,7 +231,7 @@ of scope and off. Every bridge/system call passes a typed permission broker, so 
 model cannot perform a privileged action by persuasive text. Full component list,
 security gates, rollback steps and known limitations:
 
-[`docs/releases/v0.8.9-beta.md`](docs/releases/v0.8.9-beta.md).
+[`docs/releases/v0.9.5-beta.md`](docs/releases/v0.9.5-beta.md).
 
 ## Honest Status — v0.8.7-beta
 

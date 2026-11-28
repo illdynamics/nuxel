@@ -1,742 +1,659 @@
 /**
- * Nuxel Dialer - Native Phone Dialer for Nuxel OS
- * GTK4/libadwaita application with ModemManager D-Bus integration
+ * Nuxel Phone (Dialer) — native GTK4/libadwaita dialer.
  *
- * Compile: gcc `pkg-config --cflags gtk4 libadwaita-1 mm-glib` \
- *              main.c -o nuxel-dialer \
- *              `pkg-config --libs gtk4 libadwaita-1 mm-glib`
+ * Round 34.5: restyled to the Nuxel reference language (Maps / Snekbyte /
+ * Firewall: deep navy ground, rounded panel cards, cyan accent, muted dim text,
+ * large safe touch targets) and made honest about voice:
+ *
+ *   - The keypad, backspace/clear, call action and call log remain.
+ *   - Native VoLTE signalling is not implemented, and LTE has no CS fallback,
+ *     so a dial attempt reports "VoLTE pending" and never creates a fake or
+ *     connected call.  Radio1 itself returns NOT_SUPPORTED for Dial.
+ *   - Current calls are rendered only from Radio1 GetCalls; nothing is
+ *     manufactured locally.
+ *
+ * No ModemManager dependency and no Android runtime: Radio1 (via the bridge)
+ * is the only telephony authority.
  */
 
-#ifdef HAVE_MM_GLIB
-#include <libmm-glib.h>
-#endif /* HAVE_MM_GLIB */
 #include <adwaita.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
 #include <gio/gio.h>
-/* Shared phone data layer: contacts, call log and honest capability labels. */
 #include "nuxel-phone-data.h"
-
-/* ============================================================
- * Data structures
- * ============================================================ */
+#include "nuxel-radio-client.h"
 
 typedef struct {
     GtkWidget *window;
-    GtkWidget *display_label;    /* Phone number display */
-    GtkWidget *call_button;      /* Green call button */
-    GtkWidget *end_button;       /* Red end call button */
-    GtkWidget *call_status;      /* Call status label */
-    GtkWidget *contacts_list;    /* Contact list for search */
-    GtkWidget *stack;            /* Main stack (dialer/contacts) */
-    
-    GCancellable *cancellable;
+    GtkWidget *stack;
+    GtkWidget *display_label;
+    GtkWidget *call_button;
+    GtkWidget *end_button;
+    GtkWidget *call_status;
+    GtkWidget *network_label;
+    GtkWidget *call_log_list;
+    GtkWidget *call_log_empty;
+    GtkWidget *voicemail_row;
+    GtkWidget *capability_label;
+
+    NuxelRadioClient radio;
     gboolean modem_ready;
-#ifdef HAVE_MM_GLIB
-    /* ModemManager integration (only when the client library is available) */
-    MMManager *mm_manager;
-    MMModem *mm_modem;
-#else
-    /* Runtime GDBus ModemManager path (no libmm-glib). */
-    GDBusConnection *mm_conn;
-#endif
-    
-    /* Call state */
+    gboolean incoming, command_pending, refreshing, refresh_again;
+    guint call_id;
+    gchar *native_state;
     gchar *current_number;
     gboolean in_call;
-    
-    /* Contacts */
-    GPtrArray *contacts;
 
-    /* Shared phone data (call log + contacts) and the capability probe result.
-     * The capability text shown in the UI is generated ONLY from this struct, so
-     * the dialer can never claim a modem it has not seen. */
+    GPtrArray *contacts;
     NuxelPhoneStore store;
     NuxelPhoneCapabilities caps;
     gchar *store_path;
-    GtkWidget *capability_label;
 } NuxelDialer;
-
-/* ============================================================
- * Forward declarations
- * ============================================================ */
 
 static void dialer_append_digit(NuxelDialer *dialer, const gchar *digit);
 static void dialer_clear(NuxelDialer *dialer);
 static void dialer_backspace(NuxelDialer *dialer);
 static void dialer_initiate_call(NuxelDialer *dialer);
-static void dialer_end_call(NuxelDialer *dialer);
 static void dialer_update_ui(NuxelDialer *dialer);
 static void modem_connect(NuxelDialer *dialer);
 static void dialer_update_capabilities(NuxelDialer *dialer);
 static void dialer_log_call(NuxelDialer *dialer, const gchar *number, const gchar *state);
+static void native_refresh(gpointer user);
+static void dialer_render_log(NuxelDialer *dialer);
 
-#ifdef HAVE_MM_GLIB
 /* ============================================================
- * ModemManager Integration
+ * Shared data / honest capability
  * ============================================================ */
 
 static void
-on_modem_added_cb (MMManager *manager,
-                   MMModem   *modem,
-                   NuxelDialer *dialer)
+dialer_update_capabilities(NuxelDialer *dialer)
 {
-    g_debug ("[Dialer] Modem detected: %s",
-             mm_modem_get_path (modem));
-    
-    dialer->mm_modem = g_object_ref (modem);
-    dialer->modem_ready = TRUE;
-    
-    /* Update call button state */
-    dialer_update_ui (dialer);
-    
-    /* Monitor call state changes */
-    g_signal_connect_swapped (modem, "state-changed",
-                              G_CALLBACK (dialer_update_ui), dialer);
-}
-
-static void
-on_modem_removed_cb (MMManager *manager,
-                     MMModem   *modem,
-                     NuxelDialer *dialer)
-{
-    if (dialer->mm_modem == modem) {
-        g_clear_object (&dialer->mm_modem);
-        dialer->modem_ready = FALSE;
-        dialer_update_ui (dialer);
-    }
-}
-
-static void
-modem_manager_ready_cb (GObject      *source,
-                        GAsyncResult *res,
-                        gpointer      user_data)
-{
-    NuxelDialer *dialer = (NuxelDialer *)user_data;
-    GError *error = NULL;
-    
-    dialer->mm_manager = mm_manager_new_finish (res, &error);
-    
-    if (error) {
-        g_warning ("[Dialer] Failed to connect to ModemManager: %s",
-                   error->message);
-        g_error_free (error);
+    if (!dialer->capability_label) return;
+    if (!nuxel_radio_available(&dialer->radio)) {
+        gtk_label_set_text(GTK_LABEL(dialer->capability_label),
+                           "Native call service unavailable");
         return;
     }
-    
-    g_debug ("[Dialer] Connected to ModemManager");
-    
-    /* Connect signals for modem add/remove */
-    g_signal_connect (dialer->mm_manager, "modem-added",
-                      G_CALLBACK (on_modem_added_cb), dialer);
-    g_signal_connect (dialer->mm_manager, "modem-removed",
-                      G_CALLBACK (on_modem_removed_cb), dialer);
-    
-    /* Get existing modems */
-    GList *modems = mm_manager_peek_modems (dialer->mm_manager);
-    if (modems) {
-        dialer->mm_modem = g_object_ref (MM_MODEM (modems->data));
-        dialer->modem_ready = TRUE;
-        dialer->caps.modem_present = 1;
-        dialer->caps.voice_calls = 1;
-        dialer->caps.sms_send = 1;
-        dialer->caps.data_connection = 1;
-        {
-            const gchar *nm = mm_modem_get_manufacturer (MM_MODEM (modems->data));
-            g_strlcpy (dialer->caps.modem_name, nm ? nm : "ModemManager modem",
-                       sizeof dialer->caps.modem_name);
+    if (!dialer->modem_ready) {
+        gtk_label_set_text(GTK_LABEL(dialer->capability_label),
+                           "No voice network · calls cannot be placed");
+        return;
+    }
+    gtk_label_set_text(GTK_LABEL(dialer->capability_label),
+        "VoLTE voice is pending · native SMS and data are ready");
+}
+
+static void
+dialer_log_call(NuxelDialer *dialer, const gchar *number, const gchar *state)
+{
+    if (!number || !*number || !dialer->store_path) return;
+    nuxel_phone_store_free(&dialer->store);
+    nuxel_phone_store_init(&dialer->store);
+    if (nuxel_phone_store_load(&dialer->store, dialer->store_path) < 0) return;
+    nuxel_phone_add_call(&dialer->store, number, dialer->incoming ? "in" : "out",
+                         state, nuxel_phone_now(), 0);
+    nuxel_phone_store_save(&dialer->store, dialer->store_path);
+    dialer_render_log(dialer);
+}
+
+/* ============================================================
+ * Native path (Radio1)
+ * ============================================================ */
+
+static void
+native_calls(GVariant *reply, const GError *error, gpointer user)
+{
+    NuxelDialer *dialer = user;
+    dialer->refreshing = FALSE;
+    if (!reply || error) {
+        dialer->in_call = FALSE; dialer->incoming = FALSE;
+        gtk_label_set_text(GTK_LABEL(dialer->call_status), error ? error->message : "Call state unknown");
+    } else {
+        GVariant *list = g_variant_get_child_value(reply, 0);
+        gboolean was_call = dialer->in_call;
+        if (g_variant_n_children(list)) {
+            guint id; const char *state, *number; gboolean incoming;
+            g_variant_get_child(list, 0, "(u&s&sb)", &id, &state, &number, &incoming);
+            dialer->in_call = TRUE;
+            dialer->incoming = !strcmp(state, "incoming") || !strcmp(state, "waiting");
+            if (dialer->call_id != id || g_strcmp0(dialer->native_state, state)) {
+                dialer_log_call(dialer, number, state);
+                dialer->call_id = id;
+                g_free(dialer->native_state);
+                dialer->native_state = g_strdup(state);
+            }
+            g_free(dialer->current_number);
+            dialer->current_number = g_strdup(number);
+            gtk_label_set_text(GTK_LABEL(dialer->display_label), number);
+            gtk_label_set_text(GTK_LABEL(dialer->call_status), state);
+        } else {
+            if (was_call && dialer->current_number)
+                dialer_log_call(dialer, dialer->current_number, "ended");
+            dialer->in_call = FALSE; dialer->incoming = FALSE; dialer->call_id = 0;
+            g_clear_pointer(&dialer->native_state, g_free);
+            if (!dialer->command_pending)
+                gtk_label_set_text(GTK_LABEL(dialer->call_status), "No active call");
         }
-        g_strlcpy (dialer->caps.detail,
-                   "ModemManager reported a modem with a call interface.",
-                   sizeof dialer->caps.detail);
-        dialer_update_capabilities (dialer);
-        dialer_update_ui (dialer);
-    } else {
-        dialer->caps.modem_present = 0;
-        g_strlcpy (dialer->caps.detail,
-                   "ModemManager is running but exposes no modem.",
-                   sizeof dialer->caps.detail);
-        dialer_update_capabilities (dialer);
+        g_variant_unref(list);
     }
+    dialer_update_ui(dialer);
+    if (dialer->refresh_again) { dialer->refresh_again = FALSE; native_refresh(dialer); }
 }
 
-/* Append a call-log entry through the shared store and flush it.  A failed or
- * impossible call is still recorded with its honest state so the log itself
- * never lies about what happened. */
 static void
-dialer_log_call (NuxelDialer *dialer, const gchar *number, const gchar *state)
+native_status(GVariant *reply, const GError *error, gpointer user)
 {
-    nuxel_phone_add_call (&dialer->store, number, "out", state, nuxel_phone_now (), 0);
-    if (dialer->store_path)
-        nuxel_phone_store_save (&dialer->store, dialer->store_path);
-}
-
-/* Rebuild the capability sentence from the probe only. */
-static void
-dialer_update_capabilities (NuxelDialer *dialer)
-{
-    if (!dialer->capability_label)
+    NuxelDialer *dialer = user;
+    if (!reply || error) {
+        dialer->refreshing = FALSE; dialer->modem_ready = FALSE;
+        dialer->in_call = FALSE; dialer->incoming = FALSE;
+        gtk_label_set_text(GTK_LABEL(dialer->call_status),
+                           "Call state unknown; native service unavailable");
+        if (dialer->network_label)
+            gtk_label_set_text(GTK_LABEL(dialer->network_label), "Radio1 unavailable");
+        dialer_update_ui(dialer);
         return;
-
-    char label[NUXEL_LABEL_MAX];
-    char detail[200];
-    nuxel_phone_capability_label (&dialer->caps, "summary", label, sizeof label);
-
-    if (dialer->caps.modem_present == 1 && dialer->caps.voice_calls) {
-        snprintf (detail, sizeof detail,
-                  "%s  Placing a real call still needs an owner test (proof area 17).", label);
-    } else if (dialer->caps.modem_present == 0) {
-        snprintf (detail, sizeof detail,
-                  "%s  This build records attempted calls in the call log and never "
-                  "pretends a call connected.", label);
-    } else {
-        snprintf (detail, sizeof detail, "%s", label);
     }
-    gtk_label_set_text (GTK_LABEL (dialer->capability_label), detail);
-}
-
-static void
-modem_connect (NuxelDialer *dialer)
-{
-    mm_manager_new (g_bus_get_sync (G_BUS_TYPE_SYSTEM, NULL, NULL),
-                    G_PRIORITY_DEFAULT,
-                    dialer->cancellable,
-                    modem_manager_ready_cb,
-                    dialer);
-}
-#else /* no libmm-glib: GDBus runtime path */
-static void
-modem_connect (NuxelDialer *dialer)
-{
-    /* ModemManager is only available when built against libmm-glib. When
-     * absent we report the modem as unavailable; the UI still works and shows
-     * the user a clear status message. On real hardware the native build ships
-     * libmm-glib so this path is unused. */
-    dialer->modem_ready = FALSE;
-    /* No libmm-glib build: we cannot even ask ModemManager, so the modem stays
-     * UNKNOWN (not "absent") and the label says so. */
-    dialer->caps.modem_present = -1;
-    g_strlcpy (dialer->caps.detail,
-               "Built without libmm-glib: ModemManager was not queried, so modem "
-               "availability is unknown. No call can be placed from this build.",
-               sizeof dialer->caps.detail);
-    gtk_label_set_text (GTK_LABEL (dialer->call_status),
-                        "Calls unavailable (built without libmm-glib)");
-    dialer_update_capabilities (dialer);
-    dialer_update_ui (dialer);
-}
-
-static void
-dialer_log_call (NuxelDialer *dialer, const gchar *number, const gchar *state)
-{
-    nuxel_phone_add_call (&dialer->store, number, "out", state, nuxel_phone_now (), 0);
-    if (dialer->store_path)
-        nuxel_phone_store_save (&dialer->store, dialer->store_path);
-}
-
-static void
-dialer_update_capabilities (NuxelDialer *dialer)
-{
-    char label[NUXEL_LABEL_MAX];
-    if (!dialer->capability_label)
+    GVariant *dict = g_variant_get_child_value(reply, 0);
+    const char *registration = "unknown", *audio = "unknown", *list = "unknown";
+    g_variant_lookup(dict, "registration", "&s", &registration);
+    g_variant_lookup(dict, "audio_route", "&s", &audio);
+    g_variant_lookup(dict, "call_list", "&s", &list);
+    dialer->modem_ready = !strcmp(registration, "REGISTERED_HOME") ||
+                          !strcmp(registration, "REGISTERED_ROAMING");
+    if (dialer->network_label) {
+        gchar *label = g_strdup_printf("Network · %s · call audio %s", registration, audio);
+        gtk_label_set_text(GTK_LABEL(dialer->network_label), label);
+        g_free(label);
+    }
+    dialer_update_capabilities(dialer);
+    gboolean valid = !strcmp(list, "received");
+    g_variant_unref(dict);
+    if (!valid) {
+        dialer->refreshing = FALSE; dialer->in_call = FALSE; dialer->incoming = FALSE;
+        gtk_label_set_text(GTK_LABEL(dialer->call_status), "Call list unavailable");
+        dialer_update_ui(dialer);
         return;
-    nuxel_phone_capability_label (&dialer->caps, "summary", label, sizeof label);
-    gtk_label_set_text (GTK_LABEL (dialer->capability_label), label);
-}
-#endif /* HAVE_MM_GLIB */
-/* ============================================================
- * UI Callbacks
- * ============================================================ */
-
-static void
-on_digit_clicked (GtkWidget   *button,
-                  gpointer     user_data)
-{
-    NuxelDialer *dialer = (NuxelDialer *)user_data;
-    const gchar *digit = g_object_get_data (G_OBJECT (button), "digit");
-    
-    if (digit) {
-        dialer_append_digit (dialer, digit);
     }
+    nuxel_radio_call(&dialer->radio, "GetCalls", NULL, "call:status", native_calls, dialer);
 }
 
 static void
-on_call_clicked (GtkWidget   *button,
-                 gpointer     user_data)
+native_refresh(gpointer user)
 {
-    NuxelDialer *dialer = (NuxelDialer *)user_data;
-    
-    if (dialer->in_call) {
-        dialer_end_call (dialer);
+    NuxelDialer *dialer = user;
+    if (dialer->refreshing) { dialer->refresh_again = TRUE; return; }
+    dialer->refreshing = TRUE;
+    nuxel_radio_call(&dialer->radio, "GetVoiceStatus", NULL, NULL, native_status, dialer);
+}
+
+static gboolean
+native_poll(gpointer user)
+{ native_refresh(user); return G_SOURCE_CONTINUE; }
+
+static void
+dialer_radio_changed(const char *signal, gpointer user)
+{
+    (void)signal;
+    native_refresh(user);
+}
+
+static void
+modem_connect(NuxelDialer *dialer)
+{
+    nuxel_radio_connect(&dialer->radio, "org.nuxel.Dialer", dialer_radio_changed, dialer);
+    g_timeout_add_seconds(3, native_poll, dialer);
+}
+
+static void
+native_command_done(GVariant *reply, const GError *error, gpointer user)
+{
+    NuxelDialer *dialer = user;
+    dialer->command_pending = FALSE;
+    gboolean accepted = FALSE;
+    if (reply) g_variant_get(reply, "(b)", &accepted);
+    if (error) {
+        /* Radio1 returns NOT_SUPPORTED for Dial because native VoLTE is pending:
+         * say exactly that, never a fake "calling". */
+        const gchar *msg = error->message;
+        if (g_dbus_error_is_remote_error(error) &&
+            (strstr(msg, "NOT_SUPPORTED") || strstr(msg, "not supported") ||
+             strstr(msg, "VoLTE") || strstr(msg, "Emergency"))) {
+            gtk_label_set_text(GTK_LABEL(dialer->call_status), msg);
+        } else {
+            gtk_label_set_text(GTK_LABEL(dialer->call_status), msg);
+        }
     } else {
-        dialer_initiate_call (dialer);
+        gtk_label_set_text(GTK_LABEL(dialer->call_status),
+                           accepted ? "Command accepted; waiting for call state" : "Command rejected");
     }
+    dialer_update_ui(dialer);
+    native_refresh(dialer);
 }
 
 static void
-on_clear_clicked (GtkWidget   *button,
-                  gpointer     user_data)
+native_command(NuxelDialer *dialer, const char *method, GVariant *args, const char *capability)
 {
-    NuxelDialer *dialer = (NuxelDialer *)user_data;
-    dialer_clear (dialer);
+    if (dialer->command_pending) return;
+    dialer->command_pending = TRUE;
+    dialer_update_ui(dialer);
+    nuxel_radio_call(&dialer->radio, method, args, capability, native_command_done, dialer);
 }
 
 static void
-on_backspace_clicked (GtkWidget   *button,
-                      gpointer     user_data)
+native_answer(GtkWidget *button, gpointer user)
 {
-    NuxelDialer *dialer = (NuxelDialer *)user_data;
-    dialer_backspace (dialer);
+    (void)button;
+    NuxelDialer *dialer = user;
+    if (dialer->incoming) native_command(dialer, "AnswerCall", NULL, "call:initiate");
 }
 
 /* ============================================================
- * Dialer Logic
+ * Dialer logic
  * ============================================================ */
 
 static void
-dialer_append_digit (NuxelDialer *dialer, const gchar *digit)
+dialer_append_digit(NuxelDialer *dialer, const gchar *digit)
 {
-    gchar *current = g_strdup (gtk_label_get_text (GTK_LABEL (dialer->display_label)));
-    
-    /* Limit to 20 digits */
-    if (strlen (current) >= 20) {
-        g_free (current);
-        return;
-    }
-    
-    gchar *new_text = g_strconcat (current, digit, NULL);
-    gtk_label_set_text (GTK_LABEL (dialer->display_label), new_text);
-    g_free (current);
-    g_free (new_text);
-    
-    dialer_update_ui (dialer);
+    gchar *current = g_strdup(gtk_label_get_text(GTK_LABEL(dialer->display_label)));
+    if (strlen(current) >= 20) { g_free(current); return; }
+    gchar *new_text = g_strconcat(current, digit, NULL);
+    gtk_label_set_text(GTK_LABEL(dialer->display_label), new_text);
+    g_free(current); g_free(new_text);
+    dialer_update_ui(dialer);
 }
 
 static void
-dialer_clear (NuxelDialer *dialer)
+dialer_clear(NuxelDialer *dialer)
 {
-    gtk_label_set_text (GTK_LABEL (dialer->display_label), "");
-    dialer_update_ui (dialer);
+    gtk_label_set_text(GTK_LABEL(dialer->display_label), "");
+    dialer_update_ui(dialer);
 }
 
 static void
-dialer_backspace (NuxelDialer *dialer)
+dialer_backspace(NuxelDialer *dialer)
 {
-    const gchar *current = gtk_label_get_text (GTK_LABEL (dialer->display_label));
-    gint len = strlen (current);
-    
+    const gchar *current = gtk_label_get_text(GTK_LABEL(dialer->display_label));
+    gint len = strlen(current);
     if (len > 0) {
-        gchar *new_text = g_strndup (current, len - 1);
-        gtk_label_set_text (GTK_LABEL (dialer->display_label), new_text);
-        g_free (new_text);
+        gchar *new_text = g_strndup(current, len - 1);
+        gtk_label_set_text(GTK_LABEL(dialer->display_label), new_text);
+        g_free(new_text);
     }
-    
-    dialer_update_ui (dialer);
-}
-
-#ifdef HAVE_MM_GLIB /* ModemManager call orchestration (libmm-glib only) */
-static void
-on_call_state_changed (MMModem    *modem,
-                       guint       old_state,
-                       guint       new_state,
-                       guint       reason,
-                       NuxelDialer *dialer)
-{
-    g_debug ("[Dialer] Call state changed: %u -> %u (reason: %u)",
-             old_state, new_state, reason);
-    
-    if (new_state == 0) { /* MM_MODEM_STATE_UNKNOWN or disconnected */
-        dialer->in_call = FALSE;
-        gtk_label_set_text (GTK_LABEL (dialer->call_status), "");
-    } else {
-        dialer->in_call = (new_state >= 8 && new_state <= 11); /* Connected/Calling states */
-        if (dialer->in_call) {
-            gtk_label_set_text (GTK_LABEL (dialer->call_status),
-                                "Call in progress...");
-        }
-    }
-    
-    dialer_update_ui (dialer);
+    dialer_update_ui(dialer);
 }
 
 static void
-on_call_created (GObject      *source,
-                 GAsyncResult *res,
-                 NuxelDialer  *dialer)
+on_call_button(GtkWidget *button, gpointer user)
 {
-    GError *error = NULL;
-    MMCall *call = mm_modem_create_call_finish (MM_MODEM (source), res, &error);
-    
-    if (error) {
-        g_warning ("[Dialer] Failed to create call: %s", error->message);
-        gtk_label_set_text (GTK_LABEL (dialer->call_status), error->message);
-        g_error_free (error);
+    (void)button;
+    NuxelDialer *dialer = user;
+    if (dialer->in_call) native_command(dialer, "HangupCall", NULL, "call:end");
+    else dialer_initiate_call(dialer);
+}
+
+static void
+dialer_initiate_call(NuxelDialer *dialer)
+{
+    const char *number = gtk_label_get_text(GTK_LABEL(dialer->display_label));
+    if (!number || !*number) return;
+    if (!nuxel_radio_available(&dialer->radio)) {
+        gtk_label_set_text(GTK_LABEL(dialer->call_status), "Native call service unavailable");
         return;
     }
-    
-    g_debug ("[Dialer] Call created: %s", mm_call_get_path (call));
-    dialer->in_call = TRUE;
-    gtk_label_set_text (GTK_LABEL (dialer->call_status), "Connecting...");
-    
-    /* Start the call */
-    mm_call_start (call, dialer->cancellable, NULL, NULL);
-    
-    /* Monitor call state */
-    g_signal_connect_swapped (call, "state-changed",
-                              G_CALLBACK (on_call_state_changed), dialer);
-    
-    dialer_update_ui (dialer);
-}
-
-static void
-dialer_initiate_call (NuxelDialer *dialer)
-{
-    const gchar *number = gtk_label_get_text (GTK_LABEL (dialer->display_label));
-
-    if (!dialer->modem_ready || !dialer->mm_modem) {
-        char label[NUXEL_LABEL_MAX];
-        nuxel_phone_capability_label (&dialer->caps, "voice", label, sizeof label);
-        gtk_label_set_text (GTK_LABEL (dialer->call_status), label);
-        if (number && *number)
-            dialer_log_call (dialer, number, "no-modem");
+    if (!dialer->modem_ready) {
+        gtk_label_set_text(GTK_LABEL(dialer->call_status), "No voice network registered");
         return;
     }
-
-    if (!number || strlen (number) == 0) {
-        gtk_label_set_text (GTK_LABEL (dialer->call_status),
-                            "Enter a number first");
-        return;
-    }
-
-    /* Record the attempt before it is made: if the app dies mid-dial the log
-     * still shows what the user asked for. */
-    dialer_log_call (dialer, number, "attempted");
-
-    g_debug ("[Dialer] Initiating call to: %s", number);
-    gtk_label_set_text (GTK_LABEL (dialer->call_status), "Dialing...");
-    
-    /* Create a voice call via ModemManager.  The previous code built
-     * MMSmsProperties (an SMS object) and passed it to mm_modem_create_call(),
-     * which is a type-mismatched call and made the phone app look "bugged". */
-    MMCallProperties *properties = mm_call_properties_new ();
-    g_object_set (properties,
-                  MM_CALL_PROPERTY_NUMBER, number,
-                  NULL);
-    
-    mm_modem_create_call (dialer->mm_modem,
-                          properties,
-                          dialer->cancellable,
-                          (GAsyncReadyCallback)on_call_created,
-                          dialer);
-    
-    g_object_unref (properties);
+    native_command(dialer, "Dial", g_variant_new("(s)", number), "call:initiate");
 }
 
-static void
-on_call_deleted (GObject      *source,
-                 GAsyncResult *res,
-                 NuxelDialer  *dialer)
-{
-    GError *error = NULL;
-    gboolean result = mm_modem_delete_call_finish (MM_MODEM (source), res, &error);
-    
-    if (error) {
-        g_warning ("[Dialer] Failed to end call: %s", error->message);
-        g_error_free (error);
-    }
-    
-    dialer->in_call = FALSE;
-    gtk_label_set_text (GTK_LABEL (dialer->call_status), "Call ended");
-    dialer_update_ui (dialer);
-}
 
 static void
-dialer_end_call (NuxelDialer *dialer)
+dialer_update_ui(NuxelDialer *dialer)
 {
-    if (!dialer->modem_ready || !dialer->mm_modem) {
-        return;
-    }
-    
-    g_debug ("[Dialer] Ending call");
-    
-    /* Hangup all active calls */
-    mm_modem_hangup_all (dialer->mm_modem,
-                         dialer->cancellable,
-                         (GAsyncReadyCallback)on_call_deleted,
-                         dialer);
-}
-#else /* no libmm-glib: dialer still works but cannot place/end real calls */
-static void
-dialer_initiate_call (NuxelDialer *dialer)
-{
-    const gchar *number = gtk_label_get_text (GTK_LABEL (dialer->display_label));
-    char label[NUXEL_LABEL_MAX];
-    nuxel_phone_capability_label (&dialer->caps, "voice", label, sizeof label);
-    gtk_label_set_text (GTK_LABEL (dialer->call_status), label);
-    if (number && *number)
-        dialer_log_call (dialer, number, "no-modem");
-}
-
-static void
-dialer_end_call (NuxelDialer *dialer)
-{
-    dialer->in_call = FALSE;
-    gtk_label_set_text (GTK_LABEL (dialer->call_status), "");
-    dialer_update_ui (dialer);
-}
-#endif /* HAVE_MM_GLIB */
-static void
-dialer_update_ui (NuxelDialer *dialer)
-{
-    const gchar *number = gtk_label_get_text (GTK_LABEL (dialer->display_label));
-    gboolean has_number = (number && strlen (number) > 0);
-    
-    /* Update call/end button appearance */
+    const gchar *number = gtk_label_get_text(GTK_LABEL(dialer->display_label));
+    gboolean has_number = (number && strlen(number) > 0);
     if (dialer->in_call) {
-        gtk_button_set_label (GTK_BUTTON (dialer->call_button), "■");
-        gtk_widget_remove_css_class (dialer->call_button, "call-button");
-        gtk_widget_add_css_class (dialer->call_button, "end-button");
+        gtk_button_set_label(GTK_BUTTON(dialer->call_button), "■");
+        gtk_widget_remove_css_class(dialer->call_button, "nuxel-call");
+        gtk_widget_add_css_class(dialer->call_button, "nuxel-end");
     } else {
-        gtk_button_set_label (GTK_BUTTON (dialer->call_button), "📞");
-        gtk_widget_remove_css_class (dialer->call_button, "end-button");
-        gtk_widget_add_css_class (dialer->call_button, "call-button");
+        gtk_button_set_label(GTK_BUTTON(dialer->call_button), "📞");
+        gtk_widget_remove_css_class(dialer->call_button, "nuxel-end");
+        gtk_widget_add_css_class(dialer->call_button, "nuxel-call");
     }
-    
-    /* Enable/disable call button.  The button stays available with a number so
-     * the user can press it and read WHY nothing will happen; the call log then
-     * records the attempt with an honest state instead of a fake "connected". */
-    gtk_widget_set_sensitive (dialer->call_button,
-                              has_number || dialer->in_call);
-
-    dialer_update_capabilities (dialer);
+    gtk_widget_set_sensitive(dialer->call_button,
+                             !dialer->command_pending && (has_number || dialer->in_call));
+    if (dialer->end_button) {
+        gtk_widget_set_visible(dialer->end_button, dialer->incoming);
+        gtk_widget_set_sensitive(dialer->end_button, !dialer->command_pending);
+    }
+    dialer_update_capabilities(dialer);
 }
 
 /* ============================================================
- * UI Construction
+ * UI
  * ============================================================ */
+
+static const char *DIALER_CSS =
+    ".nuxel-page { background: #0a1628; }"
+    ".nuxel-head { padding: 14px 16px 10px; }"
+    ".nuxel-title { font-size: 19px; font-weight: 700; color: #e6f0ff; }"
+    ".nuxel-panel { background: #12233c; border-radius: 14px; margin: 0 12px 12px 12px; padding: 12px; }"
+    ".nuxel-row { background: #1a3050; border-radius: 12px; padding: 12px; margin: 4px; }"
+    ".nuxel-row-title { font-weight: 700; font-size: 15px; color: #e6f0ff; }"
+    ".dim { color: #8aa3c7; font-size: 12px; }"
+    ".nuxel-display { font-size: 34px; font-weight: 700; color: #e6f0ff; padding: 12px 0 4px 0; }"
+    ".nuxel-digit { background: #1a3050; color: #e6f0ff; border-radius: 32px;"
+    "  min-width: 64px; min-height: 58px; font-size: 22px; font-weight: 600; }"
+    ".nuxel-digit:hover { background: #23446b; }"
+    ".nuxel-action { background: #12233c; color: #8aa3c7; border-radius: 22px;"
+    "  min-width: 56px; min-height: 44px; font-size: 16px; }"
+    ".nuxel-call { background: #46d18c; color: #06121f; border-radius: 34px;"
+    "  min-width: 68px; min-height: 68px; font-size: 26px; }"
+    ".nuxel-end { background: #ff5b5b; color: #2a0505; border-radius: 34px;"
+    "  min-width: 68px; min-height: 68px; font-size: 24px; }"
+    ".nuxel-tabs { padding: 0 0 4px 0; }"
+    ".nuxel-badge { background: rgba(255,184,77,0.15); color: #ffb84d;"
+    "  border-radius: 10px; padding: 2px 9px; font-size: 11px; font-weight: 700; }"
+    "listbox { background: transparent; } listbox row { background: transparent; }";
 
 static GtkWidget *
-create_digit_button (NuxelDialer *dialer,
-                     const gchar *digit,
-                     const gchar *subtitle)
+create_digit_button(NuxelDialer *dialer, const gchar *digit, const gchar *subtitle)
 {
-    GtkWidget *button = gtk_button_new ();
-    GtkWidget *box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
-    GtkWidget *label = gtk_label_new (digit);
-    GtkWidget *sub = subtitle ? gtk_label_new (subtitle) : NULL;
-    
-    /* removed duplicate pango attr leak */
-    PangoAttrList *attrs = pango_attr_list_new ();
-    pango_attr_list_insert (attrs, pango_attr_size_new (36 * PANGO_SCALE));
-    gtk_label_set_attributes (GTK_LABEL (label), attrs);
-    pango_attr_list_unref (attrs);
-    
-    gtk_widget_set_size_request (button, 80, 80);
-    gtk_widget_add_css_class (button, "digit-button");
-    
-    gtk_box_append (GTK_BOX (box), label);
-    if (sub) {
-        gtk_label_set_attributes (GTK_LABEL (sub), (pango_attr_list_new ()));
-        PangoAttrList *sattrs = pango_attr_list_new ();
-        pango_attr_list_insert (sattrs, pango_attr_size_new (12 * PANGO_SCALE));
-        gtk_label_set_attributes (GTK_LABEL (sub), sattrs);
-        pango_attr_list_unref (sattrs);
-        gtk_box_append (GTK_BOX (box), sub);
+    GtkWidget *button = gtk_button_new();
+    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    GtkWidget *label = gtk_label_new(digit);
+    gtk_widget_set_size_request(button, 80, 76);
+    gtk_widget_add_css_class(button, "nuxel-digit");
+    gtk_box_append(GTK_BOX(box), label);
+    if (subtitle && *subtitle) {
+        GtkWidget *sub = gtk_label_new(subtitle);
+        gtk_widget_add_css_class(sub, "dim");
+        gtk_box_append(GTK_BOX(box), sub);
     }
-    
-    gtk_button_set_child (GTK_BUTTON (button), box);
-    g_object_set_data_full (G_OBJECT (button), "digit",
-                            g_strdup (digit), g_free);
-    
-    g_signal_connect (button, "clicked",
-                      G_CALLBACK (on_digit_clicked), dialer);
-    
+    gtk_button_set_child(GTK_BUTTON(button), box);
+    g_object_set_data_full(G_OBJECT(button), "digit", g_strdup(digit), g_free);
+    g_signal_connect(button, "clicked", G_CALLBACK(dialer_append_digit), dialer);
     return button;
 }
 
-static GtkWidget *
-create_dialer_page (NuxelDialer *dialer)
+static void
+dialer_render_log(NuxelDialer *dialer)
 {
-    GtkWidget *page = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
-    
-    /* Status indicators */
-    GtkWidget *status_bar = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 4);
-    gtk_widget_add_css_class (status_bar, "status-bar");
-    
-    dialer->call_status = gtk_label_new ("");
-    gtk_widget_set_halign (GTK_WIDGET (dialer->call_status), GTK_ALIGN_START);
-    gtk_box_append (GTK_BOX (status_bar), dialer->call_status);
-    gtk_box_append (GTK_BOX (page), status_bar);
-    
-    /* Number display */
-    GtkWidget *display_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 4);
-    gtk_widget_set_margin_top (display_box, 20);
-    gtk_widget_set_margin_bottom (display_box, 10);
-    
-    dialer->display_label = gtk_label_new ("");
-    gtk_label_set_selectable (GTK_LABEL (dialer->display_label), TRUE);
-    PangoAttrList *dattrs = pango_attr_list_new ();
-    pango_attr_list_insert (dattrs, pango_attr_size_new (42 * PANGO_SCALE));
-    pango_attr_list_insert (dattrs, pango_attr_weight_new (PANGO_WEIGHT_BOLD));
-    gtk_label_set_attributes (GTK_LABEL (dialer->display_label), dattrs);
-    pango_attr_list_unref (dattrs);
-    gtk_widget_set_halign (dialer->display_label, GTK_ALIGN_CENTER);
-    gtk_box_append (GTK_BOX (display_box), dialer->display_label);
+    GtkWidget *list = dialer->call_log_list;
+    if (!list) return;
+    GtkWidget *child = gtk_widget_get_first_child(list);
+    while (child) {
+        GtkWidget *next = gtk_widget_get_next_sibling(child);
+        gtk_list_box_remove(GTK_LIST_BOX(list), child);
+        child = next;
+    }
+    if (nuxel_phone_store_load(&dialer->store, dialer->store_path) < 0) return;
+    size_t shown = 0;
+    for (size_t i = dialer->store.n_calls; i > 0 && shown < 50; i--, shown++) {
+        NuxelCall *call = &dialer->store.calls[i - 1];
+        GtkWidget *row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
+        gtk_widget_add_css_class(row, "nuxel-row");
+        const gchar *arrow = !strcmp(call->direction, "in") ? "↓" : "↑";
+        gchar *title = g_strdup_printf("%s  %s", arrow,
+            call->name[0] ? call->name : call->number);
+        GtkWidget *name = gtk_label_new(title);
+        g_free(title);
+        gtk_widget_add_css_class(name, "nuxel-row-title");
+        gtk_label_set_xalign(GTK_LABEL(name), 0.0);
+        gtk_widget_set_hexpand(name, TRUE);
+        gtk_label_set_ellipsize(GTK_LABEL(name), PANGO_ELLIPSIZE_END);
+        gtk_box_append(GTK_BOX(row), name);
+        gchar *when = NULL;
+        if (call->started_at > 0) {
+            GDateTime *dt = g_date_time_new_from_unix_local(call->started_at);
+            when = dt ? g_date_time_format(dt, "%H:%M") : NULL;
+            if (dt) g_date_time_unref(dt);
+        }
+        GtkWidget *state = gtk_label_new(when ? when : call->state);
+        gtk_widget_add_css_class(state, "dim");
+        gtk_box_append(GTK_BOX(row), state);
+        g_free(when);
+        gtk_list_box_append(GTK_LIST_BOX(list), row);
+    }
+    if (dialer->call_log_empty)
+        gtk_widget_set_visible(dialer->call_log_empty, shown == 0);
+}
 
-    /* Honest capability line: generated from the ModemManager probe only. */
-    dialer->capability_label = gtk_label_new ("Modem status unknown - not probed yet.");
-    gtk_label_set_wrap (GTK_LABEL (dialer->capability_label), TRUE);
-    gtk_label_set_justify (GTK_LABEL (dialer->capability_label), GTK_JUSTIFY_CENTER);
-    gtk_widget_set_halign (dialer->capability_label, GTK_ALIGN_CENTER);
-    gtk_widget_set_margin_start (dialer->capability_label, 16);
-    gtk_widget_set_margin_end (dialer->capability_label, 16);
-    gtk_widget_add_css_class (dialer->capability_label, "capability-line");
-    gtk_box_append (GTK_BOX (display_box), dialer->capability_label);
-    
-    /* Clear/backspace row */
-    GtkWidget *action_row = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 8);
-    gtk_widget_set_halign (action_row, GTK_ALIGN_CENTER);
-    
-    GtkWidget *clear_btn = gtk_button_new_with_label ("C");
-    gtk_widget_add_css_class (clear_btn, "action-button");
-    g_signal_connect (clear_btn, "clicked",
-                      G_CALLBACK (on_clear_clicked), dialer);
-    gtk_box_append (GTK_BOX (action_row), clear_btn);
-    
-    GtkWidget *backspace_btn = gtk_button_new_with_label ("⌫");
-    gtk_widget_add_css_class (backspace_btn, "action-button");
-    g_signal_connect (backspace_btn, "clicked",
-                      G_CALLBACK (on_backspace_clicked), dialer);
-    gtk_box_append (GTK_BOX (action_row), backspace_btn);
-    
-    gtk_box_append (GTK_BOX (display_box), action_row);
-    gtk_box_append (GTK_BOX (page), display_box);
-    
-    /* Keypad grid */
-    GtkWidget *grid = gtk_grid_new ();
-    gtk_grid_set_row_spacing (GTK_GRID (grid), 8);
-    gtk_grid_set_column_spacing (GTK_GRID (grid), 8);
-    gtk_widget_set_halign (grid, GTK_ALIGN_CENTER);
-    
+static GtkWidget *
+build_dialer_page(NuxelDialer *dialer)
+{
+    GtkWidget *page = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_widget_add_css_class(page, "nuxel-page");
+
+    GtkWidget *head = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    gtk_widget_add_css_class(head, "nuxel-head");
+    GtkWidget *title = gtk_label_new("Phone");
+    gtk_widget_add_css_class(title, "nuxel-title");
+    gtk_label_set_xalign(GTK_LABEL(title), 0.0);
+    gtk_widget_set_hexpand(title, TRUE);
+    gtk_box_append(GTK_BOX(head), title);
+    GtkWidget *voicemail = gtk_label_new("Voicemail");
+    gtk_widget_add_css_class(voicemail, "dim");
+    gtk_box_append(GTK_BOX(head), voicemail);
+    gtk_box_append(GTK_BOX(page), head);
+
+    /* Keypad card */
+    GtkWidget *panel = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_widget_add_css_class(panel, "nuxel-panel");
+
+    dialer->display_label = gtk_label_new("");
+    gtk_label_set_selectable(GTK_LABEL(dialer->display_label), TRUE);
+    gtk_widget_add_css_class(dialer->display_label, "nuxel-display");
+    gtk_widget_set_halign(dialer->display_label, GTK_ALIGN_CENTER);
+    gtk_label_set_ellipsize(GTK_LABEL(dialer->display_label), PANGO_ELLIPSIZE_END);
+    gtk_label_set_max_width_chars(GTK_LABEL(dialer->display_label), 16);
+    gtk_box_append(GTK_BOX(panel), dialer->display_label);
+
+    dialer->call_status = gtk_label_new("No active call");
+    gtk_widget_add_css_class(dialer->call_status, "dim");
+    gtk_widget_set_halign(dialer->call_status, GTK_ALIGN_CENTER);
+    gtk_label_set_wrap(GTK_LABEL(dialer->call_status), TRUE);
+    gtk_label_set_justify(GTK_LABEL(dialer->call_status), GTK_JUSTIFY_CENTER);
+    gtk_box_append(GTK_BOX(panel), dialer->call_status);
+    gtk_box_append(GTK_BOX(page), panel);
+
+    GtkWidget *grid = gtk_grid_new();
+    gtk_grid_set_row_spacing(GTK_GRID(grid), 8);
+    gtk_grid_set_column_spacing(GTK_GRID(grid), 8);
+    gtk_widget_set_halign(grid, GTK_ALIGN_CENTER);
+    gtk_widget_set_margin_top(grid, 4);
     const gchar *keys[] = {
         "1", "", "2", "ABC", "3", "DEF",
         "4", "GHI", "5", "JKL", "6", "MNO",
         "7", "PQRS", "8", "TUV", "9", "WXYZ",
         "*", "", "0", "+", "#", "",
     };
-    
-    int n_keys = sizeof (keys) / sizeof (keys[0]);
+    int n_keys = sizeof(keys) / sizeof(keys[0]);
     for (int i = 0; i < n_keys; i += 2) {
-        int row = i / 2;
+        int row = (i / 2) / 3;
         int col = (i / 2) % 3;
-        
-        GtkWidget *btn = create_digit_button (dialer, keys[i], keys[i + 1]);
-        gtk_grid_attach (GTK_GRID (grid), btn, col, row, 1, 1);
+        GtkWidget *btn = create_digit_button(dialer, keys[i], keys[i + 1]);
+        gtk_grid_attach(GTK_GRID(grid), btn, col, row, 1, 1);
     }
-    
-    gtk_box_append (GTK_BOX (page), grid);
-    
-    /* Call/End button */
-    GtkWidget *call_box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
-    gtk_widget_set_halign (call_box, GTK_ALIGN_CENTER);
-    gtk_widget_set_margin_top (call_box, 16);
-    gtk_widget_set_margin_bottom (call_box, 20);
-    
-    dialer->call_button = gtk_button_new_with_label ("📞");
-    gtk_widget_add_css_class (dialer->call_button, "call-button");
-    gtk_widget_set_size_request (dialer->call_button, 72, 72);
-    g_signal_connect (dialer->call_button, "clicked",
-                      G_CALLBACK (on_call_clicked), dialer);
-    gtk_box_append (GTK_BOX (call_box), dialer->call_button);
-    
-    gtk_box_append (GTK_BOX (page), call_box);
-    
+    gtk_box_append(GTK_BOX(page), grid);
+
+    /* Call actions */
+    GtkWidget *call_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 18);
+    gtk_widget_set_halign(call_box, GTK_ALIGN_CENTER);
+    gtk_widget_set_margin_top(call_box, 12);
+    gtk_widget_set_margin_bottom(call_box, 8);
+    GtkWidget *clear_btn = gtk_button_new_with_label("C");
+    gtk_widget_add_css_class(clear_btn, "nuxel-action");
+    g_signal_connect(clear_btn, "clicked", G_CALLBACK(dialer_clear), dialer);
+    gtk_box_append(GTK_BOX(call_box), clear_btn);
+    dialer->call_button = gtk_button_new_with_label("📞");
+    gtk_widget_add_css_class(dialer->call_button, "nuxel-call");
+    gtk_widget_set_size_request(dialer->call_button, 72, 72);
+    gtk_widget_set_tooltip_text(dialer->call_button, "Call (VoLTE voice pending)");
+    g_signal_connect(dialer->call_button, "clicked", G_CALLBACK(on_call_button), dialer);
+    gtk_box_append(GTK_BOX(call_box), dialer->call_button);
+    GtkWidget *backspace_btn = gtk_button_new_with_label("⌫");
+    gtk_widget_add_css_class(backspace_btn, "nuxel-action");
+    g_signal_connect(backspace_btn, "clicked", G_CALLBACK(dialer_backspace), dialer);
+    gtk_box_append(GTK_BOX(call_box), backspace_btn);
+    gtk_box_append(GTK_BOX(page), call_box);
+
+    dialer->end_button = gtk_button_new_with_label("Answer");
+    gtk_widget_add_css_class(dialer->end_button, "nuxel-call");
+    g_signal_connect(dialer->end_button, "clicked", G_CALLBACK(native_answer), dialer);
+    gtk_widget_set_visible(dialer->end_button, FALSE);
+    gtk_widget_set_halign(dialer->end_button, GTK_ALIGN_CENTER);
+    gtk_box_append(GTK_BOX(page), dialer->end_button);
+
+    dialer->capability_label = gtk_label_new("Modem status unknown - not probed yet.");
+    gtk_label_set_wrap(GTK_LABEL(dialer->capability_label), TRUE);
+    gtk_label_set_justify(GTK_LABEL(dialer->capability_label), GTK_JUSTIFY_CENTER);
+    gtk_widget_set_margin_start(dialer->capability_label, 16);
+    gtk_widget_set_margin_end(dialer->capability_label, 16);
+    gtk_widget_add_css_class(dialer->capability_label, "dim");
+    gtk_box_append(GTK_BOX(page), dialer->capability_label);
+
+    dialer->network_label = gtk_label_new("Network · status pending");
+    gtk_widget_add_css_class(dialer->network_label, "dim");
+    gtk_widget_set_halign(dialer->network_label, GTK_ALIGN_CENTER);
+    gtk_widget_set_margin_bottom(dialer->network_label, 6);
+    gtk_box_append(GTK_BOX(page), dialer->network_label);
     return page;
 }
 
+static GtkWidget *
+build_recents_page(NuxelDialer *dialer)
+{
+    GtkWidget *page = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_widget_add_css_class(page, "nuxel-page");
+    GtkWidget *head = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    gtk_widget_add_css_class(head, "nuxel-head");
+    GtkWidget *title = gtk_label_new("Recents");
+    gtk_widget_add_css_class(title, "nuxel-title");
+    gtk_label_set_xalign(GTK_LABEL(title), 0.0);
+    gtk_widget_set_hexpand(title, TRUE);
+    gtk_box_append(GTK_BOX(head), title);
+    gtk_box_append(GTK_BOX(page), head);
+
+    dialer->call_log_list = gtk_list_box_new();
+    gtk_list_box_set_selection_mode(GTK_LIST_BOX(dialer->call_log_list), GTK_SELECTION_NONE);
+    GtkWidget *scroll = gtk_scrolled_window_new();
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scroll), dialer->call_log_list);
+    gtk_widget_set_vexpand(scroll, TRUE);
+    gtk_box_append(GTK_BOX(page), scroll);
+    dialer->call_log_empty = gtk_label_new("No recent calls");
+    gtk_widget_add_css_class(dialer->call_log_empty, "dim");
+    gtk_widget_set_margin_top(dialer->call_log_empty, 24);
+    gtk_box_append(GTK_BOX(page), dialer->call_log_empty);
+    return page;
+}
+
+static void
+on_tab_keypad(GtkToggleButton *b, gpointer user)
+{
+    NuxelDialer *dialer = user;
+    if (gtk_toggle_button_get_active(b))
+        gtk_stack_set_visible_child_name(GTK_STACK(dialer->stack), "keypad");
+}
+
+static void
+on_tab_recents(GtkToggleButton *b, gpointer user)
+{
+    NuxelDialer *dialer = user;
+    if (gtk_toggle_button_get_active(b)) {
+        dialer_render_log(dialer);
+        gtk_stack_set_visible_child_name(GTK_STACK(dialer->stack), "recents");
+    }
+}
+
 /* ============================================================
- * Application Entry Point
+ * Entry point
  * ============================================================ */
 
 static void
-activate_cb (GtkApplication *app,
-             gpointer        user_data)
+activate_cb(GtkApplication *app, gpointer user_data)
 {
-    NuxelDialer *dialer = g_new0 (NuxelDialer, 1);
-    
-    /* Create window */
-    dialer->window = adw_application_window_new (GTK_APPLICATION (app));
-    adw_application_window_set_content (ADW_APPLICATION_WINDOW (dialer->window),
-                                        create_dialer_page (dialer));
-    
-    gtk_window_set_title (GTK_WINDOW (dialer->window), "Phone");
-    gtk_window_set_default_size (GTK_WINDOW (dialer->window), 400, 700);
-    gtk_window_set_resizable (GTK_WINDOW (dialer->window), TRUE);
+    (void)user_data;
+    NuxelDialer *dialer = g_new0(NuxelDialer, 1);
+
+    GtkCssProvider *provider = gtk_css_provider_new();
+    gtk_css_provider_load_from_string(provider, DIALER_CSS);
+    gtk_style_context_add_provider_for_display(gdk_display_get_default(),
+        GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    g_object_unref(provider);
+
+    dialer->window = adw_application_window_new(GTK_APPLICATION(app));
+    gtk_window_set_title(GTK_WINDOW(dialer->window), "Phone");
+    gtk_window_set_default_size(GTK_WINDOW(dialer->window), 400, 700);
+    gtk_window_set_resizable(GTK_WINDOW(dialer->window), TRUE);
     AdwStyleManager *style = adw_style_manager_get_default();
     adw_style_manager_set_color_scheme(style, ADW_COLOR_SCHEME_FORCE_DARK);
-    
-    /* CSS styling */
-    GtkCssProvider *provider = gtk_css_provider_new ();
-    gtk_css_provider_load_from_string (provider,
-        ".digit-button { font-size: 24px; min-width: 80px; min-height: 80px; "
-        "  border-radius: 40px; background: #0f3460; color: #e8e8e8; }"
-        ".digit-button:hover { background: #1a5276; }"
-        ".call-button { background: #4CAF50; color: white; font-size: 28px; "
-        "  border-radius: 36px; }"
-        ".call-button:hover { background: #388E3C; }"
-        ".end-button { background: #f44336; color: white; font-size: 24px; "
-        "  border-radius: 36px; }"
-        ".action-button { background: #16213e; color: #e8e8e8; font-size: 18px; "
-        "  min-width: 56px; min-height: 44px; border-radius: 22px; }"
-        ".status-bar { background: #16213e; padding: 8px 16px; }"
-        ".capability-line { font-size: 12px; color: #a0b0c8; }"
-    );
-    gtk_style_context_add_provider_for_display (
-        gdk_display_get_default (),
-        GTK_STYLE_PROVIDER (provider),
-        GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-    g_object_unref (provider);
-    
-    /* Initialize call state */
+
+    dialer->stack = gtk_stack_new();
+    GtkWidget *keypad = build_dialer_page(dialer);
+    GtkWidget *recents = build_recents_page(dialer);
+    gtk_stack_add_named(GTK_STACK(dialer->stack), keypad, "keypad");
+    gtk_stack_add_named(GTK_STACK(dialer->stack), recents, "recents");
+    gtk_stack_set_visible_child_name(GTK_STACK(dialer->stack), "keypad");
+
+    GtkWidget *switcher = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+    gtk_widget_add_css_class(switcher, "nuxel-tabs");
+    gtk_widget_set_margin_start(switcher, 12);
+    gtk_widget_set_margin_end(switcher, 12);
+    gtk_widget_set_margin_bottom(switcher, 6);
+    GtkWidget *tab_keypad = gtk_toggle_button_new_with_label("Keypad");
+    GtkWidget *tab_recents = gtk_toggle_button_new_with_label("Recents");
+    gtk_toggle_button_set_group(GTK_TOGGLE_BUTTON(tab_recents), GTK_TOGGLE_BUTTON(tab_keypad));
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(tab_keypad), TRUE);
+    gtk_widget_set_hexpand(tab_keypad, TRUE);
+    gtk_widget_set_hexpand(tab_recents, TRUE);
+    g_signal_connect(tab_keypad, "toggled", G_CALLBACK(on_tab_keypad), dialer);
+    g_signal_connect(tab_recents, "toggled", G_CALLBACK(on_tab_recents), dialer);
+    gtk_box_append(GTK_BOX(switcher), tab_keypad);
+    gtk_box_append(GTK_BOX(switcher), tab_recents);
+
+    GtkWidget *root = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_box_append(GTK_BOX(root), switcher);
+    gtk_widget_set_vexpand(dialer->stack, TRUE);
+    gtk_box_append(GTK_BOX(root), dialer->stack);
+    adw_application_window_set_content(ADW_APPLICATION_WINDOW(dialer->window), root);
+
     dialer->in_call = FALSE;
     dialer->modem_ready = FALSE;
-    dialer->cancellable = g_cancellable_new ();
-    dialer->contacts = g_ptr_array_new_with_free_func (g_free);
-
-    /* Shared phone data: the same store nuxel-contacts and nuxel-messages use,
-     * so the call log and the address book cannot drift apart. */
+    dialer->contacts = g_ptr_array_new_with_free_func(g_free);
     {
-        gchar *dir = g_build_filename (g_get_user_data_dir (), "nuxel-contacts", NULL);
-        g_mkdir_with_parents (dir, 0755);
-        dialer->store_path = g_build_filename (dir, "contacts.json", NULL);
-        g_free (dir);
+        gchar *dir = g_build_filename(g_get_user_data_dir(), "nuxel-contacts", NULL);
+        g_mkdir_with_parents(dir, 0755);
+        dialer->store_path = g_build_filename(dir, "contacts.json", NULL);
+        g_free(dir);
     }
-    nuxel_phone_store_init (&dialer->store);
-    nuxel_phone_capabilities_init (&dialer->caps);
+    nuxel_phone_store_init(&dialer->store);
+    nuxel_phone_capabilities_init(&dialer->caps);
     if (dialer->store_path) {
-        int rc = nuxel_phone_store_load (&dialer->store, dialer->store_path);
-        if (rc == -1)
-            g_warning ("[Dialer] stored phone data is unreadable; call log starts empty");
+        if (nuxel_phone_store_load(&dialer->store, dialer->store_path) == -1)
+            g_warning("[Dialer] stored phone data is unreadable; call log starts empty");
     }
-    dialer_update_capabilities (dialer);
+    dialer_update_capabilities(dialer);
+    dialer_update_ui(dialer);
+    dialer_render_log(dialer);
 
-    /* Connect to ModemManager */
-    modem_connect (dialer);
-    
-    gtk_window_present (GTK_WINDOW (dialer->window));
+    modem_connect(dialer);
+    gtk_window_present(GTK_WINDOW(dialer->window));
 }
 
 int
-main (int argc, char *argv[])
+main(int argc, char *argv[])
 {
-    GtkApplication *app = gtk_application_new ("org.nuxel.Dialer",
-                                                G_APPLICATION_DEFAULT_FLAGS);
-    g_signal_connect (app, "activate", G_CALLBACK (activate_cb), NULL);
-    
-    int status = g_application_run (G_APPLICATION (app), argc, argv);
-    g_object_unref (app);
-    
+    GtkApplication *app = gtk_application_new("org.nuxel.Dialer",
+                                              G_APPLICATION_DEFAULT_FLAGS);
+    g_signal_connect(app, "activate", G_CALLBACK(activate_cb), NULL);
+    int status = g_application_run(G_APPLICATION(app), argc, argv);
+    g_object_unref(app);
     return status;
 }

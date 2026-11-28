@@ -1,0 +1,24 @@
+[Unit]
+Description=Nuxel Radio1 bridge - expose nl.nuxel.Radio1 on the system bus
+Documentation=https://github.com/nuxel/nuxel/docs/architecture.md
+After=nuxel-wayland.service nuxel-radiod.service dbus.service
+Wants=nuxel-wayland.service
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+[Service]
+Type=simple
+# Runs as root so it can open the root compositor session bus (0600 root)
+# where radiod is, and own the bridged name on the system bus.  It forwards
+# only the Radio1 allow-listed methods and Radio1 signals.
+Environment=NUXEL_ROOT_BUS=unix:path=/run/nuxel-wayland/bus
+ExecStart=/usr/libexec/nuxel/nuxel-radio-bridge
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=read-only
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

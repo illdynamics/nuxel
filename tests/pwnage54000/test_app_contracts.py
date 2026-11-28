@@ -53,10 +53,13 @@ check("Contacts has SIM import/sync/save", "on_import_sim_clicked" in contacts a
 check("Contacts forces dark mode", "ADW_COLOR_SCHEME_FORCE_DARK" in contacts)
 messages = (ROOT / "shell/nuxel-shell/nuxel-messages/main.c").read_text()
 check("Messages forces dark mode", "ADW_COLOR_SCHEME_FORCE_DARK" in messages)
-check("Messages has SIM import/sync", "on_import_sim_clicked" in messages and "on_sync_sim_clicked" in messages)
+check("Messages has SIM import/sync", "on_import_sim_clicked" in messages and "messages_merge_store" in messages)
 dialer = (ROOT / "shell/nuxel-shell/nuxel-dialer/main.c").read_text()
-check("Dialer uses call properties, not SMS properties", "MMCallProperties" in dialer and
-      "MM_SMS_PROPERTY_NUMBER" not in dialer)
+# The dialer now talks to the native Radio1 API only (no ModemManager, no SMS
+# properties) and honestly reports that VoLTE voice is not yet implemented.
+check("Dialer uses native call API, not SMS properties",
+      "GetVoiceStatus" in dialer and "GetCalls" in dialer and
+      "MM_SMS_PROPERTY_NUMBER" not in dialer and "libmm-glib" not in dialer)
 check("Dialer forces dark mode", "ADW_COLOR_SCHEME_FORCE_DARK" in dialer)
 
 api = (ROOT / "services/nuxel-bridge/src/api.py").read_text()

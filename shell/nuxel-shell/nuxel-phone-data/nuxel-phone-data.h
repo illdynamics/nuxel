@@ -112,6 +112,8 @@ void nuxel_phone_capabilities_init(NuxelPhoneCapabilities *c);
 int nuxel_phone_normalize_number(char *dst, size_t dstsz, const char *src);
 /* Compare two numbers after normalisation. Returns 1 if they match. */
 int nuxel_phone_number_match(const char *a, const char *b);
+/* 1 when the value is actually a telephone number (not a SIM alpha name). */
+int nuxel_phone_is_number(const char *who);
 
 /* ---- contacts ---------------------------------------------------------- */
 /* Returns a borrowed pointer to the stored contact, or NULL on error. */
@@ -120,6 +122,9 @@ NuxelContact *nuxel_phone_add_contact(NuxelPhoneStore *s, const char *name,
 NuxelContact *nuxel_phone_find_contact_by_id(NuxelPhoneStore *s, const char *id);
 NuxelContact *nuxel_phone_find_contact_by_number(NuxelPhoneStore *s, const char *number);
 const char   *nuxel_phone_display_name(NuxelPhoneStore *s, const char *number);
+/* Real contact name for a number, or NULL when only the number fallback would
+ * apply (unknown number, or a record whose name is its own number). */
+const char   *nuxel_phone_contact_name(NuxelPhoneStore *s, const char *number);
 int           nuxel_phone_delete_contact(NuxelPhoneStore *s, const char *id);
 /* Case-insensitive name/phone/email search; returns the number of matches and
  * fills out[] (up to outsz) with borrowed pointers. */
@@ -147,6 +152,24 @@ int  nuxel_phone_export_vcard(NuxelPhoneStore *s, char **out);
  * number of contacts added.  Duplicate ids are re-keyed instead of overwritten. */
 int  nuxel_phone_import_vcard(NuxelPhoneStore *s, const char *text, size_t len,
                               int *imported);
+
+/* ---- merge / import (lossless, additive) ------------------------------- */
+/* Merge every contact from `src` into `dst` that is not already present there
+ * (match by normalised phone, else by case-insensitive name).  Existing records
+ * are never modified or removed.  Returns the number of contacts added. */
+size_t nuxel_phone_merge_contacts(NuxelPhoneStore *dst, const NuxelPhoneStore *src);
+/* Import SIM-mirror messages into `dst` additively and idempotently: a message
+ * is skipped when the same normalised peer + body + direction already exists.
+ * Records in `src` are never changed and nothing is ever deleted.  When
+ * with_contacts is non-zero, a contact is created for a peer that has an
+ * alphabetic name and no existing matching contact.  *added_messages and
+ * *added_contacts receive the counts (either may be NULL).  Returns the number
+ * of messages added, or -1 on a NULL argument. */
+int    nuxel_phone_import_sim_messages(NuxelPhoneStore *dst,
+                                       const NuxelPhoneStore *src,
+                                       int with_contacts,
+                                       size_t *added_messages,
+                                       size_t *added_contacts);
 
 /* ---- JSON store -------------------------------------------------------- */
 /* Load a store from disk.  A missing file is not an error (returns 1 = empty
