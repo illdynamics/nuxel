@@ -60,7 +60,7 @@
       "bridge_version": "1",
       "docked": true,
       "status": "implemented",
-      "runtime_state": "NEEDS_OWNER_TEST (real SMS needs a SIM and a carrier)"
+      "runtime_state": "LIVE: native SMS over IMS via Radio1 (nl.nuxel.Radio1Bridge); Round 33 MO/MT verified"
     },
     {
       "id": "nuxel-contacts",
