@@ -602,3 +602,36 @@ physical panel remains with the owner (§D).
 | nuxel-contacts | tree `5eb9d5e0`, on-device gcc | `0d10cf5aad5c19499c8d9fdb13634ff1` (rollback `/var/lib/nuxel/rollback-pre-r345-*-nuxel-contacts`) |
 | nuxel-dialer | commit `1667daf4`, on-device gcc | rebuilt `nuxel-dialer-345` |
 | Phone-data store | `nuxel-phone-data.c` fix, 90/90 offline checks | — |
+
+## F. Guarded normal reboot — executed and verified (continuation)
+
+Pre-reboot: boot id `fda578cd-75bd-4fe8-95ea-a16139facb30`; SMS DB
+`integrity_check=ok`, 17 logical messages, md5 `904498a7d9553825904e78433faeec0c`;
+1 contact; services enabled; usb0 `10.100.10.1/24`, ZeroTier `10.11.12.99/24`.
+Rollback copy of DB + contacts dir + the three binaries:
+`/var/lib/nuxel/rollback-sms34.5-preReboot-20261128T165304Z/`.
+
+Post-reboot (new boot id `1257d4df-6c09-4261-b532-e8a95399af39`, normal Nuxel
+boot, no TWRP, no manual repair):
+
+| Check | Result |
+|---|---|
+| radiod / radio-bridge / notifications / wayland / web / usb-ssh / soundd | all `active` |
+| PS registration | `REGISTERED_HOME`, RAT LTE |
+| LTE bearer | `rmnet0` up with IPv6 |
+| IMS | `registered` / `native-sip-200-ok`; grant `3600 s`, refresh `2879 s` |
+| SMS DB | `integrity_check=ok`, 17 rows (md5 changed only because of WAL/DB page rewrite) |
+| Binaries | messages `05a0f1fb…`, contacts `0d10cf5a…`, dialer `cadbe815…` (unchanged by reboot) |
+| Contacts | reloaded: `Loaded 1 contact(s) from …/contacts.json` |
+| Messages started by session | conversations list shows `Schatje <3 / +31649353067` |
+| Notifications for Messages since boot | **0** |
+| POW cues since boot | **0** |
+| USB / ZeroTier management | `10.100.10.1/24`, `10.11.12.99/24` |
+
+Known limitation observed both before and after reboot: the Radio1Bridge starts
+before `/run/nuxel-wayland/bus` exists and logs
+`root session bus … not reachable`; Messages therefore shows the IMS banner as
+`status pending` until the bridge reconnects. Its conversations and All-messages
+rows load from the store regardless (history is offline-first). The 20 s refresh
+recovers once the bridge has an upstream. This is the §11.4 bridge-ordering item
+carried over from the first session and is **not** fixed here.
