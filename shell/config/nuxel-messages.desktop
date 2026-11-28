@@ -12,3 +12,4 @@ Categories=GTK;GNOME;Telephony;Chat;
 Keywords=sms;message;text;
 StartupNotify=true
 DBusActivatable=false
+DebugID=nuxel-messages-v095-sim-import
