@@ -1,0 +1,42 @@
+From: Nuxel <nuxel@localhost>
+Subject: [PATCH 0025] sensorhub/ssp: force-drop hub rail for a genuine MCU cold-cycle
+
+The BCM47752 SPI boot ROM only answers its autobaud/GetVersion window right
+after a true cold power-on.  On this board vdd_mcu_1p8 (s2mps19 LDO21M) is
+left enabled by the bootloader with num_users == 0, so the existing
+regulator_disable() is a no-op (an "unbalanced disable" of a rail that holds
+no reference) and the rail never actually falls.  A warm reboot therefore
+never re-enters the boot-ROM window and every firmware download reads 0xFFFF.
+
+Use regulator_force_disable() on `echo 0 > mcu_power` (and in the native
+bring-up recovery) so the rail genuinely drops, and regulator_enable() restores
+it.  Stays a single kernel-owned path via the existing mcu_power sysfs, with no
+competing raw GPIO or ad-hoc regulator manipulation.
+
+NOTE: line numbers assume the tree state after patches 0020 and 0023-ssp are
+applied (the build applies patches in sorted order before this one).
+
+Signed-off-by: Nuxel <nuxel@localhost>
+---
+ drivers/sensorhub/brcm/ssp_sysfs.c | 2 +-
+ drivers/sensorhub/brcm/ssp_bbd.c   | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/sensorhub/brcm/ssp_sysfs.c b/drivers/sensorhub/brcm/ssp_sysfs.c
+--- a/drivers/sensorhub/brcm/ssp_sysfs.c
++++ b/drivers/sensorhub/brcm/ssp_sysfs.c
+@@ -568,3 +568,3 @@ static ssize_t set_mcu_power(struct device *dev,
+ 			if (regulator_is_enabled(data->regulator_vdd_mcu_1p8))
+-				ret = regulator_disable(data->regulator_vdd_mcu_1p8);
++				ret = regulator_force_disable(data->regulator_vdd_mcu_1p8);
+ 			break;
+
+diff --git a/drivers/sensorhub/brcm/ssp_bbd.c b/drivers/sensorhub/brcm/ssp_bbd.c
+--- a/drivers/sensorhub/brcm/ssp_bbd.c
++++ b/drivers/sensorhub/brcm/ssp_bbd.c
+@@ -156,4 +156,4 @@ int nuxel_ssp_bringup_hw(void)
+ 		pr_err("[SSPBBD] Nuxel bring-up: retrying after MCU power-cycle\n");
+ 		if (regulator_is_enabled(data->regulator_vdd_mcu_1p8))
+-			regulator_disable(data->regulator_vdd_mcu_1p8);
++			regulator_force_disable(data->regulator_vdd_mcu_1p8);
+ 		msleep(120);

@@ -1,0 +1,22 @@
+# 02 — FORENSIC KERNEL PATCH SURGERY: 0020 / 0023 / 0025 / 0026 / 0027
+
+DeepSeek-V4-Pro-Thinking: carry MASTER 00 and a passing baseline from 01. Pure offline/source work. DO NOT FLASH, reset rails, toggle GPIOs or write device nodes.
+
+**Primary risk:** `0027-nuxel-ssp-kernel-firmware-download.patch` is not a safe new additive patch. It repeats `0023` changes against an older base and includes dangerous error paths. Reconcile the **actual live** sources with repo patch series rather than blindly stacking numbers.
+
+Must investigate and fix:
+
+- De-duplicate `0027` against reconciled `0023`, incorporate `0025` and `0026` only where justified, and produce a **clean, minimal, versioned, explicitly required and strictly ordered** patch series. Compare original/expected fingerprints, avoid speculative `git apply --3way` merging or silently skipped optional patches. Update `kernel/s10plus/build-kernel.sh` so mandatory SSP patches are checked and the build fails if any is skipped/conflicted. Record exact applied patch SHA256s and source symbols in a manifest.
+- Analyze `bbd_do_transfer` in `0027`, especially its failure path after `mutex_lock(&data->pending_mutex)`: a second acquisition of that same lock is present; fix double locking, accidental double unlocks, iterator cleanup, `clean_msg`/freed-pointer ownership, `comm_mutex` order, wake-lock balance and all cancellation paths. Use static analysis plus fault-injection tests.
+- Correct firmware decoder: validate tagged F0..F5 stream against exact vendor semantics, full `BlobLength` and independently computed SHA/CRC, strict complete-parser EOF, counted mandatory records, exact destinations/lengths/total byte counts and non-F1 behavior. Any malformed/truncated tail, unexpected tag, wrong destination or missing required write **must hard-fail**, not break loop and start the app.
+- Replace potentially fragile 438,895-byte contiguous `kmalloc` with bounded allocation or streaming compatible with the actual 4.14 kernel (`kvfree`/`vmalloc` when appropriate), and test overflow, huge input, odd hex, invalid tag and bad CRC paths. Verify text `Crc` isn't misread as IEEE CRC32.
+- Fix reliable ACK/NACK correlation: clear per-operation state; verify packet framing/CRC, session, type, sequence including wrap/staleness, outstanding operation and payload, explicit negative replies; never treat arbitrary `bcm_ssi_rx()` data or duplicated packet as completion. Confirm actual vendor semantics (transport ACK versus operation-level result).
+- Audit raw SSI autobaud/GetVersion transfer shape and return logic; receive buffer location and length, SPI host controller runtime PM and serialization with IRQ/workqueue/tty. `0xffffffff` could reflect electrical, clock, reset, mode, lifecycle or protocol mismatch; do not assert the exclusive root cause without evidence.
+- Audit `regulator_force_disable` in `0025`: identify regulator consumers/shared GNSS, regulator reference counts, shutdown/restore symmetry and recovery impact. It must not become an unbounded service-loop action. Prefer source-driven kernel ownership; never direct undocumented sysfs/GPIO pokes.
+- Specifically distinguish `nuxel_bbd_flash` no-`--flash` exit 0 (container verification only) from physical firmware success, check all `write_control()` results, and reconcile 36-byte ttyBCM versus 32-byte direct-SSI ROM autobaud against the pinned vendor behavior.
+- Remove duplicated transport/ROM state machines: choose ONE authoritative kernel/early-userspace download mechanism. No overlapping `nuxel_bbd_flash` / `nuxel-ssp-bridge` / kernel downloader live sessions. Keep Android `lhd` as *offline* reference only.
+- Preserve independent camera, NFC, phone, display, touchscreen, modem and DT behavior.
+
+**Gating tests:** patch apply to exact pinned clean kernel; repeated apply check/idempotence; all compiler and linker warnings/errors resolved; mandatory symbol/ABI/config manifest; KASAN/lockdep or applicable instrumentation in offline VM if supported; pathological ACK and allocation tests; no unbalanced regulator/IRQ/mutex operations. If exact kernel source is absent, report blocker instead of claiming compilation.
+
+**Outputs:** `reports/SSP-KERNEL-PATCH-RECONCILIATION.md`, a minimal tested series or single properly rebased patch, `reports/SSP-LOCKING-AND-OWNERSHIP-AUDIT.md`, exact negative-case test receipts. PASS only after all 0027 blockers are corrected, reviewed and verified. Do not attempt a BOOT flash on the original 0027.

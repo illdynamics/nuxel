@@ -194,3 +194,12 @@ assets/nuxel-sounds/full_*.mp3
 assets/nuxel-sounds/tight_*.mp3
 ./SAMFW.COM_SM-G975F_TNL_G975FXXS9DTK9_fac/
 SAMFW.COM_SM-G975F_TNL_G975FXXS9DTK9_fac/**
+
+# Camera Strategy B: cloned upstream reference + generated sensor data.
+# The S5K .s5k runtime containers and *-tables.h contain Samsung-derived
+# register values; keep them out of public git (generated locally only).
+pwn/upstream-camera-research/
+pwn/camera-tables-src/
+pwn/camera-tables-out/
+pwn/s5k-firmware-out/
+tools/s10plus/fimc-capture/nuxel-fimc-capture3

@@ -1,0 +1,4 @@
+I found three important issues in the uploaded repository:
+1. Prompt 00 is not verifiably complete. The archive does not contain the required camera-00-postincident-baseline.md, current BOOT/DTB/DTBO backup manifest, or a proven match between the current active device tree and off-device recovery images. Older boot-repair reports cannot substitute for this evidence.
+2. Prompt 01 has an incomplete implementation. The repository already contains camera-dt-gate.py and a release-gate script, but their checks are insufficient. For example, the DT validator checks some relationships through text matching rather than a complete device-tree graph.
+3. The existing camera-DT test suite is broken. Its golden images and negative-test fixtures are absent. Several tests are skipped, and the golden self-match fails.

@@ -70,25 +70,33 @@ def test_missing_lhd_is_reported_and_no_doomed_write(tmp_path):
     assert (tmp_path / paths["bbd"].lstrip("/")).read_text() == ""
 
 
-def test_present_lhd_drives_real_kernel_nodes_then_reports_no_stream(tmp_path):
+def test_present_lhd_never_synthesises_esw_ready(tmp_path):
+    """Premature ESW:READY publication is removed (SSP protocol contract).
+
+    With no native bridge ABI the daemon is a consumer only; it must not write
+    ESW:READY into /dev/bbd_control or touch the enable bits, even when the
+    vendor lhd runtime appears present.  It reports the hub unavailable and
+    leaves the control nodes untouched.
+    """
     paths = make_root(tmp_path, lhd=True, linker=True, raw="0,0,0\n")
     hub = control(tmp_path, paths, retry_interval_ms=0, auto_start=True)
     status = hub.ensure_streaming()
     assert status["lhd_present"] is True
     assert status["android_linker_present"] is True
     assert status["streaming"] is False
-    # The two real control operations happened.
-    assert (tmp_path / paths["bbd"].lstrip("/")).read_text() == "ESW:READY"
-    assert (tmp_path / paths["enable"].lstrip("/")).read_text().strip() == "1"
-    assert "did not stream" in status["reason"]
+    # No ESW:READY, no enable-bit write, ever.
+    assert (tmp_path / paths["bbd"].lstrip("/")).read_text() == ""
+    assert (tmp_path / paths["enable"].lstrip("/")).read_text().strip() == "0"
 
 
-def test_existing_enable_bits_are_preserved(tmp_path):
+def test_existing_enable_bits_are_not_modified(tmp_path):
+    """The daemon is a consumer: it must not OR extra enable bits."""
     paths = make_root(tmp_path, enable="6\n")  # gyro/other bits already set
     hub = control(tmp_path, paths, retry_interval_ms=0)
     status = hub.ensure_streaming()
-    assert status["enable_bits"] == 7
-    assert (tmp_path / paths["enable"].lstrip("/")).read_text().strip() == "7"
+    # enable buffer is left exactly as-is (6), never bumped to 7.
+    assert status["enable_bits"] == 6
+    assert (tmp_path / paths["enable"].lstrip("/")).read_text().strip() == "6"
 
 
 def test_live_raw_data_needs_no_write_and_is_auto_capable(tmp_path):

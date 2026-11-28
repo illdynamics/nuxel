@@ -19,6 +19,12 @@ UNPACK="$ROOT/tools/s10plus/unpack-boot-image.py"
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/nuxel-gate-tests.XXXXXX")
 trap 'rm -rf "$WORK"' EXIT
 
+# Mandatory portable synthetic preflight. The later A5 historical suite only
+# runs when real historical build artifacts are supplied; never substitute a
+# synthetic image for an old device-proven recovery artifact.
+echo '=== Prompt01 synthetic BOOT/DT release-gate regression suite ==='
+python3 "$ROOT/tools/s10plus/tests/test-camera-offline-gates.py" -v || exit 1
+echo '=== Historical A5/A25 fixtures: HISTORICAL ONLY, not current BOOT ==='
 PASS=0; FAIL=0; SKIP=0
 ok()   { PASS=$((PASS+1)); printf '  ok   %s\n' "$1"; }
 bad()  { FAIL=$((FAIL+1)); printf '  FAIL %s\n' "$1"; }

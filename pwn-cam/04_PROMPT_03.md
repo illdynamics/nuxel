@@ -1,0 +1,14 @@
+# PROMPT 03 — EXACT S10+ CAMERA BOARD TOPOLOGY AND DTB/DTBO PREPARATION (OFFLINE)
+
+**Entry:** 00–02 PASS. **No flash or live DT write.** The previous camera work almost bricked the phone; minimize the source-of-truth and change set.
+
+1. Compare *three separate things* first: (i) current phone's fully merged runtime FDT and bootloader-selected overlay/board revision from PROMPT 00, (ii) exact downstream beyond2lte DTS source used to build its known-good BOOT, and (iii) `butztill/s10-linux` beyond1lte native-camera graph. Never transplant S10 (G973F) GPIO/regulator/clock/PHY values blindly to S10+ (G975F).
+2. Trace rear main 2L4 (module id 0), rear tele 3M3 (2), rear ultrawide 3P9 (4), front main 3J1 (1), and front depth/aux 4HA (3), as supported by actual board-revision evidence. Map each actual I2C bus/address, xclk/MCLK, GPIO reset/standby, regulator enables/voltages as discovered in source only, pinctrl, CSI lanes/VC, 4 CSIS endpoints, CAMIF/PHY resource overlap, MIPI mux, actuator and flash. Mark unproved fields UNKNOWN and block their deployment; do not guess GPIO pins or enable random voltages.
+3. Implement a **minimal camera-only** DTS/DTSI/DTBO patch in the actual source packaging path, leaving unrelated nodes and working boot resources byte-identical/semantically identical. Begin with a rear-main-only camera graph, not all five sensors at once. If 4HA needs new driver, mark it explicitly deferred; no imaginary node used as RGB camera.
+4. Ensure no simultaneous native/vendor ownership. Prove disabled FIMC-IS2 nodes won't break unrelated Exynos peripherals, OIS or regulator parents. Ensure ported driver compatibles, phandle targets, clock names, I2C and platform-resource registers match source code exactly. Do not use overlay runtime insertion on a live boot unless independently proven safe by kernel config and board behavior.
+5. Compile and decompile FDTs, test roundtrip, run kernel `dtbs` build, `dtc` warnings as hard errors where relevant, and the new camera DT gate. Diff the final **selected merged** active tree, not only the base DTS. Require board revision match; list every modified node/property and explain each. Run automated negative fault-injection fixtures.
+6. Write a staged BOOT plan maximizing unchanged members. If a driver can be inserted as ABI-compatible module on existing kernel and existing DT without conflict, prefer reversible module work; otherwise stage one BOOT-only candidate only after absolute PASS. Reflash must not modify separate DTB/DTBO partitions at this stage.
+
+**Deliver:** minimal compile-tested beyond2lte camera DTS patch, `reports/camera-03-topology-and-dt-diff.md`, semantic diffs, machine-readable gate receipts. **EXIT GATE:** exact board/overlay selected and every new resource accounted for; unchanged working devices protected; no hard gate warnings and no phone writes.
+
+---

@@ -35,6 +35,8 @@ import struct
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import fdt_binary
+import dt_graph
 import newc  # noqa: E402  (repo-local, dependency-free newc cpio reader)
 
 MAGIC = b"ANDROID!"
@@ -140,7 +142,7 @@ def check_cpio(data, gate, label):
     # trailing bytes after the trailer record must be nothing but zero padding
     tail = data[info["logical_end"]:]
     if tail.strip(b"\x00"):
-        gate.warn("%s: %d non-zero bytes after TRAILER!!! (ignored by the kernel)"
+        gate.fail("%s: %d non-zero bytes after TRAILER!!! (ambiguous ramdisk trailing content)"
                   % (label, len(tail) - len(tail.rstrip(b"\x00"))))
     info["init"] = None
     ent = names.get("init")
@@ -172,7 +174,7 @@ def check_cpio(data, gate, label):
                 gate.fail("%s: /init interpreter %s is present but not executable"
                           % (label, interp))
     if "dev/console" not in names:
-        gate.warn("%s: /dev/console is missing — prepare_namespace() is skipped "
+        gate.fail("%s: /dev/console is missing — prepare_namespace() is skipped "
                   "for a built-in initramfs, so kernel_init cannot open an initial "
                   "console and NO initramfs output can ever be captured" % label)
     return info
@@ -270,7 +272,63 @@ def _align4(n):
     return (n + 3) & ~3
 
 
-def inspect(path, partition_bytes, gate):
+def verify_separate_dt_evidence(evidence, gate):
+    """Validate explicit signed-baseline references for separate Samsung DTB/DTBO.
+
+    This alone cannot prove bootloader behavior. The outer release gate MUST
+    verify the owner-trusted manifest signature and exact live readback hashes.
+    Missing/contradictory evidence is fatal, never an implied no-DT exception.
+    """
+    if not isinstance(evidence, dict):
+        gate.fail('separate DT layout requires complete explicit evidence')
+        return False
+    try:
+        for name in ('dtb', 'dtbo', 'merged'):
+            path, expected_sha = evidence[name + '_path'], evidence[name + '_sha256']
+            if not isinstance(expected_sha, str) or len(expected_sha) != 64 or any(
+                    ch not in '0123456789abcdef' for ch in expected_sha.lower()):
+                raise ValueError('invalid SHA256 for separate ' + name)
+            with open(path, 'rb') as f:
+                raw = f.read()
+            if hashlib.sha256(raw).hexdigest() != expected_sha.lower():
+                raise ValueError('separate %s SHA256 mismatch' % name)
+            if name == 'merged' and not dt_graph.is_fdt(raw):
+                raise ValueError('active merged FDT must be bare FDT')
+            trees = [dt_graph.parse_fdt(b) for b in dt_graph.extract_fdts(raw)]
+            if name == 'dtb':
+                if len(trees) != 1:
+                    raise ValueError('separate DTB has ambiguous multiple entries')
+            if name == 'dtbo':
+                idx = evidence['dtbo_index']
+                rev = evidence['board_revision']
+                if not isinstance(idx, int) or not isinstance(rev, int) or not (0 <= rev <= 255):
+                    raise ValueError('unproven overlay index or board revision')
+                if not dt_graph.is_samsung_dth(raw) or not (0 <= idx < len(trees)):
+                    raise ValueError('DTBO is not a selected Samsung table entry')
+                root = trees[idx].get('/')
+                lo = root.props.get('dtbo-hw_rev') if root else None
+                hi = root.props.get('dtbo-hw_rev_end') if root else None
+                if not lo or not hi or len(lo.data) != 4 or len(hi.data) != 4 or \
+                        not (lo.cells[0] <= rev <= hi.cells[0]):
+                    raise ValueError('selected overlay revision window does not include board')
+            if name == 'merged':
+                root = trees[0].get('/')
+                comp = root.props.get('compatible') if root else None
+                model = root.props.get('model') if root else None
+                if not comp or not any('exynos9820' in x.lower() for x in comp.strings) or \
+                        not model or not any('beyond2lte' in x.lower() for x in model.strings):
+                    raise ValueError('active merged FDT does not identify beyond2lte Exynos9820')
+                check_dtb(raw, gate, 'signed live merged FDT (separate DT source)')
+        gate.note('separate DTB, selected DTBO entry and live merged FDT verified by SHA256; '
+                  'bootloader active-source proof still requires trusted live manifest')
+        return True
+    except (ValueError, KeyError, OSError, IndexError, TypeError, struct.error) as exc:
+        gate.fail('separate DT layout evidence rejected: %s' % exc)
+        return False
+
+
+def inspect(path, partition_bytes, gate, expected=None, selected_appended_idx=None, separate_dt_evidence=None):
+    expected = expected or {}
     rep = {"path": path}
     size = os.path.getsize(path)
     rep["size"] = size
@@ -316,14 +374,18 @@ def inspect(path, partition_bytes, gate):
             gate.fail("header_size field is %d, boot_img_hdr_v1 requires %d"
                       % (hsize, HEADER_SIZE_V1))
         if rdtbo_off and (rdtbo_off + rdtbo_size) > size:
-            gate.warn("recovery_dtbo_offset/size (%d/%d) point past the image"
+            gate.fail("recovery_dtbo_offset/size (%d/%d) point past the image"
                       % (rdtbo_off, rdtbo_size))
     if os_version == 0:
         gate.warn("os_version is 0; S-Boot logs it and the device's own images "
                   "use 0x18000171 (12.0.0)")
     if ssize != 0:
-        gate.warn("second_size is %d (expected 0 on this device)" % ssize)
+        gate.fail("second_size is %d (expected 0 on this device)" % ssize)
 
+    if (rdtbo_size == 0) != (rdtbo_off == 0):
+        gate.fail('recovery_dtbo header fields inconsistent (this is NOT the dtbo partition)')
+    if expected.get('boot') and rep['sha256'] != expected['boot']:
+        gate.fail('BOOT full-image SHA-256 differs from approved candidate source')
     # ---- gate 2: kernel payload -------------------------------------------------
     if ksize == 0:
         gate.fail("kernel_size is 0")
@@ -334,6 +396,8 @@ def inspect(path, partition_bytes, gate):
         return rep
     kernel = data[koff:koff + ksize]
     rep["kernel_sha256"] = hashlib.sha256(kernel).hexdigest()
+    if expected.get('kernel') and rep['kernel_sha256'] != expected['kernel']:
+        gate.fail('kernel member SHA-256 mismatch against approved input')
     if kernel[:2] == b"\x1f\x8b":
         gate.fail("kernel payload is GZIP — S-Boot jumps to kernel_addr without "
                   "decompressing, so gzip bytes are executed as code (attempt A1: "
@@ -376,6 +440,8 @@ def inspect(path, partition_bytes, gate):
                ramdisk_offset_hex="0x%x" % roff)
     ramdisk = data[roff:roff + rsize]
     rep["ramdisk_sha256"] = hashlib.sha256(ramdisk).hexdigest()
+    if expected.get('ramdisk') and rep['ramdisk_sha256'] != expected['ramdisk']:
+        gate.fail('ramdisk member SHA-256 mismatch against approved input')
 
     # ---- gate 4: ramdisk contents ----------------------------------------------
     label = "ramdisk"
@@ -394,35 +460,80 @@ def inspect(path, partition_bytes, gate):
                    if k in cpio}
     rep["cpio"]["init"] = cpio.get("init")
 
-    # ---- gate 5: appended device tree ------------------------------------------
+    # ---- gate 5: appended DTBs; exact count and bootloader selection --------
     doff = roff + round_up(rsize, page)
-    if doff < size:
-        dtb = data[doff:size]
-        if len(dtb) >= 8:
-            dt_magic = struct.unpack_from(">I", dtb, 0)[0]
-            if dt_magic != DTB_MAGIC:
-                gate.warn("bytes after the ramdisk do not start with an FDT magic "
-                          "(0x%08x); appending a DTB is how S-Boot finds "
-                          "entry[0]" % dt_magic)
-            else:
-                totalsize = struct.unpack_from(">I", dtb, 4)[0]
-                rep["dtb_offset"] = doff
-                rep["dtb_size"] = totalsize
-                if totalsize > len(dtb):
-                    gate.fail("appended DTB declares %d bytes but only %d are present"
-                              % (totalsize, len(dtb)))
-                if totalsize < len(dtb) and dtb[totalsize:].strip(b"\x00"):
-                    gate.warn("%d non-zero bytes after the DTB" % (len(dtb) - totalsize))
-                for prop in (b"linux,initrd-start", b"linux,initrd-end"):
-                    if prop in dtb[:totalsize]:
-                        gate.warn("appended DTB contains a stale /chosen %s "
-                                  "placeholder (S-Boot overwrites it; do not count a "
-                                  "change to it as a device-tree experiment)"
-                                  % prop.decode())
-                try:
-                    check_dtb(dtb[:totalsize], gate)
-                except Exception as exc:  # noqa: BLE001
-                    gate.fail("appended DTB could not be validated: %s" % exc)
+    if separate_dt_evidence is not None:
+        if selected_appended_idx is not None:
+            gate.fail('separate DT layout cannot also select an appended BOOT DTB')
+        if doff > size or any(data[doff:]):
+            gate.fail('separate DT layout contains unexpected BOOT trailing payload; not a proven separate-DT image')
+        else:
+            verify_separate_dt_evidence(separate_dt_evidence, gate)
+            rep['dt_source'] = 'verified-separate-dtb-dtbo-and-live-fdt'
+            rep['appended_dtb_count'] = 0
+            rep['dtb_sha256'] = separate_dt_evidence.get('dtb_sha256')
+        if expected.get('dtb') and rep.get('dtb_sha256') != expected['dtb']:
+            gate.fail('separate DTB member SHA-256 mismatch')
+    elif doff >= size:
+        gate.fail('BOOT has no appended DTB; bootloader DT selection unproven')
+    else:
+        pos = doff
+        found = []
+        while pos < size:
+            tail = data[pos:]
+            if not any(tail):
+                break  # partition padding is permitted only after an FDT
+            if len(tail) < 40 or tail[:4] != struct.pack('>I', DTB_MAGIC):
+                gate.fail('unexpected non-FDT payload at BOOT offset %d (magic/size)' % pos)
+                break
+            try:
+                h = fdt_binary.inspect(tail)
+                segment = tail[:h['totalsize']]
+                dt_graph.parse_fdt(segment)
+                found.append((pos, segment))
+            except (ValueError, UnicodeError, struct.error) as e:
+                gate.fail('appended DTB at offset %d is malformed: %s' % (pos, e))
+                break
+            nextp = round_up(pos + h['totalsize'], 4)
+            # Concatenated FDTs must be unambiguously packed; no magic scans.
+            if any(data[pos + h['totalsize']:nextp]):
+                gate.fail('nonzero bytes in appended FDT alignment padding')
+                break
+            pos = nextp
+            # Boot images frequently pad DT to 2048 and then continue with
+            # another FDT: accept ONLY zero-padding to exact page boundary.
+            if pos < size and data[pos:pos+4] != struct.pack('>I', DTB_MAGIC):
+                boundary = round_up(pos, page)
+                if boundary < size and data[boundary:boundary+4] == struct.pack('>I', DTB_MAGIC):
+                    if any(data[pos:boundary]):
+                        gate.fail('nonzero bytes between appended FDTs')
+                        break
+                    pos = boundary
+        rep['appended_dtb_count'] = len(found)
+        rep['appended_dtb_entries'] = [{'offset': p, 'size': len(b),
+              'sha256': hashlib.sha256(b).hexdigest()} for p, b in found]
+        if not found:
+            gate.fail('no valid appended BOOT FDT')
+        elif len(found) > 1 and selected_appended_idx is None:
+            gate.fail('%d appended DTBs, but bootloader-selected index is unproven' % len(found))
+        elif selected_appended_idx is not None and not (0 <= selected_appended_idx < len(found)):
+            gate.fail('selected appended DTB index %d absent' % selected_appended_idx)
+        else:
+            idx = selected_appended_idx if selected_appended_idx is not None else 0
+            rep['selected_appended_dtb_index'] = idx
+            rep['dtb_offset'], chosen = found[idx]
+            rep['dtb_size'] = len(chosen)
+            rep['dtb_sha256'] = hashlib.sha256(chosen).hexdigest()
+            if expected.get('dtb') and rep['dtb_sha256'] != expected['dtb']:
+                gate.fail('selected appended DTB member SHA-256 mismatch')
+            for prop in (b'linux,initrd-start', b'linux,initrd-end'):
+                if prop in chosen:
+                    gate.warn('appended FDT has bootloader-initialized %s; validate merged tree'
+                              % prop.decode())
+            try:
+                check_dtb(chosen, gate)
+            except (ValueError, struct.error, IndexError) as e:
+                gate.fail('existing NFC protection could not parse appended DTB: %s' % e)
     # ---- gate 6: partition capacity --------------------------------------------
     if size > partition_bytes:
         gate.fail("image is %d bytes, larger than the BOOT partition (%d bytes)"
@@ -439,16 +550,43 @@ def main(argv):
     ap.add_argument("--partition-bytes", type=int,
                     default=int(os.environ.get("NUXEL_BOOT_PARTITION_BYTES",
                                                BOOT_PARTITION_BYTES_DEFAULT)))
+    ap.add_argument('--expect-boot-sha256')
+    ap.add_argument('--expect-kernel-sha256')
+    ap.add_argument('--expect-ramdisk-sha256')
+    ap.add_argument('--expect-dtb-sha256')
+    ap.add_argument('--selected-appended-dtb-index', type=int)
+    ap.add_argument('--separate-dtb-path')
+    ap.add_argument('--separate-dtb-sha256')
+    ap.add_argument('--separate-dtbo-path')
+    ap.add_argument('--separate-dtbo-sha256')
+    ap.add_argument('--separate-merged-path')
+    ap.add_argument('--separate-merged-sha256')
+    ap.add_argument('--separate-dtbo-index', type=int)
+    ap.add_argument('--separate-board-revision', type=int)
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args(argv)
 
+    keys = ('dtb_path', 'dtb_sha256', 'dtbo_path', 'dtbo_sha256',
+            'merged_path', 'merged_sha256', 'dtbo_index', 'board_revision')
+    kwargs = {key: getattr(args, 'separate_' + key) for key in keys}
+    # All-or-none. A single flag never bypasses the required appended DTB.
+    separate_evidence = kwargs if any(x is not None for x in kwargs.values()) else None
+    if separate_evidence is not None and any(x is None for x in kwargs.values()):
+        print('FAIL: incomplete separate DT source evidence', file=sys.stderr)
+        return 2
     overall = 0
     reports = []
     for path in args.images:
         gate = Gate()
         try:
-            rep = inspect(path, args.partition_bytes, gate)
+            rep = inspect(path, args.partition_bytes, gate, expected={
+                'boot': args.expect_boot_sha256,
+                'kernel': args.expect_kernel_sha256,
+                'ramdisk': args.expect_ramdisk_sha256,
+                'dtb': args.expect_dtb_sha256,
+            }, selected_appended_idx=args.selected_appended_dtb_index,
+               separate_dt_evidence=separate_evidence)
         except OSError as exc:
             gate.fail("cannot read: %s" % exc)
             rep = {"path": path}
